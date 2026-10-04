@@ -215,7 +215,7 @@ CREATE TABLE forgotten (
 
 export const SCHEMA_VERSION = MIGRATIONS.length
 
-const readUserVersion = (db: ISqliteDb): number =>
+export const readUserVersion = (db: ISqliteDb): number =>
   (db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version
 
 // Applies every missing step up to targetVersion, each in its own BEGIN IMMEDIATE transaction. The version is read
