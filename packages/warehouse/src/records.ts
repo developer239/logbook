@@ -198,3 +198,13 @@ export interface ILabelRecord {
   value: string
   labelledAt: number
 }
+
+// What a sync records about one source unit it imported: the adapter's fingerprint and parser version, so the next
+// sync can tell whether the unit changed, and when it was imported.
+export interface ISourceStateRecord {
+  harness: string
+  locator: string
+  fingerprint: string
+  parserVersion: number
+  importedAt: number
+}
