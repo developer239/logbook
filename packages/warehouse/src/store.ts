@@ -5,6 +5,7 @@ import { LogBookError, openSqlite, type ISqliteDb } from '@log-book/core'
 import { WAREHOUSE_ERROR_CODES, WarehouseVersionError } from './errors.js'
 import { applyMigrations, readUserVersion, SCHEMA_VERSION } from './migrations.js'
 import { resolveDataDirectory } from './paths.js'
+import type { IImportedSession, ISourceStateRecord } from './records.js'
 
 // The warehouse holds whole conversations, and so do its write-ahead log and shared-memory files until a checkpoint:
 // readable by the owner only.
@@ -15,6 +16,8 @@ const FILE_MODE = 0o600
 const JOURNAL_SIZE_LIMIT_BYTES = 67_108_864
 
 type TSqlParam = string | number | null
+
+export type SourceState = Pick<ISourceStateRecord, 'fingerprint' | 'parserVersion'>
 
 const SQLITE_BUSY = 5
 const WAL_SWITCH_ATTEMPTS = 50
@@ -139,4 +142,151 @@ export class WarehouseStore implements IWarehouseReader {
   }
 
   public readonly close = (): void => this.db.close()
+
+  // The fingerprint and parser version stored for a unit, or null when it was never imported.
+  public readonly readSourceState = (harness: string, locator: string): SourceState | null => {
+    const row = this.get<{ fingerprint: string; parser_version: number }>(
+      'SELECT fingerprint, parser_version FROM source_state WHERE harness = ? AND locator = ?',
+      harness,
+      locator
+    )
+    return row === undefined ? null : { fingerprint: row.fingerprint, parserVersion: row.parser_version }
+  }
+
+  // Replaces everything held for each session of one unit with what the adapter imported, and records the unit's
+  // source state, in one transaction: a reader sees the unit old or new, never half. A session the user forgot is left
+  // out, and a session the unit no longer produces keeps its rows. Labels are never touched: ids are stable across
+  // imports, so they still point at the same records.
+  public readonly writeImportedUnit = (
+    sessions: readonly IImportedSession[],
+    sourceState: ISourceStateRecord
+  ): void => {
+    this.transaction(() => {
+      const isForgotten = this.db.prepare('SELECT 1 FROM forgotten WHERE session_id = ?')
+      for (const imported of sessions) {
+        if (isForgotten.get(imported.session.id) === undefined) {
+          this.deleteSession(imported.session.id)
+          this.insertSession(imported)
+        }
+      }
+      this.db
+        .prepare(
+          `INSERT INTO source_state (harness, locator, fingerprint, parser_version, imported_at) VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT (harness, locator) DO UPDATE SET fingerprint = excluded.fingerprint,
+             parser_version = excluded.parser_version, imported_at = excluded.imported_at`
+        )
+        .run(
+          sourceState.harness,
+          sourceState.locator,
+          sourceState.fingerprint,
+          sourceState.parserVersion,
+          sourceState.importedAt
+        )
+    })
+  }
+
+  private readonly transaction = (work: () => void): void => {
+    this.db.exec('BEGIN IMMEDIATE')
+    try {
+      work()
+      this.db.exec('COMMIT')
+    } catch (error: unknown) {
+      this.db.exec('ROLLBACK')
+      throw error
+    }
+  }
+
+  // In this order, so the part delete trigger keeps part_fts in step before the rest goes.
+  private readonly deleteSession = (sessionId: string): void => {
+    for (const table of ['part', 'message', 'tool_call', 'event']) {
+      this.db.prepare(`DELETE FROM ${table} WHERE session_id = ?`).run(sessionId)
+    }
+    this.db.prepare('DELETE FROM session WHERE id = ?').run(sessionId)
+  }
+
+  private readonly insertSession = ({ session, messages, parts, toolCalls, events }: IImportedSession): void => {
+    this.db
+      .prepare(
+        `INSERT INTO session (id, harness, source_id, origin, is_scripted, project_dir, title, agent,
+           spawned_by_session_id, spawned_by_tool_call_id, started_at, ended_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        session.id,
+        session.harness,
+        session.sourceId,
+        session.origin,
+        session.isScripted ? 1 : 0,
+        session.projectDir,
+        session.title,
+        session.agent,
+        session.spawnedBySessionId,
+        session.spawnedByToolCallId,
+        session.startedAt,
+        session.endedAt
+      )
+
+    const insertMessage = this.db.prepare(
+      `INSERT INTO message (id, session_id, seq, actor, source_role, created_at, completed_at, requested_at, model, agent,
+         git_branch, tokens_input, tokens_output, tokens_reasoning, tokens_cache_read, tokens_cache_write, reported_cost)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    for (const message of messages) {
+      insertMessage.run(
+        message.id,
+        message.sessionId,
+        message.seq,
+        message.actor,
+        message.sourceRole,
+        message.createdAt,
+        message.completedAt,
+        message.requestedAt,
+        message.model,
+        message.agent,
+        message.gitBranch,
+        message.tokensInput,
+        message.tokensOutput,
+        message.tokensReasoning,
+        message.tokensCacheRead,
+        message.tokensCacheWrite,
+        message.reportedCost
+      )
+    }
+
+    const insertPart = this.db.prepare(
+      'INSERT INTO part (message_id, session_id, idx, kind, text, tool_call_id) VALUES (?, ?, ?, ?, ?, ?)'
+    )
+    for (const part of parts) {
+      insertPart.run(part.messageId, part.sessionId, part.idx, part.kind, part.text, part.toolCallId)
+    }
+
+    const insertToolCall = this.db.prepare(
+      `INSERT INTO tool_call (id, session_id, message_id, name, bare_name, server, family, input_json, status,
+         child_session_id, started_at, ended_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    for (const call of toolCalls) {
+      insertToolCall.run(
+        call.id,
+        call.sessionId,
+        call.messageId,
+        call.name,
+        call.bareName,
+        call.server,
+        call.family,
+        call.inputJson,
+        call.status,
+        call.childSessionId,
+        call.startedAt,
+        call.endedAt
+      )
+    }
+
+    const insertEvent = this.db.prepare(
+      'INSERT INTO event (id, session_id, kind, at, data_json) VALUES (?, ?, ?, ?, ?)'
+    )
+    for (const event of events) {
+      insertEvent.run(event.id, event.sessionId, event.kind, event.at, event.dataJson)
+    }
+  }
 }

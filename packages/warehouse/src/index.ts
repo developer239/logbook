@@ -8,6 +8,7 @@ export type {
   IPartRecord,
   ISessionCommandRecord,
   ISessionRecord,
+  ISourceStateRecord,
   IToolCallRecord,
   ITurnRecord,
   LabelRecordType,
@@ -65,4 +66,4 @@ export {
   type SyncLockOperation,
 } from './locks.js'
 export { resolveDataDirectory, resolveWarehousePath } from './paths.js'
-export { WarehouseStore, type IWarehouseReader } from './store.js'
+export { WarehouseStore, type IWarehouseReader, type SourceState } from './store.js'

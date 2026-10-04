@@ -5,7 +5,9 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { openSqlite, runSubprocess } from '@log-book/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { IImportedSession, ISourceStateRecord } from './records.js'
 import { WarehouseStore } from './store.js'
+import { insert } from './testing/index.js'
 
 const CHILD_TIMEOUT_MS = 10_000
 
@@ -275,5 +277,257 @@ describe('WarehouseStore', () => {
       // Assert
       expect(result).toStrictEqual({ version: { user_version: 1 }, sessions: [] })
     })
+  })
+})
+
+const HARNESS = 'test-harness'
+const LOCATOR = 'units/unit-1.jsonl'
+
+// One invented session with a message, a part, a tool call and an event, all named after the session.
+const importedSession = (sessionId: string, text: string, createdAt: number | string = 1_000): IImportedSession => ({
+  session: {
+    id: sessionId,
+    harness: HARNESS,
+    sourceId: sessionId.split(':')[1] ?? sessionId,
+    origin: 'interactive',
+    isScripted: false,
+    projectDir: '/work/example',
+    title: 'Example session',
+    agent: null,
+    spawnedBySessionId: null,
+    spawnedByToolCallId: null,
+    startedAt: 1_000,
+    endedAt: 2_000,
+  },
+  messages: [
+    {
+      id: `${sessionId}/m1`,
+      sessionId,
+      seq: 0,
+      actor: 'user',
+      sourceRole: 'user',
+      // A string here is refused by STRICT, which the failed-write test relies on.
+      createdAt: createdAt as number,
+      completedAt: null,
+      requestedAt: null,
+      model: null,
+      agent: null,
+      gitBranch: null,
+      tokensInput: null,
+      tokensOutput: null,
+      tokensReasoning: null,
+      tokensCacheRead: null,
+      tokensCacheWrite: null,
+      reportedCost: null,
+    },
+  ],
+  parts: [{ messageId: `${sessionId}/m1`, sessionId, idx: 0, kind: 'text', text, toolCallId: null }],
+  toolCalls: [
+    {
+      id: `${sessionId}/c1`,
+      sessionId,
+      messageId: `${sessionId}/m1`,
+      name: 'Read',
+      bareName: 'Read',
+      server: null,
+      family: 'read',
+      inputJson: '{}',
+      status: 'completed',
+      childSessionId: null,
+      startedAt: 1_100,
+      endedAt: 1_200,
+    },
+  ],
+  events: [{ id: `${sessionId}/e1`, sessionId, kind: 'idle', at: 1_500, dataJson: '{}' }],
+})
+
+const sourceState = (fingerprint: string, importedAt = 5_000): ISourceStateRecord => ({
+  harness: HARNESS,
+  locator: LOCATOR,
+  fingerprint,
+  parserVersion: 3,
+  importedAt,
+})
+
+const IMPORTED_TABLES = ['session', 'message', 'part', 'tool_call', 'event', 'source_state']
+
+const counts = (opened: WarehouseStore): Record<string, number> =>
+  Object.fromEntries(
+    IMPORTED_TABLES.map((table) => [
+      table,
+      opened.get<{ count: number }>(`SELECT count(*) AS count FROM ${table}`)?.count ?? -1,
+    ])
+  )
+
+const search = (opened: WarehouseStore, phrase: string): string[] =>
+  opened
+    .all<{ session_id: string }>(
+      'SELECT part.session_id FROM part_fts JOIN part ON part.rowid = part_fts.rowid WHERE part_fts MATCH ?',
+      `"${phrase}"`
+    )
+    .map((row) => row.session_id)
+
+describe('WarehouseStore unit writes', () => {
+  let directory = ''
+  let store: WarehouseStore | null = null
+
+  const openStore = async (): Promise<WarehouseStore> => {
+    store = await WarehouseStore.open(join(directory, 'warehouse.db'))
+    return store
+  }
+
+  beforeEach(async () => {
+    directory = await realpath(await mkdtemp(join(tmpdir(), 'log-book-unit-')))
+    vi.stubEnv('XDG_DATA_HOME', join(directory, 'data'))
+  })
+
+  afterEach(async () => {
+    store?.close()
+    store = null
+    await rm(directory, { recursive: true, force: true })
+  })
+
+  it('writes a new unit to every imported table and finds its text', async () => {
+    // Arrange
+    const opened = await openStore()
+
+    // Act
+    opened.writeImportedUnit([importedSession('test-harness:s1', 'the build is green')], sourceState('f1'))
+
+    // Assert
+    expect({ counts: counts(opened), found: search(opened, 'build is green') }).toStrictEqual({
+      counts: { session: 1, message: 1, part: 1, tool_call: 1, event: 1, source_state: 1 },
+      found: ['test-harness:s1'],
+    })
+  })
+
+  it('replaces a changed unit, and text it no longer holds is no longer found', async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.writeImportedUnit([importedSession('test-harness:s1', 'the build is green')], sourceState('f1'))
+
+    // Act
+    opened.writeImportedUnit([importedSession('test-harness:s1', 'the build is red')], sourceState('f2'))
+
+    // Assert
+    expect({
+      counts: counts(opened),
+      old: search(opened, 'build is green'),
+      new: search(opened, 'build is red'),
+      state: opened.readSourceState(HARNESS, LOCATOR),
+    }).toStrictEqual({
+      counts: { session: 1, message: 1, part: 1, tool_call: 1, event: 1, source_state: 1 },
+      old: [],
+      new: ['test-harness:s1'],
+      state: { fingerprint: 'f2', parserVersion: 3 },
+    })
+  })
+
+  it('keeps the labels on a re-imported session', async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.writeImportedUnit([importedSession('test-harness:s1', 'first text')], sourceState('f1'))
+    const db = await openSqlite(join(directory, 'warehouse.db'), { isReadOnly: false })
+    insert(db, 'label', {
+      record_type: 'tool_call',
+      record_id: 'test-harness:s1/c1',
+      labeller: 'model-a',
+      version: 1,
+      name: 'purpose',
+      value: 'read a file',
+      labelled_at: 3_000,
+    })
+    db.close()
+
+    // Act
+    opened.writeImportedUnit([importedSession('test-harness:s1', 'second text')], sourceState('f2'))
+
+    // Assert
+    expect(opened.all('SELECT record_id, value FROM label')).toStrictEqual([
+      { record_id: 'test-harness:s1/c1', value: 'read a file' },
+    ])
+  })
+
+  it('leaves every table as it was when the write fails part-way', async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.writeImportedUnit([importedSession('test-harness:s1', 'kept text')], sourceState('f1', 5_000))
+    const before = { counts: counts(opened), rows: opened.all('SELECT * FROM source_state') }
+
+    // Act
+    const writing = (): void =>
+      opened.writeImportedUnit(
+        [importedSession('test-harness:s1', 'new text'), importedSession('test-harness:s2', 'broken', 'soon')],
+        sourceState('f2', 6_000)
+      )
+
+    // Assert
+    expect(writing).toThrow('cannot store TEXT value in INTEGER column message.created_at')
+    expect({ counts: counts(opened), rows: opened.all('SELECT * FROM source_state') }).toStrictEqual(before)
+    expect(search(opened, 'kept text')).toStrictEqual(['test-harness:s1'])
+  })
+
+  it('leaves out a forgotten session and writes the rest of the unit', async () => {
+    // Arrange
+    const opened = await openStore()
+    const db = await openSqlite(join(directory, 'warehouse.db'), { isReadOnly: false })
+    insert(db, 'forgotten', { session_id: 'test-harness:s2', forgotten_at: 4_000 })
+    db.close()
+
+    // Act
+    opened.writeImportedUnit(
+      [importedSession('test-harness:s1', 'kept'), importedSession('test-harness:s2', 'forgotten')],
+      sourceState('f1')
+    )
+
+    // Assert
+    expect({
+      sessions: opened.all('SELECT id FROM session'),
+      state: opened.readSourceState(HARNESS, LOCATOR),
+    }).toStrictEqual({ sessions: [{ id: 'test-harness:s1' }], state: { fingerprint: 'f1', parserVersion: 3 } })
+  })
+
+  it('keeps the rows of a session a re-imported unit no longer produces', async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.writeImportedUnit(
+      [importedSession('test-harness:s1', 'first'), importedSession('test-harness:s2', 'second')],
+      sourceState('f1')
+    )
+
+    // Act
+    opened.writeImportedUnit([importedSession('test-harness:s1', 'first again')], sourceState('f2'))
+
+    // Assert
+    expect({
+      sessions: opened.all('SELECT id FROM session ORDER BY id'),
+      found: search(opened, 'second'),
+    }).toStrictEqual({ sessions: [{ id: 'test-harness:s1' }, { id: 'test-harness:s2' }], found: ['test-harness:s2'] })
+  })
+
+  it('stores the import time the caller passed', async () => {
+    // Arrange
+    const opened = await openStore()
+
+    // Act
+    opened.writeImportedUnit([importedSession('test-harness:s1', 'text')], sourceState('f1', 1_791_100_800_000))
+
+    // Assert
+    expect(
+      opened.all('SELECT harness, locator, fingerprint, parser_version, imported_at FROM source_state')
+    ).toStrictEqual([
+      { harness: HARNESS, locator: LOCATOR, fingerprint: 'f1', parser_version: 3, imported_at: 1_791_100_800_000 },
+    ])
+  })
+
+  it('reads no state for a unit never imported', async () => {
+    // Arrange
+    const opened = await openStore()
+
+    // Act
+    const state = opened.readSourceState(HARNESS, 'units/never.jsonl')
+
+    // Assert
+    expect(state).toBeNull()
   })
 })
