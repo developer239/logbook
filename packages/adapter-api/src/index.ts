@@ -23,3 +23,5 @@ export {
   unknownEvent,
   type UnknownRecordDescription,
 } from './helpers.js'
+export { KNOWN_TOOLS } from './known-tools.js'
+export { isToolFamily, mcpFamily, TOOL_FAMILIES, type ToolFamily } from './tool-families.js'
