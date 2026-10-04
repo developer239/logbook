@@ -1,1 +1,22 @@
 export { MIGRATIONS, SCHEMA_VERSION } from './migrations.js'
+export type {
+  IEventRecord,
+  IImportedSession,
+  ILabelRecord,
+  ILinkRecord,
+  IMessageRecord,
+  IPartRecord,
+  ISessionCommandRecord,
+  ISessionRecord,
+  IToolCallRecord,
+  ITurnRecord,
+  LabelRecordType,
+  LinkConfidence,
+  LinkKind,
+  MessageActor,
+  PartKind,
+  SessionCommandSource,
+  SessionEventKind,
+  SessionOrigin,
+  ToolCallStatus,
+} from './records.js'
