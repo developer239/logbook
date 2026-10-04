@@ -10,11 +10,16 @@
   "scripts": {
     "build:packages": "pnpm -r --filter '!@log-book/docs' build",
     "build": "pnpm build:packages",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r typecheck && tsc --noEmit",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "lint": "oxlint --type-aware && stylelint --allow-empty-input 'apps/web/src/**/*.css'",
-    "knip": "knip"
+    "knip": "knip",
+    "test": "vitest run --project '!e2e' --project '!demo-build' --project '!docs-browser'",
+    "test:related": "vitest related --run",
+    "test:e2e": "vitest run --project e2e",
+    "test:demo": "vitest run --project demo-build",
+    "test:docs": "vitest run --project docs-browser"
   },
   "devDependencies": {
     "@types/node": "catalog:",
@@ -23,6 +28,7 @@
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "stylelint": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
