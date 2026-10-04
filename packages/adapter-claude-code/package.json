@@ -1,0 +1,21 @@
+{
+  "name": "@log-book/adapter-claude-code",
+  "version": "0.0.0-development",
+  "private": true,
+  "type": "module",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./source-writer": {
+      "types": "./dist/source-writer/index.d.ts",
+      "default": "./dist/source-writer/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  }
+}
