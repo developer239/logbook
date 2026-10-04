@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { openSqlite, runSubprocess } from '@log-book/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { IImportedSession, ISourceStateRecord } from './records.js'
+import type { IHarnessDescriptorRecord, IImportedSession, ISourceStateRecord } from './records.js'
 import { WarehouseStore } from './store.js'
 import { insert } from './testing/index.js'
 
@@ -529,5 +529,238 @@ describe('WarehouseStore unit writes', () => {
 
     // Assert
     expect(state).toBeNull()
+  })
+})
+
+const descriptor = (id: string, fields: Partial<IHarnessDescriptorRecord> = {}): IHarnessDescriptorRecord => ({
+  id,
+  name: `Harness ${id}`,
+  defaultAgent: 'build',
+  filterAlias: id,
+  isFound: true,
+  checkedAt: 1_000,
+  location: `~/.${id}`,
+  locationVariables: [],
+  ...fields,
+})
+
+const HARNESS_COLUMNS_READ =
+  'SELECT id, name, default_agent, filter_alias, is_found, checked_at, location, location_variables, version_seen, notice, problem FROM harness ORDER BY id'
+
+describe('WarehouseStore bookkeeping', () => {
+  let directory = ''
+  let store: WarehouseStore | null = null
+
+  const openStore = async (): Promise<WarehouseStore> => {
+    store = await WarehouseStore.open(join(directory, 'warehouse.db'))
+    return store
+  }
+
+  beforeEach(async () => {
+    directory = await realpath(await mkdtemp(join(tmpdir(), 'log-book-bookkeeping-')))
+    vi.stubEnv('XDG_DATA_HOME', join(directory, 'data'))
+  })
+
+  afterEach(async () => {
+    store?.close()
+    store = null
+    await rm(directory, { recursive: true, force: true })
+  })
+
+  it('inserts each adapter row with no version, notice or problem', async () => {
+    // Arrange
+    const opened = await openStore()
+
+    // Act
+    opened.writeHarnessDescriptors([descriptor('alpha'), descriptor('beta', { isFound: false, location: null })])
+
+    // Assert
+    expect(opened.all(HARNESS_COLUMNS_READ)).toStrictEqual([
+      {
+        id: 'alpha',
+        name: 'Harness alpha',
+        default_agent: 'build',
+        filter_alias: 'alpha',
+        is_found: 1,
+        checked_at: 1_000,
+        location: '~/.alpha',
+        location_variables: '[]',
+        version_seen: null,
+        notice: null,
+        problem: null,
+      },
+      {
+        id: 'beta',
+        name: 'Harness beta',
+        default_agent: 'build',
+        filter_alias: 'beta',
+        is_found: 0,
+        checked_at: 1_000,
+        location: null,
+        location_variables: '[]',
+        version_seen: null,
+        notice: null,
+        problem: null,
+      },
+    ])
+  })
+
+  it('changes the descriptor fields on a later upsert and keeps the step-end columns', async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.writeHarnessDescriptors([descriptor('alpha')])
+    opened.writeHarnessStepEnd('alpha', { versionSeen: '2.1.0', notice: 'A notice.', problem: 'A problem.' })
+
+    // Act
+    opened.writeHarnessDescriptors([
+      descriptor('alpha', {
+        name: 'Alpha',
+        defaultAgent: 'plan',
+        filterAlias: 'a',
+        isFound: false,
+        checkedAt: 2_000,
+        location: '~/elsewhere',
+        locationVariables: ['ALPHA_HOME', 'ALPHA_DATA'],
+      }),
+    ])
+
+    // Assert
+    expect(opened.all(HARNESS_COLUMNS_READ)).toStrictEqual([
+      {
+        id: 'alpha',
+        name: 'Alpha',
+        default_agent: 'plan',
+        filter_alias: 'a',
+        is_found: 0,
+        checked_at: 2_000,
+        location: '~/elsewhere',
+        location_variables: '["ALPHA_HOME","ALPHA_DATA"]',
+        version_seen: '2.1.0',
+        notice: 'A notice.',
+        problem: 'A problem.',
+      },
+    ])
+  })
+
+  it('sets the step-end columns and sets them back to null', async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.writeHarnessDescriptors([descriptor('alpha')])
+    const read = (): unknown => opened.get('SELECT version_seen, notice, problem FROM harness WHERE id = ?', 'alpha')
+
+    // Act
+    opened.writeHarnessStepEnd('alpha', { versionSeen: '2.1.0', notice: 'Newer than tested.', problem: null })
+    const set = read()
+    opened.writeHarnessStepEnd('alpha', { versionSeen: null, notice: null, problem: null })
+
+    // Assert
+    expect({ set, cleared: read() }).toStrictEqual({
+      set: { version_seen: '2.1.0', notice: 'Newer than tested.', problem: null },
+      cleared: { version_seen: null, notice: null, problem: null },
+    })
+  })
+
+  it('writes a notice of two sentences and a problem with no version seen', async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.writeHarnessDescriptors([descriptor('alpha')])
+    const step = {
+      versionSeen: null,
+      notice: 'The harness is newer than tested. Its data format is newer than tested.',
+      problem: 'The listing failed.',
+    }
+
+    // Act
+    opened.writeHarnessStepEnd('alpha', step)
+
+    // Assert
+    expect(opened.get('SELECT version_seen, notice, problem FROM harness WHERE id = ?', 'alpha')).toStrictEqual({
+      version_seen: null,
+      notice: step.notice,
+      problem: step.problem,
+    })
+  })
+
+  it('keeps the row of an adapter missing from a later upsert', async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.writeHarnessDescriptors([descriptor('alpha'), descriptor('beta')])
+
+    // Act
+    opened.writeHarnessDescriptors([descriptor('alpha', { checkedAt: 2_000 })])
+
+    // Assert
+    expect(opened.all('SELECT id, name, checked_at FROM harness ORDER BY id')).toStrictEqual([
+      { id: 'alpha', name: 'Harness alpha', checked_at: 2_000 },
+      { id: 'beta', name: 'Harness beta', checked_at: 1_000 },
+    ])
+  })
+
+  it('reads location_variables back as the JSON array written', async () => {
+    // Arrange
+    const opened = await openStore()
+
+    // Act
+    opened.writeHarnessDescriptors([
+      descriptor('alpha', { locationVariables: [] }),
+      descriptor('beta', { locationVariables: ['BETA_DB'] }),
+    ])
+
+    // Assert
+    expect(
+      opened
+        .all<{ location_variables: string }>('SELECT location_variables FROM harness ORDER BY id')
+        .map((row) => JSON.parse(row.location_variables) as unknown)
+    ).toStrictEqual([[], ['BETA_DB']])
+  })
+
+  it('fails an upsert where two adapters share a filter alias and writes neither row', async () => {
+    // Arrange
+    const opened = await openStore()
+
+    // Act
+    const writing = (): void =>
+      opened.writeHarnessDescriptors([
+        descriptor('alpha', { filterAlias: 'same' }),
+        descriptor('beta', { filterAlias: 'same' }),
+      ])
+
+    // Assert
+    expect(writing).toThrow('UNIQUE constraint failed: harness.filter_alias')
+    expect(opened.all('SELECT id FROM harness')).toStrictEqual([])
+  })
+
+  it.each([
+    { outcome: 'ok', error: null },
+    { outcome: 'partial', error: 'One harness could not be read.' },
+    { outcome: 'failed', error: 'The warehouse is full.' },
+    { outcome: 'stopped', error: null },
+  ] as const)('starts and ends a sync record as $outcome', async ({ outcome, error }) => {
+    // Arrange
+    const opened = await openStore()
+
+    // Act
+    const id = opened.startSyncRecord(1_000)
+    opened.endSyncRecord(id, { endedAt: 2_000, outcome, error })
+
+    // Assert
+    expect(opened.all('SELECT id, started_at, ended_at, outcome, error FROM sync_run')).toStrictEqual([
+      { id, started_at: 1_000, ended_at: 2_000, outcome, error },
+    ])
+  })
+
+  it('keeps the newest 100 sync records', async () => {
+    // Arrange
+    const opened = await openStore()
+    const ids = Array.from({ length: 100 }, (_, index) => opened.startSyncRecord(1_000 + index))
+
+    // Act
+    const newest = opened.startSyncRecord(5_000)
+
+    // Assert
+    expect(opened.all<{ id: number }>('SELECT id FROM sync_run ORDER BY id').map((row) => row.id)).toStrictEqual([
+      ...ids.slice(1),
+      newest,
+    ])
   })
 })

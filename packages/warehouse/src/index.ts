@@ -1,6 +1,8 @@
 export { MIGRATIONS, SCHEMA_VERSION } from './migrations.js'
 export type {
   IEventRecord,
+  IHarnessDescriptorRecord,
+  IHarnessStepRecord,
   IImportedSession,
   ILabelRecord,
   ILinkRecord,
@@ -9,6 +11,7 @@ export type {
   ISessionCommandRecord,
   ISessionRecord,
   ISourceStateRecord,
+  ISyncEndRecord,
   IToolCallRecord,
   ITurnRecord,
   LabelRecordType,
@@ -19,6 +22,7 @@ export type {
   SessionCommandSource,
   SessionEventKind,
   SessionOrigin,
+  SyncOutcome,
   ToolCallStatus,
 } from './records.js'
 export {

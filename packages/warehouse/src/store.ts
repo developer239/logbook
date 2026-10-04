@@ -5,7 +5,13 @@ import { LogBookError, openSqlite, type ISqliteDb } from '@log-book/core'
 import { WAREHOUSE_ERROR_CODES, WarehouseVersionError } from './errors.js'
 import { applyMigrations, readUserVersion, SCHEMA_VERSION } from './migrations.js'
 import { resolveDataDirectory } from './paths.js'
-import type { IImportedSession, ISourceStateRecord } from './records.js'
+import type {
+  IHarnessDescriptorRecord,
+  IHarnessStepRecord,
+  IImportedSession,
+  ISourceStateRecord,
+  ISyncEndRecord,
+} from './records.js'
 
 // The warehouse holds whole conversations, and so do its write-ahead log and shared-memory files until a checkpoint:
 // readable by the owner only.
@@ -14,6 +20,8 @@ const FILE_MODE = 0o600
 // Truncates the write-ahead log after a checkpoint, so one large unit does not leave a log of hundreds of megabytes
 // behind while a reader holds a snapshot.
 const JOURNAL_SIZE_LIMIT_BYTES = 67_108_864
+// Only the newest sync record has a reader; the rest are kept for `logbook sql` up to this many.
+const SYNC_RECORDS_KEPT = 100
 
 type TSqlParam = string | number | null
 
@@ -185,11 +193,62 @@ export class WarehouseStore implements IWarehouseReader {
     })
   }
 
-  private readonly transaction = (work: () => void): void => {
+  // One upsert per registered adapter at the start of a sync, in one transaction. The step-end columns (version_seen,
+  // notice, problem) keep their values, and a harness missing from the list keeps its row and its name.
+  public readonly writeHarnessDescriptors = (descriptors: readonly IHarnessDescriptorRecord[]): void => {
+    this.transaction(() => {
+      const upsert = this.db.prepare(
+        `INSERT INTO harness (id, name, default_agent, filter_alias, is_found, checked_at, location, location_variables)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT (id) DO UPDATE SET name = excluded.name, default_agent = excluded.default_agent,
+           filter_alias = excluded.filter_alias, is_found = excluded.is_found, checked_at = excluded.checked_at,
+           location = excluded.location, location_variables = excluded.location_variables`
+      )
+      for (const descriptor of descriptors) {
+        upsert.run(
+          descriptor.id,
+          descriptor.name,
+          descriptor.defaultAgent,
+          descriptor.filterAlias,
+          descriptor.isFound ? 1 : 0,
+          descriptor.checkedAt,
+          descriptor.location,
+          JSON.stringify(descriptor.locationVariables)
+        )
+      }
+    })
+  }
+
+  // At the end of one adapter's step: all three columns every time, null meaning none.
+  public readonly writeHarnessStepEnd = (harnessId: string, step: IHarnessStepRecord): void => {
+    this.db
+      .prepare('UPDATE harness SET version_seen = ?, notice = ?, problem = ? WHERE id = ?')
+      .run(step.versionSeen, step.notice, step.problem, harnessId)
+  }
+
+  // Inserts the sync's record and returns its id; the same transaction deletes all but the newest records.
+  public readonly startSyncRecord = (startedAt: number): number =>
+    this.transaction(() => {
+      this.db.prepare('INSERT INTO sync_run (started_at) VALUES (?)').run(startedAt)
+      const { id } = this.db.prepare('SELECT last_insert_rowid() AS id').get() as { id: number }
+      this.db
+        .prepare('DELETE FROM sync_run WHERE id NOT IN (SELECT id FROM sync_run ORDER BY id DESC LIMIT ?)')
+        .run(SYNC_RECORDS_KEPT)
+      return id
+    })
+
+  public readonly endSyncRecord = (id: number, end: ISyncEndRecord): void => {
+    this.db
+      .prepare('UPDATE sync_run SET ended_at = ?, outcome = ?, error = ? WHERE id = ?')
+      .run(end.endedAt, end.outcome, end.error, id)
+  }
+
+  private readonly transaction = <TResult>(work: () => TResult): TResult => {
     this.db.exec('BEGIN IMMEDIATE')
     try {
-      work()
+      const result = work()
       this.db.exec('COMMIT')
+      return result
     } catch (error: unknown) {
       this.db.exec('ROLLBACK')
       throw error
