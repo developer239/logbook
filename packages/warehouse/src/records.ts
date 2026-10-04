@@ -208,3 +208,38 @@ export interface ISourceStateRecord {
   parserVersion: number
   importedAt: number
 }
+
+// What a sync knows about one registered adapter when it starts: the harness's name and filter alias, whether its
+// data is on this machine, and where it is or where the adapter looked (null when it could not say). Locations
+// arrive in their `~/` form.
+export interface IHarnessDescriptorRecord {
+  id: string
+  name: string
+  defaultAgent: string
+  filterAlias: string
+  isFound: boolean
+  checkedAt: number
+  location: string | null
+  // The harness's own environment variables that move its data, by name.
+  locationVariables: string[]
+}
+
+// What one adapter's step of a sync ended with; null means none.
+export interface IHarnessStepRecord {
+  // The newest harness version the step's imported units recorded.
+  versionSeen: string | null
+  // The engine's drift notice, up to two sentences.
+  notice: string | null
+  // The message of the error that ended the step.
+  problem: string | null
+}
+
+// `partial`: the sync finished but an adapter's step failed or a unit was skipped; `stopped`: SIGINT or SIGTERM.
+export type SyncOutcome = 'ok' | 'partial' | 'failed' | 'stopped'
+
+export interface ISyncEndRecord {
+  endedAt: number
+  outcome: SyncOutcome
+  // The first problem line for `partial`, the last line of the ending error for `failed`, null otherwise.
+  error: string | null
+}
