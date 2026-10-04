@@ -76,7 +76,15 @@ importers:
 
   packages/engine: {}
 
-  packages/warehouse: {}
+  packages/warehouse:
+    dependencies:
+      '@log-book/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(jiti@2.7.0)(yaml@2.9.1))
 
 packages:
 
