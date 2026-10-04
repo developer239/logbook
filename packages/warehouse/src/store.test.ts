@@ -5,8 +5,16 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { openSqlite, runSubprocess } from '@log-book/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { IHarnessDescriptorRecord, IImportedSession, ISourceStateRecord } from './records.js'
-import { WarehouseStore } from './store.js'
+import type {
+  IHarnessDescriptorRecord,
+  IImportedSession,
+  ILabelRecord,
+  ILinkRecord,
+  ISessionCommandRecord,
+  ISourceStateRecord,
+  ITurnRecord,
+} from './records.js'
+import { RULES_LABELLER, WarehouseStore } from './store.js'
 import { insert } from './testing/index.js'
 
 const CHILD_TIMEOUT_MS = 10_000
@@ -762,5 +770,276 @@ describe('WarehouseStore bookkeeping', () => {
       ...ids.slice(1),
       newest,
     ])
+  })
+})
+
+const sessionRow = (id: string, isScripted: number): Record<string, string | number | null> => ({
+  id,
+  harness: HARNESS,
+  source_id: id,
+  origin: 'interactive',
+  is_scripted: isScripted,
+})
+
+const subagentLink = (parent: string, child: string): ILinkRecord => ({
+  parentSessionId: parent,
+  parentToolCallId: `${parent}/c1`,
+  childSessionId: child,
+  kind: 'subagent',
+  confidence: 'exact',
+  evidence: 'tool call id',
+})
+
+const turnRecord = (messageId: string, startedAt: number | string = 1_000): ITurnRecord => ({
+  sessionId: 'test-harness:s1',
+  messageId,
+  seq: 0,
+  isPrompt: true,
+  requests: 1,
+  toolCalls: 0,
+  // A string here is refused by STRICT, which the failed-replace test relies on.
+  startedAt: startedAt as number,
+  endedAt: 2_000,
+  modelMs: 500,
+  toolMs: 0,
+  idleMs: 0,
+  humanWaitMs: 0,
+  parentTurnId: null,
+  parentToolCallId: null,
+})
+
+const labelRecord = (fields: Partial<ILabelRecord>): ILabelRecord => ({
+  recordType: 'tool_call',
+  recordId: 'test-harness:s1/c1',
+  labeller: 'model-a',
+  version: 1,
+  name: 'purpose',
+  value: 'read a file',
+  labelledAt: 1_000,
+  ...fields,
+})
+
+const commandRecord = (name: string): ISessionCommandRecord => ({
+  sessionId: 'test-harness:s1',
+  messageId: 'test-harness:s1/m1',
+  at: 1_000,
+  command: name,
+  source: 'typed',
+  hasFile: name !== 'model',
+})
+
+const LABELS_READ = 'SELECT record_type, record_id, labeller, version, name, value FROM label ORDER BY 1, 2, 3, 4, 5'
+
+describe('WarehouseStore derived tables and labels', () => {
+  let directory = ''
+  let store: WarehouseStore | null = null
+
+  const openStore = async (): Promise<WarehouseStore> => {
+    store = await WarehouseStore.open(join(directory, 'warehouse.db'))
+    return store
+  }
+
+  const insertRows = async (table: string, rows: Record<string, string | number | null>[]): Promise<void> => {
+    const db = await openSqlite(join(directory, 'warehouse.db'), { isReadOnly: false })
+    for (const row of rows) {
+      insert(db, table, row)
+    }
+    db.close()
+  }
+
+  beforeEach(async () => {
+    directory = await realpath(await mkdtemp(join(tmpdir(), 'log-book-derived-')))
+    vi.stubEnv('XDG_DATA_HOME', join(directory, 'data'))
+  })
+
+  afterEach(async () => {
+    store?.close()
+    store = null
+    await rm(directory, { recursive: true, force: true })
+  })
+
+  it('sets each session origin from is_scripted and incoming subagent links', async () => {
+    // Arrange
+    const opened = await openStore()
+    await insertRows('session', [
+      sessionRow('parent', 0),
+      sessionRow('plain', 0),
+      sessionRow('script', 1),
+      sessionRow('child', 0),
+      sessionRow('scripted-child', 1),
+    ])
+
+    // Act
+    opened.replaceLinks([subagentLink('parent', 'child'), subagentLink('parent', 'scripted-child')])
+
+    // Assert
+    expect(opened.all('SELECT id, origin FROM session ORDER BY id')).toStrictEqual([
+      { id: 'child', origin: 'subagent' },
+      { id: 'parent', origin: 'interactive' },
+      { id: 'plain', origin: 'interactive' },
+      { id: 'script', origin: 'scripted' },
+      { id: 'scripted-child', origin: 'subagent' },
+    ])
+  })
+
+  it('returns a session to interactive or scripted when the next write leaves out its link', async () => {
+    // Arrange
+    const opened = await openStore()
+    await insertRows('session', [sessionRow('parent', 0), sessionRow('child', 0), sessionRow('scripted-child', 1)])
+    opened.replaceLinks([subagentLink('parent', 'child'), subagentLink('parent', 'scripted-child')])
+
+    // Act
+    opened.replaceLinks([])
+
+    // Assert
+    expect(opened.all('SELECT id, origin FROM session ORDER BY id')).toStrictEqual([
+      { id: 'child', origin: 'interactive' },
+      { id: 'parent', origin: 'interactive' },
+      { id: 'scripted-child', origin: 'scripted' },
+    ])
+  })
+
+  it('leaves only the second write of links, commands and turns', async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.replaceLinks([subagentLink('a', 'b')])
+    opened.replaceSessionCommands([commandRecord('review')])
+    opened.replaceTurns([turnRecord('test-harness:s1/m1')])
+
+    // Act
+    opened.replaceLinks([subagentLink('c', 'd')])
+    opened.replaceSessionCommands([commandRecord('model')])
+    opened.replaceTurns([turnRecord('test-harness:s1/m2')])
+
+    // Assert
+    expect({
+      links: opened.all('SELECT parent_session_id, child_session_id FROM link'),
+      commands: opened.all('SELECT command, has_file FROM session_command'),
+      turns: opened.all('SELECT message_id, is_prompt FROM turn'),
+    }).toStrictEqual({
+      links: [{ parent_session_id: 'c', child_session_id: 'd' }],
+      commands: [{ command: 'model', has_file: 0 }],
+      turns: [{ message_id: 'test-harness:s1/m2', is_prompt: 1 }],
+    })
+  })
+
+  it('replaces the rule labels of one record type and keeps the others and every model label', async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.writeLabels([
+      labelRecord({ labeller: RULES_LABELLER, value: 'old rule' }),
+      labelRecord({
+        recordType: 'session',
+        recordId: 'test-harness:s1',
+        labeller: RULES_LABELLER,
+        name: 'initiator',
+        value: 'human',
+      }),
+      labelRecord({ labeller: 'model-a', value: 'model answer' }),
+    ])
+
+    // Act
+    opened.replaceRuleLabels('tool_call', [
+      labelRecord({ recordId: 'test-harness:s1/c2', labeller: RULES_LABELLER, value: 'new rule' }),
+    ])
+
+    // Assert
+    expect(opened.all(LABELS_READ)).toStrictEqual([
+      {
+        record_type: 'session',
+        record_id: 'test-harness:s1',
+        labeller: 'rules',
+        version: 1,
+        name: 'initiator',
+        value: 'human',
+      },
+      {
+        record_type: 'tool_call',
+        record_id: 'test-harness:s1/c1',
+        labeller: 'model-a',
+        version: 1,
+        name: 'purpose',
+        value: 'model answer',
+      },
+      {
+        record_type: 'tool_call',
+        record_id: 'test-harness:s1/c2',
+        labeller: 'rules',
+        version: 1,
+        name: 'purpose',
+        value: 'new rule',
+      },
+    ])
+  })
+
+  it('replaces the value and time of a model label with the same key', async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.writeLabels([labelRecord({ value: 'first', labelledAt: 1_000 })])
+
+    // Act
+    opened.writeLabels([labelRecord({ value: 'second', labelledAt: 2_000 })])
+
+    // Assert
+    expect(opened.all('SELECT value, labelled_at FROM label')).toStrictEqual([{ value: 'second', labelled_at: 2_000 }])
+  })
+
+  it("drops one labeller's fields, returns the count, and keeps another model's and the rules' labels", async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.writeLabels([
+      labelRecord({ name: 'purpose' }),
+      labelRecord({ name: 'failure' }),
+      labelRecord({ name: 'kept' }),
+      labelRecord({ labeller: 'model-b', name: 'purpose' }),
+      labelRecord({ labeller: RULES_LABELLER, name: 'purpose' }),
+    ])
+
+    // Act
+    const count = opened.dropLabels('tool_call', 'model-a', ['purpose', 'failure'])
+
+    // Assert
+    expect({ count, rows: opened.all('SELECT labeller, name FROM label ORDER BY labeller, name') }).toStrictEqual({
+      count: 2,
+      rows: [
+        { labeller: 'model-a', name: 'kept' },
+        { labeller: 'model-b', name: 'purpose' },
+        { labeller: 'rules', name: 'purpose' },
+      ],
+    })
+  })
+
+  it('lists labelled records per labeller and version', async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.writeLabels([
+      labelRecord({ recordId: 'call-1', version: 1 }),
+      labelRecord({ recordId: 'call-2', version: 1 }),
+      labelRecord({ recordId: 'call-2', version: 2 }),
+      labelRecord({ recordId: 'call-3', version: 2, labeller: 'model-b' }),
+    ])
+
+    // Act
+    const lists = {
+      versionOne: opened.labelledRecordIds('tool_call', 'purpose', 'model-a', 1),
+      versionTwo: opened.labelledRecordIds('tool_call', 'purpose', 'model-a', 2),
+    }
+
+    // Assert
+    expect(lists).toStrictEqual({ versionOne: new Set(['call-1', 'call-2']), versionTwo: new Set(['call-2']) })
+  })
+
+  it('keeps the previous rows when a replace fails part-way', async () => {
+    // Arrange
+    const opened = await openStore()
+    opened.replaceTurns([turnRecord('test-harness:s1/m1')])
+
+    // Act
+    const replacing = (): void =>
+      opened.replaceTurns([turnRecord('test-harness:s1/m2'), turnRecord('test-harness:s1/m3', 'soon')])
+
+    // Assert
+    expect(replacing).toThrow('cannot store TEXT value in INTEGER column turn.started_at')
+    expect(opened.all('SELECT message_id FROM turn')).toStrictEqual([{ message_id: 'test-harness:s1/m1' }])
   })
 })

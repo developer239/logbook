@@ -70,4 +70,4 @@ export {
   type SyncLockOperation,
 } from './locks.js'
 export { resolveDataDirectory, resolveWarehousePath } from './paths.js'
-export { WarehouseStore, type IWarehouseReader, type SourceState } from './store.js'
+export { RULES_LABELLER, WarehouseStore, type IWarehouseReader, type SourceState } from './store.js'
