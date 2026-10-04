@@ -9,8 +9,13 @@ import type {
   IHarnessDescriptorRecord,
   IHarnessStepRecord,
   IImportedSession,
+  ILabelRecord,
+  ILinkRecord,
+  ISessionCommandRecord,
   ISourceStateRecord,
   ISyncEndRecord,
+  ITurnRecord,
+  LabelRecordType,
 } from './records.js'
 
 // The warehouse holds whole conversations, and so do its write-ahead log and shared-memory files until a checkpoint:
@@ -24,6 +29,9 @@ const JOURNAL_SIZE_LIMIT_BYTES = 67_108_864
 const SYNC_RECORDS_KEPT = 100
 
 type TSqlParam = string | number | null
+
+// The labeller of the labels a sync computes from fixed rules; every other labeller is a model, whose labels are kept.
+export const RULES_LABELLER = 'rules'
 
 export type SourceState = Pick<ISourceStateRecord, 'fingerprint' | 'parserVersion'>
 
@@ -241,6 +249,142 @@ export class WarehouseStore implements IWarehouseReader {
     this.db
       .prepare('UPDATE sync_run SET ended_at = ?, outcome = ?, error = ? WHERE id = ?')
       .run(end.endedAt, end.outcome, end.error, id)
+  }
+
+  // Replaces every link, and in the same transaction recomputes every session's origin: scripted where the source
+  // shows a program started it, otherwise interactive; then subagent for every child of a subagent link.
+  public readonly replaceLinks = (links: readonly ILinkRecord[]): void => {
+    this.transaction(() => {
+      this.db.exec('DELETE FROM link')
+      const insert = this.db.prepare(
+        `INSERT INTO link (parent_session_id, parent_tool_call_id, child_session_id, kind, confidence, evidence)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      )
+      for (const link of links) {
+        insert.run(
+          link.parentSessionId,
+          link.parentToolCallId,
+          link.childSessionId,
+          link.kind,
+          link.confidence,
+          link.evidence
+        )
+      }
+      this.db.exec("UPDATE session SET origin = CASE WHEN is_scripted = 1 THEN 'scripted' ELSE 'interactive' END")
+      this.db.exec(
+        "UPDATE session SET origin = 'subagent' WHERE id IN (SELECT child_session_id FROM link WHERE kind = 'subagent')"
+      )
+    })
+  }
+
+  public readonly replaceSessionCommands = (commands: readonly ISessionCommandRecord[]): void => {
+    this.transaction(() => {
+      this.db.exec('DELETE FROM session_command')
+      const insert = this.db.prepare(
+        'INSERT INTO session_command (session_id, message_id, at, command, source, has_file) VALUES (?, ?, ?, ?, ?, ?)'
+      )
+      for (const command of commands) {
+        insert.run(
+          command.sessionId,
+          command.messageId,
+          command.at,
+          command.command,
+          command.source,
+          command.hasFile ? 1 : 0
+        )
+      }
+    })
+  }
+
+  public readonly replaceTurns = (turns: readonly ITurnRecord[]): void => {
+    this.transaction(() => {
+      this.db.exec('DELETE FROM turn')
+      const insert = this.db.prepare(
+        `INSERT INTO turn (session_id, message_id, seq, is_prompt, requests, tool_calls, started_at, ended_at, model_ms,
+           tool_ms, idle_ms, human_wait_ms, parent_turn_id, parent_tool_call_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      for (const turn of turns) {
+        insert.run(
+          turn.sessionId,
+          turn.messageId,
+          turn.seq,
+          turn.isPrompt ? 1 : 0,
+          turn.requests,
+          turn.toolCalls,
+          turn.startedAt,
+          turn.endedAt,
+          turn.modelMs,
+          turn.toolMs,
+          turn.idleMs,
+          turn.humanWaitMs,
+          turn.parentTurnId,
+          turn.parentToolCallId
+        )
+      }
+    })
+  }
+
+  // The rules' labels are derived from the warehouse, so a sync replaces them whole for one record type; model labels
+  // and other record types are left as they are.
+  public readonly replaceRuleLabels = (recordType: LabelRecordType, labels: readonly ILabelRecord[]): void => {
+    this.transaction(() => {
+      this.db.prepare('DELETE FROM label WHERE record_type = ? AND labeller = ?').run(recordType, RULES_LABELLER)
+      this.insertLabels(labels)
+    })
+  }
+
+  // Model labels: a label with the same record type, record id, labeller, version and name is replaced.
+  public readonly writeLabels = (labels: readonly ILabelRecord[]): void => {
+    this.transaction(() => {
+      this.insertLabels(labels)
+    })
+  }
+
+  // Deletes one labeller's labels of some fields of a record type and returns how many rows went.
+  public readonly dropLabels = (recordType: LabelRecordType, labeller: string, names: readonly string[]): number =>
+    this.transaction(() => {
+      const where = `record_type = ? AND labeller = ? AND name IN (${names.map(() => '?').join(', ')})`
+      const { count } = this.db
+        .prepare(`SELECT count(*) AS count FROM label WHERE ${where}`)
+        .get(recordType, labeller, ...names) as { count: number }
+      this.db.prepare(`DELETE FROM label WHERE ${where}`).run(recordType, labeller, ...names)
+      return count
+    })
+
+  // The records one labeller has labelled for a record type, a field and a version.
+  public readonly labelledRecordIds = (
+    recordType: LabelRecordType,
+    name: string,
+    labeller: string,
+    version: number
+  ): Set<string> =>
+    new Set(
+      this.all<{ record_id: string }>(
+        'SELECT record_id FROM label WHERE record_type = ? AND name = ? AND labeller = ? AND version = ?',
+        recordType,
+        name,
+        labeller,
+        version
+      ).map((row) => row.record_id)
+    )
+
+  private readonly insertLabels = (labels: readonly ILabelRecord[]): void => {
+    const insert = this.db.prepare(
+      `INSERT OR REPLACE INTO label (record_type, record_id, labeller, version, name, value, labelled_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    )
+    for (const label of labels) {
+      insert.run(
+        label.recordType,
+        label.recordId,
+        label.labeller,
+        label.version,
+        label.name,
+        label.value,
+        label.labelledAt
+      )
+    }
   }
 
   private readonly transaction = <TResult>(work: () => TResult): TResult => {
