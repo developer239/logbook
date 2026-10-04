@@ -10,10 +10,19 @@
   "scripts": {
     "build:packages": "pnpm -r --filter '!@log-book/docs' build",
     "build": "pnpm build:packages",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "lint": "oxlint --type-aware && stylelint --allow-empty-input 'apps/web/src/**/*.css'",
+    "knip": "knip"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "knip": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "stylelint": "catalog:",
     "typescript": "catalog:"
   }
 }

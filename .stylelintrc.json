@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "no-duplicate-selectors": true,
+    "block-no-empty": true,
+    "declaration-block-no-duplicate-properties": true,
+    "no-descending-specificity": true,
+    "selector-class-pattern": [
+      "^[a-z][a-z0-9]*(-[a-z0-9]+)*(__[a-z0-9]+(-[a-z0-9]+)*)?(--[a-z0-9]+(-[a-z0-9]+)*)?$",
+      {
+        "message": "Expected a BEM class: block, block__element, block--modifier or block__element--modifier, in kebab case"
+      }
+    ],
+    "unit-disallowed-list": [
+      ["px"],
+      {
+        "ignoreProperties": {
+          "px": ["/^border/", "/^outline/", "box-shadow", "/^--(hatch|shadow-[0-9])$/"]
+        }
+      }
+    ]
+  }
+}
