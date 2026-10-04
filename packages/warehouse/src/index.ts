@@ -52,4 +52,6 @@ export {
   type IToolCallRow,
   type ITurnRow,
 } from './rows.js'
-export { resolveDataDirectory, resolveWarehousePath, WAREHOUSE_ERROR_CODES } from './paths.js'
+export { WAREHOUSE_ERROR_CODES, WarehouseVersionError } from './errors.js'
+export { resolveDataDirectory, resolveWarehousePath } from './paths.js'
+export { WarehouseStore, type IWarehouseReader } from './store.js'

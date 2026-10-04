@@ -1,10 +1,7 @@
 import { homedir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import { LogBookError } from '@log-book/core'
-
-export const WAREHOUSE_ERROR_CODES = {
-  WAREHOUSE_PATH_INVALID: 'WAREHOUSE_PATH_INVALID',
-} as const
+import { WAREHOUSE_ERROR_CODES } from './errors.js'
 
 const DATA_DIRECTORY_NAME = 'log-book'
 const WAREHOUSE_FILE_NAME = 'warehouse.db'
