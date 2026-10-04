@@ -1,0 +1,19 @@
+{
+  "name": "log-book",
+  "private": true,
+  "type": "module",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "packageManager": "pnpm@11.11.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build:packages": "pnpm -r --filter '!@log-book/docs' build",
+    "build": "pnpm build:packages",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

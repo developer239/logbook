@@ -1,0 +1,6 @@
+[tools]
+node = "24"
+
+[env]
+# Astro reports anonymous CLI usage by default; Log Book stays on the machine.
+ASTRO_TELEMETRY_DISABLED = "1"

@@ -1,0 +1,13 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+.astro/
+
+# this machine's settings, such as the CLI entry the web app runs under astro dev
+mise.local.toml
+
+# editor and OS files
+.idea/
+.DS_Store
