@@ -1,6 +1,7 @@
 import { ERROR_CODES, LogBookError } from '@log-book/core'
-import { RULES_LABELLER, type IWarehouseReader } from '@log-book/warehouse'
+import type { IWarehouseReader } from '@log-book/warehouse'
 import { SESSION_ORIGINS } from '../labels/vocabularies.js'
+import { labelSql } from './label-sql.js'
 
 export interface ISessionSummary {
   id: string
@@ -80,9 +81,7 @@ const DEFAULT_LIMIT = 30
 const MAX_TREE_DEPTH = 12
 
 // A session field from the newest label a model gave it.
-const modelLabel = (field: string): string =>
-  `(SELECT l.value FROM label l WHERE l.record_type = 'session' AND l.record_id = s.id
-     AND l.labeller <> '${RULES_LABELLER}' AND l.name = '${field}' ORDER BY l.labelled_at DESC LIMIT 1)`
+const modelLabel = (field: string): string => labelSql('session', 's.id', field, '<>')
 
 const SESSION_SUMMARY_SQL = `
   SELECT s.id, s.harness, s.origin, s.title, s.agent, s.project_dir AS projectDir, s.started_at AS startedAt,

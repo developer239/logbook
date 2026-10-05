@@ -1,6 +1,7 @@
 import { WarehouseStore } from '@log-book/warehouse'
 import { formatQuery, formatSearch, formatSessions, formatTimeline, formatTree } from './format.js'
 import { WarehouseQueries, type ISessionFilter } from './queries.js'
+import { REPORTS, reportsFor } from './reports.js'
 
 const DEFAULT_MAX_ROWS = 200
 
@@ -11,6 +12,8 @@ export interface IReadOperations {
   readonly search: (query: string, options?: { limit?: number }) => Promise<string>
   readonly tree: (session: string, options?: { isFromRoot?: boolean }) => Promise<string>
   readonly timeline: (session: string) => Promise<string>
+  // A report name, a topic or `all`; each report printed with its title and description.
+  readonly report: (selector: string, options?: { maxRows?: number }) => Promise<string>
   readonly sql: (query: string, options?: { maxRows?: number }) => Promise<string>
 }
 
@@ -34,6 +37,17 @@ export const readOperations = (warehousePath: string): IReadOperations => {
         const resolved = queries.resolveSession(session)
         return formatTimeline(resolved, queries.timeline(resolved))
       }),
+    report: async (selector, options = {}) => {
+      const names = reportsFor(selector)
+      return answer((queries) =>
+        names
+          .map((name) => {
+            const { title, description, sql } = REPORTS[name]
+            return formatQuery(title, queries.query(sql, options.maxRows ?? DEFAULT_MAX_ROWS), description)
+          })
+          .join('\n')
+      )
+    },
     sql: async (query, options = {}) =>
       answer((queries) => formatQuery('Query', queries.query(query, options.maxRows ?? DEFAULT_MAX_ROWS))),
   }

@@ -154,8 +154,11 @@ export const formatTimeline = (sessionId: string, entries: readonly ITimelineEnt
     .build()
 }
 
-export const formatQuery = (title: string, result: IQueryResult): string => {
+export const formatQuery = (title: string, result: IQueryResult, description?: string): string => {
   const md = MarkdownBuilder.create().heading(title, 1)
+  if (description !== undefined) {
+    md.text(description).blank()
+  }
   if (result.rows.length === 0) {
     return md.italic('No rows.').build()
   }
