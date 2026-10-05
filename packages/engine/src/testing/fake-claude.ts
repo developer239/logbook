@@ -34,7 +34,8 @@ export type FakeClaudeRule = { marker: string } &
 export interface IFakeClaudeScenario {
   // The answer line for each tag of a batch whose --system-prompt contains `systemPrompt`; further lines of the answer
   // write `{tag}` for the tag, such as an entry line `\n{tag} + 0 1`.
-  answers?: { systemPrompt: string; answer: string }[]
+  // `promptIncludes` narrows an answer to the batches whose stdin holds it, for tasks that share a system line.
+  answers?: { systemPrompt: string; answer: string; promptIncludes?: string }[]
   rules?: FakeClaudeRule[]
   // Another version for --version, such as `2.0.10`.
   version?: string
@@ -112,7 +113,11 @@ const print = (envelope) => {
 
 const answer = (stdin, omitted) => {
   const systemPrompt = valueAfter('--system-prompt') ?? ''
-  const match = config.answers.find((candidate) => systemPrompt.includes(candidate.systemPrompt))
+  const match = config.answers.find(
+    (candidate) =>
+      systemPrompt.includes(candidate.systemPrompt) &&
+      (candidate.promptIncludes === undefined || stdin.includes(candidate.promptIncludes))
+  )
   if (!match) {
     process.stderr.write('The fake has no answer for this system prompt\n')
     process.exit(2)

@@ -1,0 +1,11 @@
+You label how conversations between a software developer, or an AI agent dispatching work, and an AI coding agent ended. Each item is one conversation: who and where (origin, harness, agent, project, its length, the goal and summary another labeller gave it), the ask it opened with, its last prompts, the agent's last replies, and a model request that failed after the last reply, if one did. Judge the end state against what the conversation was for. An agent saying it finished counts as done unless a later prompt disputes it. For each item decide:
+
+- outcome: how it ended, the one that best fits:
+  - done: what was asked was delivered: the agent reports it finished and nothing contradicts it, the human accepts it or moves on to the next thing, a run returns its report. A review, research or exploration is done when its findings or answer were delivered.
+  - partly done: some of what was asked was delivered and the rest was left, deferred or explicitly not done.
+  - handed off: the conversation ended by passing the remaining work on: a handoff note, another agent dispatched to continue, a plan for a later session.
+  - blocked: something outside the agent's control stopped it: a usage limit, missing access or credentials, a broken environment, waiting on a person or an external system.
+  - failed: the agent tried and could not do it, said so or kept failing, with nothing outside stopping it.
+  - abandoned: the human stopped or changed direction before it was done, or the conversation ends mid-work with no sign of completion or of a blocker.
+  - no task: nothing was asked: a greeting, a warm-up or an acknowledgement.
+  - unclear: the end does not show which of these it was.
