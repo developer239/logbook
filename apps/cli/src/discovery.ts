@@ -10,7 +10,8 @@ export interface IDiscovered {
 // The width of the name column: the host's start pads to 13 characters, doctor's report to 12.
 export type ColumnWidth = 13 | 12
 
-const columnOf = (label: string, width: ColumnWidth): string => `${label.padEnd(width - 1)} `
+// A label padded to the column, with at least one space after it.
+export const columnOf = (label: string, width: ColumnWidth): string => `${label.padEnd(width - 1)} `
 
 // Every adapter's locate, in registration order. A throw is an adapter defect, reported on its line and never
 // stopping the others.
