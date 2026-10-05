@@ -1,5 +1,6 @@
 import type { IHarnessAdapter } from '@log-book/adapter-api'
 import { detectClaude, type ClaudeDetection } from './claude/detect.js'
+import { compareLabellers } from './labels/compare.js'
 import { runLabelling, type LabelPreflight, type LabelProgress, type LabelRunResult } from './labels/label-run.js'
 import { planLabelling, type LabelPlan } from './labels/plan.js'
 import { previewLabelling, type ILabelPreview } from './labels/preview.js'
@@ -47,6 +48,8 @@ export interface IEngine {
     readonly plan: (options?: { model?: string; signal?: AbortSignal }) => Promise<LabelPlan>
     // The next batches of a task exactly as a run would send them now, without running `claude`.
     readonly preview: (options: { task: LabelTaskName; batches?: number }) => Promise<ILabelPreview>
+    // How often two labellers agree on a task's records both labelled, field by field, as markdown.
+    readonly compare: (options: { task: string; first: string; second: string }) => Promise<string>
     // Every task in order, under the labelling lock, with its run record.
     readonly update: (options: ILabelCallOptions) => Promise<LabelRunResult>
     // One task, only the run's own model's labels counting as done, with a sample or a limit.
@@ -75,6 +78,7 @@ export const createEngine = (options: IEngineOptions): IEngine => {
       detect: async (options = {}) => detectClaude(options.signal),
       plan: async (options = {}) => planLabelling({ ...options, warehousePath }),
       preview: async (options) => previewLabelling({ ...options, warehousePath }),
+      compare: async (options) => compareLabellers({ ...options, warehousePath }),
       update: async (options) => runLabelling({ ...options, warehousePath, scope: { kind: 'update' } }),
       run: async ({ task, sample, limit, ...options }) =>
         runLabelling({
