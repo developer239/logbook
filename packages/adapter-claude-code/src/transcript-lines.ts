@@ -1,8 +1,18 @@
+import { IMAGE_PART_TEXT } from '@log-book/adapter-api'
+import type { IMessageRecord } from '@log-book/warehouse'
+
 // The fields of a Claude Code transcript line the importer reads; every one may be missing or of another type.
 export interface IContentBlock {
   type?: unknown
   text?: unknown
   thinking?: unknown
+  id?: unknown
+  name?: unknown
+  input?: unknown
+  tool_use_id?: unknown
+  content?: unknown
+  is_error?: unknown
+  tool_name?: unknown
 }
 
 export interface IUsage {
@@ -38,10 +48,37 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 export const stringOf = (value: unknown): string | null => (typeof value === 'string' ? value : null)
 
-export const numberOf = (value: unknown): number | null => (typeof value === 'number' ? value : null)
+const numberOf = (value: unknown): number | null => (typeof value === 'number' ? value : null)
 
 export const blocksOf = (content: unknown): IContentBlock[] =>
   Array.isArray(content) ? content.filter((block): block is IContentBlock => isRecord(block)) : []
+
+export const usageFields = (usage: IUsage | undefined): Partial<IMessageRecord> => ({
+  tokensInput: numberOf(usage?.input_tokens),
+  tokensOutput: numberOf(usage?.output_tokens),
+  tokensReasoning: numberOf(usage?.output_tokens_details?.thinking_tokens),
+  tokensCacheRead: numberOf(usage?.cache_read_input_tokens),
+  tokensCacheWrite: numberOf(usage?.cache_creation_input_tokens),
+})
+
+const resultBlockText = (block: IContentBlock): string => {
+  if (block.type === 'text') {
+    return stringOf(block.text) ?? ''
+  }
+  if (block.type === 'tool_reference') {
+    return `(tool reference: ${stringOf(block.tool_name) ?? ''})`
+  }
+  return block.type === 'image' ? IMAGE_PART_TEXT : ''
+}
+
+// A tool result's text: string content as it is; for blocks, their text, a deferred tool load's `tool_reference` as
+// `(tool reference: <name>)` and an image as `(image)`, joined with newlines.
+export const toolResultText = (content: unknown): string =>
+  stringOf(content) ??
+  blocksOf(content)
+    .map((block) => resultBlockText(block))
+    .filter((text) => text !== '')
+    .join('\n')
 
 // The line's time in epoch milliseconds, or null when it has none that parses.
 export const timeOf = (line: ITranscriptLine): number | null => {

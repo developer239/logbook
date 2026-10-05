@@ -4,10 +4,20 @@ import type {
   IImportedSession,
   IMessageRecord,
   IPartRecord,
+  IToolCallRecord,
   MessageActor,
   PartKind,
 } from '@log-book/warehouse'
-import { blocksOf, numberOf, stringOf, timeOf, type ITranscriptLine, type IUsage } from './transcript-lines.js'
+import { toolNameOf } from './families.js'
+import {
+  blocksOf,
+  stringOf,
+  timeOf,
+  toolResultText,
+  usageFields,
+  type IContentBlock,
+  type ITranscriptLine,
+} from './transcript-lines.js'
 
 export const ADAPTER_ID = 'claude-code'
 
@@ -24,14 +34,6 @@ const isHarnessText = (text: string | null): boolean => {
   return HARNESS_PREFIXES.some((prefix) => start.startsWith(prefix))
 }
 
-const usageFields = (usage: IUsage | undefined): Partial<IMessageRecord> => ({
-  tokensInput: numberOf(usage?.input_tokens),
-  tokensOutput: numberOf(usage?.output_tokens),
-  tokensReasoning: numberOf(usage?.output_tokens_details?.thinking_tokens),
-  tokensCacheRead: numberOf(usage?.cache_read_input_tokens),
-  tokensCacheWrite: numberOf(usage?.cache_creation_input_tokens),
-})
-
 // The text a user line opens with: its string content, or its first text block.
 const openingText = (content: unknown): string | null =>
   stringOf(content) ?? stringOf(blocksOf(content).find((block) => block.type === 'text')?.text)
@@ -42,6 +44,8 @@ export class SessionBuilder {
   public readonly messages: IMessageRecord[] = []
   public readonly parts: IPartRecord[] = []
   public readonly events: IEventRecord[] = []
+  // By tool call id, in the order the calls were made.
+  public readonly toolCalls = new Map<string, IToolCallRecord>()
   public projectDir: string | null = null
   public isScripted = false
   public harnessVersion: string | null = null
@@ -86,7 +90,7 @@ export class SessionBuilder {
     },
     messages: this.messages,
     parts: this.parts,
-    toolCalls: [],
+    toolCalls: [...this.toolCalls.values()],
     events: this.events,
   })
 
@@ -127,11 +131,57 @@ export class SessionBuilder {
     const record = this.assistants.get(sourceId) ?? this.newAssistant(sourceId, at, line)
     Object.assign(record, { completedAt: at, ...usageFields(message.usage) })
     for (const block of blocksOf(message.content)) {
-      if (block.type === 'text') {
-        this.addPart(record, 'text', stringOf(block.text))
-      } else if (block.type === 'thinking') {
-        this.addPart(record, 'reasoning', stringOf(block.thinking))
-      }
+      this.addAssistantBlock(record, block, at)
+    }
+  }
+
+  private readonly addAssistantBlock = (record: IMessageRecord, block: IContentBlock, at: number): void => {
+    if (block.type === 'text') {
+      this.addPart(record, 'text', stringOf(block.text))
+    } else if (block.type === 'thinking') {
+      this.addPart(record, 'reasoning', stringOf(block.thinking))
+    } else if (block.type === 'tool_use') {
+      this.addToolCall(record, block, at)
+    }
+  }
+
+  // A call is pending, with no end, until its result is seen.
+  private readonly addToolCall = (message: IMessageRecord, block: IContentBlock, at: number): void => {
+    const callId = stringOf(block.id)
+    const name = stringOf(block.name)
+    if (callId === null || name === null) {
+      return
+    }
+    const id = childIdOf(this.sessionId, callId)
+    const inputJson = JSON.stringify(block.input ?? {})
+    this.toolCalls.set(id, {
+      id,
+      sessionId: this.sessionId,
+      messageId: message.id,
+      name,
+      ...toolNameOf(name),
+      inputJson,
+      status: 'pending',
+      childSessionId: null,
+      startedAt: at,
+      endedAt: null,
+    })
+    this.addPart(message, 'tool_call', `${name} ${inputJson}`, id)
+  }
+
+  // A result whose call is not in the file (a resumed transcript that starts mid-call) keeps its part; no call is
+  // invented. A large output Claude Code saved to `tool-results/` arrives as the preview it gave the model.
+  private readonly addToolResult = (message: IMessageRecord, block: IContentBlock, at: number): void => {
+    const callId = stringOf(block.tool_use_id)
+    if (callId === null) {
+      return
+    }
+    const id = childIdOf(this.sessionId, callId)
+    this.addResultPart(message, toolResultText(block.content), id)
+    const call = this.toolCalls.get(id)
+    if (call !== undefined) {
+      call.status = block.is_error === true ? 'error' : 'completed'
+      call.endedAt = at
     }
   }
 
@@ -172,8 +222,12 @@ export class SessionBuilder {
     }
     const content = line.message?.content
     const blocks = blocksOf(content)
-    if (blocks.some((block) => block.type === 'tool_result')) {
-      this.newMessage(sourceId, 'tool', 'user', at, line)
+    const results = blocks.filter((block) => block.type === 'tool_result')
+    if (results.length > 0) {
+      const record = this.newMessage(sourceId, 'tool', 'user', at, line)
+      for (const block of results) {
+        this.addToolResult(record, block, at)
+      }
       return
     }
     const record = this.newMessage(sourceId, this.userActor(line, openingText(content)), 'user', at, line)
@@ -237,11 +291,29 @@ export class SessionBuilder {
   }
 
   // An empty or missing text adds no part.
-  private readonly addPart = (message: IMessageRecord, kind: PartKind, text: string | null): void => {
-    if (text === null || text === '') {
-      return
+  private readonly addPart = (
+    message: IMessageRecord,
+    kind: PartKind,
+    text: string | null,
+    toolCallId: string | null = null
+  ): void => {
+    if (text !== null && text !== '') {
+      this.pushPart(message, kind, text, toolCallId)
     }
+  }
+
+  // An empty result keeps its part.
+  private readonly addResultPart = (message: IMessageRecord, text: string, toolCallId: string): void => {
+    this.pushPart(message, 'tool_result', text, toolCallId)
+  }
+
+  private readonly pushPart = (
+    message: IMessageRecord,
+    kind: PartKind,
+    text: string,
+    toolCallId: string | null
+  ): void => {
     const idx = this.parts.filter((part) => part.messageId === message.id).length
-    this.parts.push({ messageId: message.id, sessionId: this.sessionId, idx, kind, text, toolCallId: null })
+    this.parts.push({ messageId: message.id, sessionId: this.sessionId, idx, kind, text, toolCallId })
   }
 }
