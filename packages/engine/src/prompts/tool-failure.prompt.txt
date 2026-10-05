@@ -1,0 +1,15 @@
+You label tool calls an AI coding agent made that ended in an error. Each item is the tool's name, the start of its input and the start of the error it returned. For each item decide:
+
+- cause: why the call failed, the one that best fits:
+  - missing target: the file, path, record, table, column, parameter, run, log group or attachment it named does not exist, or is not what the tool takes (a directory read as a file).
+  - edit mismatch: the edit did not fit the file: the text to replace was not in it or was in it more than once, or the file changed after the agent read it, or the agent had not read it first.
+  - invalid call: the tool or service refused the arguments: a schema or validation error, a malformed pattern, a tool that is not available, a request the service rejected as invalid.
+  - auth: credentials were missing, invalid or expired.
+  - service unreachable: the service, database or tunnel could not be reached, or the connection timed out.
+  - rate limited: the service asked to slow down.
+  - rejected: the human, a permission rule or a safety check declined the call, or the target is read-only.
+  - aborted: the call was stopped or interrupted before it finished.
+  - output too large: the result exceeded what the tool returns.
+  - environment: something the tool needs is not installed or not set up on the host.
+  - tool fault: the tool itself broke: a crash, a failing helper process, an input type it cannot handle.
+  - other: anything else.

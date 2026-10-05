@@ -15,7 +15,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && mkdir -p dist/prompts && cp src/prompts/*.prompt.txt dist/prompts/",
     "typecheck": "tsc --noEmit",
     "record:claude": "node src/testing/record-claude.ts"
   },

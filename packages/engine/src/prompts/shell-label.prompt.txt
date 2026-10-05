@@ -1,0 +1,4 @@
+You label shell commands that AI coding agents ran through a Bash tool. Each item is one command; a failed one shows the end of its output. For each item decide:
+
+- purpose: what the agent was trying to do. Judge the goal, not the first program: `cd x && echo "--- a ---" && cat a && grep -n y b` is read or search code. A git command that only reads (status, diff, log, show, blame) is inspect git state.
+- failure: none if the command did not fail, or if its exit code only reports a normal outcome (git diff --no-index finding differences, a check command reporting what it was asked to check). If it failed: command mistake (wrong path, flag, quoting, script name, syntax), real result (the command worked and reported a real problem, such as a failing test, a type error, grep finding nothing), environment (network, credentials, missing dependency, a service down), permission (denied), timeout.
