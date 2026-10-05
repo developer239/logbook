@@ -105,12 +105,15 @@ export const doctorLabellingLine = (detection: ClaudeDetection, home: string): s
     ? readyText(detection, tildePath(detection.binary, home))
     : missingText(detection.missing))
 
-// What a labelling command stops with: exit 7, `missing prerequisite`, and the text after the column; null when
-// labelling can run.
+// What a labelling command stops with: exit 7, `missing prerequisite`, and the text after the column.
+export const missingReport = (missing: ClaudeMissing): IErrorReport => ({
+  code: exitCodeOf('missing prerequisite'),
+  line: missingText(missing),
+})
+
+// A labelling command's stop for a detection, or null when labelling can run.
 export const missingPrerequisite = (detection: ClaudeDetection): IErrorReport | null =>
-  detection.status === 'ready'
-    ? null
-    : { code: exitCodeOf('missing prerequisite'), line: missingText(detection.missing) }
+  detection.status === 'ready' ? null : missingReport(detection.missing)
 
 // The word every text names a task's records with, singular for one record: `shell call`, `failed tool calls`.
 export const taskNoun = (task: LabelTaskName, count: number): string =>
