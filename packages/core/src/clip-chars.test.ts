@@ -24,3 +24,5 @@ describe('clipChars', () => {
     expect(clipped).toBe('a😀…')
   })
 })
+
+it.skip('reads a cut line', () => {})
