@@ -1,0 +1,49 @@
+---
+import { count, plural } from '../../lib/format'
+import type { IModelReactions, REPLY_HABITS } from '../../lib/queries/interaction'
+import Card from '../ui/Card.astro'
+import TrendRows from './TrendRows.astro'
+
+interface Props {
+  models: IModelReactions[]
+}
+
+const { models } = Astro.props
+const SHOWN = 4
+const NAMES: Readonly<Record<(typeof REPLY_HABITS)[number], { name: string; tone: string }>> = {
+  permission: { name: 'Asked permission', tone: 'slow' },
+  caves: { name: 'Gave in', tone: 'problem' },
+  pushback: { name: 'Pushed back', tone: 'hollow' },
+}
+---
+
+<Card title="Reactions from the agent">
+  <Fragment slot="meta">
+    {models.length > SHOWN ? `the busiest ${count(SHOWN)} of ${count(models.length)} models` : plural(models.length, 'model')}
+  </Fragment>
+  {
+    models.length === 0 ? (
+      <p class="card__empty">No labelled replies in this range.</p>
+    ) : (
+      <>
+        <p class="card__lede">
+          Share of each model's replies that asked permission for something it could just do, gave in to me without a new
+          reason, or pushed back on me.
+        </p>
+        <TrendRows
+          of="replies"
+          groups={models.slice(0, SHOWN).map((model) => ({
+            title: model.model,
+            aside: plural(model.replies, 'reply', 'replies'),
+            rows: model.reactions.map((reaction) => ({
+              ...NAMES[reaction.kind],
+              count: reaction.count,
+              total: model.replies,
+              weekly: reaction.weekly,
+            })),
+          }))}
+        />
+      </>
+    )
+  }
+</Card>

@@ -1,0 +1,10 @@
+---
+import Disclosure from '../ui/Disclosure.astro'
+import './Plugins.css'
+---
+
+<Disclosure class="plugins" rememberKey="plugin-tools" summaryClass="plugins__summary" bodyClass="plugins__body">
+  <span slot="summary" class="plugins__name">Plugins</span>
+  <span slot="summary" class="plugins__text"><slot name="summary" /></span>
+  <slot />
+</Disclosure>

@@ -1,0 +1,10 @@
+---
+import type { HTMLAttributes } from 'astro/types'
+import './Link.css'
+
+type Props = HTMLAttributes<'a'>
+
+const { class: className, ...rest } = Astro.props
+---
+
+<a class:list={['link', className]} {...rest}><slot /></a>

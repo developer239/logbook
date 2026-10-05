@@ -1,0 +1,121 @@
+---
+import { count, plural, tokensCompact, turnLabel } from '../../lib/format'
+import { SERVER_STATES } from '../../lib/labels'
+import type { IPluginServer, IPluginTool } from '../../lib/plugins'
+import { offeredPlugins } from '../../lib/views/offered-plugins'
+import Plugins from './Plugins.astro'
+
+interface Props {
+  servers: IPluginServer[]
+}
+
+const { servers } = Astro.props
+
+const turn = (number: number): string => turnLabel(number).toLowerCase()
+const size = (tokens: number | null): string => (tokens === null ? 'unknown' : tokensCompact(tokens))
+const loadedWhen = (tool: IPluginTool): string => {
+  if (tool.loaded === null) {
+    return 'never loaded'
+  }
+
+  return tool.loaded === 'start' ? 'sent at the start' : `loaded in ${turn(tool.loaded)}`
+}
+const plugins = offeredPlugins(servers)
+---
+
+<Plugins>
+  <Fragment slot="summary">
+    {plural(plugins.offeredCount, 'tool')} offered (names {tokensCompact(plugins.offerTokens)}), {count(plugins.loadedCount)} loaded
+    {plugins.loadedCount > 0 && ` (definitions ${plugins.definitions})`}, {count(plugins.usedCount)}{' '}
+    used
+    {plugins.failedCount > 0 && <span class="plugins__flag plugins__flag--bad">{count(plugins.failedCount)} failed</span>}
+    {plugins.idleCount > 0 && <span class="plugins__flag">{count(plugins.idleCount)} loaded, not used</span>}
+  </Fragment>
+  {
+    plugins.blocks.map((server) => (
+      <div>
+        <div class="plugins__group-head">
+          <b class="plugins__group-name">{server.name}</b>
+          <span class="plugins__group-meta">
+            {plural(server.tools.length, 'tool')}, {count(server.used)} used
+          </span>
+          {server.later.length > 0 && (
+            <span class="plugins__group-meta">
+              {count(server.later.length)} arrived in {turn(Math.min(...server.later))}
+            </span>
+          )}
+          {server.startState !== 'connected' && (
+            <span class="plugins__group-meta plugins__flag plugins__flag--bad">{SERVER_STATES[server.startState]}</span>
+          )}
+        </div>
+        {server.error !== null && <p class="plugins__error">{server.error}</p>}
+        <ul class="plugins__list">
+          {server.touched.map((tool) => (
+            <li class="plugins__item">
+              <code class:list={['plugins__code', tool.calls === 0 && 'plugins__code--muted']}>{tool.name}</code>
+              <span class="plugins__use">
+                {tool.calls > 0 ? (
+                  `used ${count(tool.calls)}×`
+                ) : (
+                  <span class="plugins__flag">{loadedWhen(tool)}, not used</span>
+                )}
+                {tool.addedInTurn !== null && ` · offered from ${turn(tool.addedInTurn)}`}
+                {tool.removedInTurn !== null && ` · dropped in ${turn(tool.removedInTurn)}`}
+              </span>
+              <span class:list={['plugins__size', tool.definitionTokens === null && 'plugins__size--unknown']}>{size(tool.definitionTokens)}</span>
+            </li>
+          ))}
+        </ul>
+        {server.names.length > 0 && (
+          <ul class="plugins__list plugins__list--names">
+            {server.names.map((group) => (
+              <li class="plugins__item">
+                <span class="plugins__label">
+                  {group.cookbookModule ?? 'the rest'}
+                  <span class="plugins__by-name">{count(group.tools)} by name only</span>
+                </span>
+                <span class="plugins__size">{tokensCompact(group.tokens)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    ))
+  }
+  {
+    (plugins.quiet.length > 0 || plugins.signIn.names.length > 0) && (
+      <div>
+        <div class="plugins__group-head">
+          <b class="plugins__group-name">Offered by name only</b>
+          <span class="plugins__group-meta">nothing loaded or used</span>
+        </div>
+        <ul class="plugins__list plugins__list--names">
+          {plugins.quiet.map((server) => (
+            <li class="plugins__item">
+              <span class="plugins__label">
+                {server.name}
+                <span class="plugins__by-name">{plural(server.tools, 'tool')}</span>
+              </span>
+              <span class="plugins__size">{tokensCompact(server.tokens)}</span>
+            </li>
+          ))}
+          {plugins.signIn.names.length > 0 && (
+            <li class="plugins__item" title={plugins.signIn.names.join(', ')}>
+              <span class="plugins__label">
+                {plural(plugins.signIn.names.length, 'server')} that needed a sign-in
+                <span class="plugins__by-name">{plural(plugins.signIn.tools, 'sign-in tool')}</span>
+              </span>
+              <span class="plugins__size">{tokensCompact(plugins.signIn.tokens)}</span>
+            </li>
+          )}
+        </ul>
+      </div>
+    )
+  }
+  <p class="plugins__note">
+    Claude Code offers a plugin tool by its name, which costs the name in the list of offered tools; its definition
+    (name, description, input schema) goes into the context only when the server sends it at the start or a ToolSearch
+    loads it, and stays in every request after. Sizes are estimated from the text Claude Code recorded; unknown where it
+    recorded none.
+  </p>
+</Plugins>

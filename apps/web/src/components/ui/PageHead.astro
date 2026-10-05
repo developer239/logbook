@@ -1,0 +1,16 @@
+---
+import type { IRange } from '../../lib/range'
+import './PageHead.css'
+
+interface Props {
+  title: string
+  range: IRange
+}
+
+const { title, range } = Astro.props
+---
+
+<div class="page-head">
+  <h1 class="page-head__title">{title}</h1>
+  <span class="page-head__range">{range.label}</span>
+</div>

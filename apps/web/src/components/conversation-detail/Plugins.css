@@ -1,0 +1,153 @@
+.plugins {
+  margin-top: var(--space-3);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-1);
+}
+
+.plugins__summary {
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-ui);
+  color: var(--text-2);
+}
+
+.plugins__name {
+  color: var(--text-1);
+  font-weight: 500;
+}
+
+.plugins__text {
+  flex: 1 1 100%;
+}
+
+.plugins__body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 23.75rem), 1fr));
+  gap: 0.375rem var(--space-6);
+  padding: 0 var(--space-4) var(--space-3);
+}
+
+.plugins__group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.625rem;
+  margin: var(--space-2) 0 var(--space-1);
+  font-size: var(--text-ui);
+}
+
+.plugins__group-name {
+  font-weight: 500;
+}
+
+.plugins__group-meta {
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+.plugins__flag {
+  margin-left: 0.625rem;
+  color: var(--slow);
+}
+
+.plugins__flag--bad {
+  color: var(--problem);
+}
+
+.plugins__use .plugins__flag {
+  margin: 0;
+}
+
+.plugins__error {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--problem);
+}
+
+.plugins__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.plugins__list--names {
+  color: var(--text-2);
+}
+
+.plugins__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 2.75rem;
+  gap: var(--space-3);
+  align-items: center;
+  min-height: 1.5rem;
+  font-size: var(--text-sm);
+}
+
+.plugins__code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+}
+
+.plugins__code--muted {
+  color: var(--text-2);
+}
+
+.plugins__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugins__by-name {
+  margin-left: var(--space-2);
+  color: var(--text-3);
+}
+
+.plugins__use {
+  color: var(--text-2);
+  text-align: right;
+}
+
+.plugins__size {
+  font-family: var(--font-mono);
+  color: var(--text-2);
+  text-align: right;
+}
+
+.plugins__size--unknown {
+  font-family: var(--font-sans);
+  color: var(--text-3);
+}
+
+.plugins__note {
+  grid-column: 1 / -1;
+  margin: 0.375rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-3);
+}
+
+@media (min-width: 48rem) {
+  .plugins__group-head {
+    flex-wrap: nowrap;
+  }
+
+  .plugins__summary {
+    flex-wrap: nowrap;
+    padding: var(--space-3) 1.25rem;
+  }
+
+  .plugins__text {
+    flex: 0 1 auto;
+  }
+
+  .plugins__body {
+    padding: 0 1.125rem 0.875rem 2.5rem;
+  }
+
+  .plugins__use {
+    white-space: nowrap;
+  }
+}

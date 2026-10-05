@@ -1,0 +1,79 @@
+---
+import Board from '../components/dashboard/Board.astro'
+import DidntFinish from '../components/dashboard/DidntFinish.astro'
+import AgentReactions from '../components/dashboard/AgentReactions.astro'
+import GoalMix from '../components/dashboard/GoalMix.astro'
+import ReactionTrend from '../components/dashboard/ReactionTrend.astro'
+import RetryLoops from '../components/dashboard/RetryLoops.astro'
+import SlowCalls from '../components/dashboard/SlowCalls.astro'
+import Strip from '../components/dashboard/Strip.astro'
+import TimePerConversation from '../components/dashboard/TimePerConversation.astro'
+import TimePerTurn from '../components/dashboard/TimePerTurn.astro'
+import TokensByGoal from '../components/dashboard/TokensByGoal.astro'
+import ToolProblems from '../components/dashboard/ToolProblems.astro'
+import ToolTokens from '../components/dashboard/ToolTokens.astro'
+import Layout from '../layouts/Layout.astro'
+import { load } from '../lib/load'
+import { slowCalls } from '../lib/queries/calls'
+import { goalMix, timePerConversation, timePerTurn, tokensByGoal } from '../lib/queries/effort'
+import { agentReactions, reactionTrend } from '../lib/queries/interaction'
+import { retryLoops } from '../lib/queries/loops'
+import { toolProblems } from '../lib/queries/problems'
+import { stripFor } from '../lib/queries/strip'
+import { toolTokens } from '../lib/queries/tool-tokens'
+import { unfinished } from '../lib/queries/unfinished'
+import { parseRange } from '../lib/range'
+
+const page = load(() => {
+  const range = parseRange(Astro.url.searchParams)
+
+  return {
+    range,
+    strip: stripFor(range),
+    problems: toolProblems(range),
+    slow: slowCalls(range),
+    loops: retryLoops(range),
+    unfinished: unfinished(range),
+    goals: goalMix(range),
+    tokens: tokensByGoal(range),
+    toolTokens: toolTokens(range),
+    time: timePerTurn(range),
+    conversationTime: timePerConversation(range),
+    reactions: reactionTrend(range),
+    agentReactions: agentReactions(range),
+  }
+})
+
+if (!page.ok) {
+  Astro.response.status = page.status
+}
+---
+
+<Layout title="Dashboard" current="dashboard" range={page.ok ? page.data.range : null} syncedAt={page.syncedAt} problem={page.ok ? null : page.problem}>
+  {
+    page.ok && (
+      <>
+        <Strip {...page.data.strip} range={page.data.range} />
+        <Board>
+          <Fragment slot="first">
+            <ToolProblems {...page.data.problems} range={page.data.range} />
+            <TimePerTurn {...page.data.time} />
+            <TimePerConversation {...page.data.conversationTime} />
+          </Fragment>
+          <Fragment slot="second">
+            <SlowCalls {...page.data.slow} range={page.data.range} />
+            <RetryLoops {...page.data.loops} range={page.data.range} />
+            <DidntFinish {...page.data.unfinished} range={page.data.range} />
+            <ReactionTrend {...page.data.reactions} />
+            <AgentReactions models={page.data.agentReactions} />
+          </Fragment>
+          <Fragment slot="third">
+            <GoalMix {...page.data.goals} range={page.data.range} />
+            <TokensByGoal {...page.data.tokens} />
+            <ToolTokens rows={page.data.toolTokens} range={page.data.range} />
+          </Fragment>
+        </Board>
+      </>
+    )
+  }
+</Layout>

@@ -1,0 +1,15 @@
+---
+interface Props {
+  href?: string | undefined
+  class?: string | undefined
+}
+
+const { href, class: className } = Astro.props
+const Tag = href === undefined ? 'div' : 'a'
+---
+
+<li class:list={['rows__row', className]}>
+  <Tag class={href === undefined ? 'rows__line' : 'rows__link'} href={href}>
+    <slot />
+  </Tag>
+</li>

@@ -1,0 +1,13 @@
+---
+import type { BarKind } from './kinds'
+import './Swatch.css'
+
+interface Props {
+  kind: BarKind
+  class?: string | undefined
+}
+
+const { kind, class: className } = Astro.props
+---
+
+<span class:list={['swatch', `swatch--${kind}`, className]} aria-hidden="true"></span>

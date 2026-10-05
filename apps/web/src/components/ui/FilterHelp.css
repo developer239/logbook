@@ -1,0 +1,10 @@
+.filter-help {
+  padding: 0.625rem 0.25rem 0;
+  font-size: var(--text-sm);
+  color: var(--text-3);
+}
+
+.filter-help__field {
+  font-size: var(--text-sm);
+  color: var(--text-1);
+}

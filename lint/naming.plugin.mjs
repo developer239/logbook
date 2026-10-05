@@ -82,7 +82,14 @@ const declarationNaming = {
     docs: {
       description: 'Enforce I-prefixed interfaces, T-prefixed type parameters, and camelCase private members',
     },
-    schema: [],
+    // interfaceExceptions: names a framework requires, such as the `Props` interface of an Astro component.
+    schema: [
+      {
+        type: 'object',
+        properties: { interfaceExceptions: { type: 'array', items: { type: 'string' } } },
+        additionalProperties: false,
+      },
+    ],
     messages: {
       interfaceName: "Interface '{{name}}' must be PascalCase and start with 'I' (e.g. IUserRepository).",
       typeParameterName: "Type parameter '{{name}}' must match ^T[A-Z][a-zA-Z]+$ (e.g. TEntity, TResult).",
@@ -90,6 +97,7 @@ const declarationNaming = {
     },
   },
   create: (context) => {
+    const interfaceExceptions = new Set(context.options[0]?.interfaceExceptions ?? [])
     const checkPrivateMemberName = (name, node) => {
       if (name !== null && !CAMEL_CASE.test(name)) {
         context.report({ node, messageId: 'privateMember', data: { name } })
@@ -99,7 +107,7 @@ const declarationNaming = {
     return {
       TSInterfaceDeclaration: (node) => {
         const name = identifierName(node.id)
-        if (name !== null && !INTERFACE_NAME.test(name)) {
+        if (name !== null && !INTERFACE_NAME.test(name) && !interfaceExceptions.has(name)) {
           context.report({ node: node.id, messageId: 'interfaceName', data: { name } })
         }
       },

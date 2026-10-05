@@ -1,0 +1,8 @@
+.conversation-list__rows {
+  --rows-columns: 8.25rem minmax(0, 1fr) 8.125rem 9.375rem 5rem minmax(0, 12.5rem) 6.875rem;
+}
+
+.conversation-list__failed {
+  margin-left: var(--space-2);
+  color: var(--problem);
+}

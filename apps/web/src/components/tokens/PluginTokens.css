@@ -1,0 +1,59 @@
+.plugin-tokens__rows {
+  --rows-columns: minmax(0, 1fr) 3rem 0 2.75rem;
+  --rows-gap: 0.5rem;
+}
+
+.plugin-tokens__group:not(.plugin-tokens__group--rest) + .plugin-tokens__group--rest {
+  margin-top: 0.625rem;
+}
+
+.plugin-tokens__line {
+  display: grid;
+  flex: 1;
+  grid-template-columns: var(--rows-columns);
+  gap: var(--rows-gap);
+  align-items: center;
+  min-width: 0;
+  min-height: 2.25rem;
+  margin-left: -1.375rem;
+}
+
+.plugin-tokens__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-2);
+  min-width: 0;
+  padding-left: 1.25rem;
+}
+
+.plugin-tokens__title {
+  font-weight: 500;
+}
+
+.plugin-tokens__group--rest .plugin-tokens__title {
+  color: var(--text-2);
+}
+
+.plugin-tokens__calls {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-3);
+}
+
+.plugin-tokens__body {
+  padding: 0.125rem 0 var(--space-3) 1.25rem;
+}
+
+@media (min-width: 48rem) {
+  .plugin-tokens__rows {
+    --rows-columns: minmax(0, 1.8fr) 3.5rem minmax(0, 1fr) 2.75rem;
+    --rows-gap: 0.75rem;
+  }
+
+  .plugin-tokens__name {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+    white-space: nowrap;
+  }
+}

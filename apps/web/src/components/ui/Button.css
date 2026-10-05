@@ -1,0 +1,44 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: var(--button-height, 2.25rem);
+  margin: 0;
+  padding: 0 var(--button-padding, 0.875rem);
+  border: 0;
+  font: inherit;
+  font-size: var(--button-size, var(--text-ui));
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.button--accent {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  transition: filter var(--fast);
+}
+
+.button--accent:hover {
+  filter: brightness(1.08);
+}
+
+.button--soft {
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-weight: 500;
+  transition:
+    background var(--fast),
+    color var(--fast);
+}
+
+.button--soft:hover {
+  background: var(--surface-3);
+  color: var(--text-1);
+}
+
+.button--soft:disabled {
+  color: var(--text-1);
+  cursor: progress;
+}

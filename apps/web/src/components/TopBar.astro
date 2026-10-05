@@ -1,0 +1,107 @@
+---
+import { ago } from '../lib/format'
+import { PRESETS, RANGE_PARAMS, type IRange } from '../lib/range'
+import { isoDay } from '../lib/time'
+import Button from './ui/Button.astro'
+import Icon from './ui/Icon.astro'
+import Segmented from './ui/Segmented.astro'
+import Status from './ui/Status.astro'
+import './TopBar.css'
+
+interface Props {
+  current: 'dashboard' | 'conversations' | 'rules' | 'check' | null
+  range: IRange | null
+  conversation?: { title: string; href: string } | undefined
+  syncedAt: number | null
+  back: string
+}
+
+const { current, range, conversation, syncedAt, back } = Astro.props
+
+const rangeHref = (key: string): string => {
+  const params = new URLSearchParams(Astro.url.search)
+  for (const name of RANGE_PARAMS) {
+    params.delete(name)
+  }
+  params.set('range', key)
+
+  return `?${params.toString()}`
+}
+
+const keep = [...Astro.url.searchParams.entries()].filter(([name]) => !RANGE_PARAMS.includes(name))
+
+const days = range === null || range.key === 'all' ? null : { from: isoDay(range.from), to: isoDay(Math.min(range.to, Date.now()) - 1) }
+---
+
+<header class="top-bar">
+  <a class="top-bar__logo" href="/">
+    <span class="top-bar__mark"><Icon name="logbook" /></span>
+    Logbook
+  </a>
+  <nav class="top-bar__nav">
+    <a class="top-bar__tab" href="/" aria-current={current === 'dashboard' ? 'page' : undefined}>Dashboard</a>
+    <a class="top-bar__tab" href="/conversations" aria-current={current === 'conversations' ? 'page' : undefined}>Conversations</a>
+    <a class="top-bar__tab" href="/rules" aria-current={current === 'rules' ? 'page' : undefined}>Rules</a>
+    <a class="top-bar__tab" href="/check" aria-current={current === 'check' ? 'page' : undefined}>Check</a>
+    {
+      conversation !== undefined && (
+        <a class="top-bar__tab top-bar__tab--title" href={conversation.href} aria-current="page">
+          : {conversation.title}
+        </a>
+      )
+    }
+  </nav>
+  <div class="top-bar__controls">
+    {
+      range !== null && (
+        <>
+          <Segmented class="top-bar__range">
+            {Object.entries(PRESETS).map(([key, preset]) => (
+              <a class="segmented__option" href={rangeHref(key)} aria-current={range.key === key ? 'true' : undefined}>
+                {preset.name}
+              </a>
+            ))}
+          </Segmented>
+          <details class="top-bar__custom">
+            <summary class="button button--soft top-bar__custom-summary" aria-current={range.key === 'custom' ? 'true' : undefined}>
+              {range.key === 'custom' ? range.label : 'Custom'}
+            </summary>
+            <form class="top-bar__custom-form" method="get">
+              {keep.map(([name, value]) => (
+                <input type="hidden" name={name} value={value} />
+              ))}
+              <label class="top-bar__field">
+                From <input class="top-bar__date" type="date" name="from" value={days?.from ?? ''} required />
+              </label>
+              <label class="top-bar__field">
+                To <input class="top-bar__date" type="date" name="to" value={days?.to ?? ''} required />
+              </label>
+              <Button class="top-bar__show" variant="accent" type="submit">Show</Button>
+            </form>
+          </details>
+        </>
+      )
+    }
+    <form class="top-bar__sync" method="post" action="/sync" data-sync>
+      <input type="hidden" name="back" value={back} />
+      <Button class="top-bar__sync-button" variant="soft" type="submit" title="Import what changed since the last sync">
+        <Status tone={syncedAt === null ? 'hollow' : 'good'} />
+        <span data-sync-label>{syncedAt === null ? 'Never synced' : `Synced ${ago(syncedAt)}`}</span>
+      </Button>
+    </form>
+  </div>
+</header>
+
+<script is:inline>
+  document.querySelector('[data-sync]')?.addEventListener('submit', (event) => {
+    const form = event.currentTarget
+    // The page script moves the URL as the selection changes, so the sync returns
+    // to the page as it is now, unless this is the sync's own page.
+    if (location.pathname !== new URL(form.action).pathname) {
+      form.elements.back.value = location.pathname + location.search
+    }
+
+    form.querySelector('[data-sync-label]').textContent = 'Syncing…'
+    form.querySelector('button').disabled = true
+  })
+</script>

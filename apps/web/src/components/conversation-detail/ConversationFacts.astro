@@ -1,0 +1,64 @@
+---
+import { stamp } from '../../lib/format'
+import { harnessName } from '../../lib/labels'
+import type { IConversation } from '../../lib/queries/conversation'
+import type { IFact } from '../../lib/views/conversation-facts'
+import Chip from '../ui/Chip.astro'
+import Label from '../ui/Label.astro'
+import Status from '../ui/Status.astro'
+import './ConversationFacts.css'
+
+interface Props {
+  facts: IFact[]
+  head: IConversation
+}
+
+const { facts, head } = Astro.props
+---
+
+<div class="conversation-facts__list">
+  {
+    facts.map((fact) => (
+      <div class:list={['conversation-facts__fact', fact.isWide === true && 'conversation-facts__fact--wide']}>
+        <Label as="div">{fact.label}</Label>
+        <div class="conversation-facts__value">
+          {fact.statusTone === undefined ? fact.value : <Status tone={fact.statusTone}>{fact.value}</Status>}
+          {
+            fact.badge !== undefined && (
+              <Status class="conversation-facts__badge" tone="problem" form="text">
+                {fact.badge}
+              </Status>
+            )
+          }
+        </div>
+        {fact.note !== undefined && <div class="conversation-facts__note">{fact.note}</div>}
+      </div>
+    ))
+  }
+</div>
+<div class="conversation-facts__chips">
+  <Chip class="conversation-facts__chip">{harnessName(head.harness)}</Chip>
+  {head.agent !== null && <Chip class="conversation-facts__chip">{head.agent}</Chip>}
+  {
+    head.model !== null && (
+      <Chip class="conversation-facts__chip" isMono>
+        {head.model}
+      </Chip>
+    )
+  }
+  {
+    head.project !== null && (
+      <Chip class="conversation-facts__chip" title={head.project}>
+        {head.project.split('/').at(-1)}
+      </Chip>
+    )
+  }
+  {
+    head.branch !== null && (
+      <Chip class="conversation-facts__chip" isMono>
+        {head.branch}
+      </Chip>
+    )
+  }
+  {head.startedAt !== null && <Chip class="conversation-facts__chip">{stamp(head.startedAt)}</Chip>}
+</div>

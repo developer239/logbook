@@ -1,0 +1,38 @@
+---
+import ConversationFilter from '../../components/conversation-list/ConversationFilter.astro'
+import ConversationList from '../../components/conversation-list/ConversationList.astro'
+import PageHead from '../../components/ui/PageHead.astro'
+import Layout from '../../layouts/Layout.astro'
+import { parseFilter } from '../../lib/filter'
+import { load } from '../../lib/load'
+import { checkPage, parsePage } from '../../lib/paging'
+import { conversations } from '../../lib/queries/conversations'
+import { parseRange } from '../../lib/range'
+
+const page = load(() => {
+  const range = parseRange(Astro.url.searchParams)
+  const query = Astro.url.searchParams.get('q') ?? ''
+  const filter = parseFilter(query)
+  const pageNumber = parsePage(Astro.url.searchParams)
+  const list = conversations(filter, range, pageNumber)
+  checkPage(pageNumber, list.total, list.pageSize)
+
+  return { range, query, filter, pageNumber, list }
+})
+
+if (!page.ok) {
+  Astro.response.status = page.status
+}
+---
+
+<Layout title="Conversations" current="conversations" range={page.ok ? page.data.range : null} syncedAt={page.syncedAt} problem={page.ok ? null : page.problem}>
+  {
+    page.ok && (
+      <>
+        <PageHead title="Conversations" range={page.data.range} />
+        <ConversationFilter query={page.data.query} filter={page.data.filter} range={page.data.range} />
+        <ConversationList list={page.data.list} range={page.data.range} page={page.data.pageNumber} />
+      </>
+    )
+  }
+</Layout>

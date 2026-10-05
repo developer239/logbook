@@ -1,0 +1,44 @@
+---
+import { count, duration, plural } from '../../lib/format'
+import { stepsHref } from '../../lib/links'
+import { SLOW_FACTOR, SLOW_FLOOR_MS, type slowCalls, USUAL_MIN_CALLS } from '../../lib/queries/calls'
+import type { IRange } from '../../lib/range'
+import Card from '../ui/Card.astro'
+import Link from '../ui/Link.astro'
+import './SlowCalls.css'
+
+type Props = ReturnType<typeof slowCalls> & { range: IRange }
+
+const { range, groups, total } = Astro.props
+const SHOWN = 5
+---
+
+<Card title="Unusually slow calls">
+  <Fragment slot="meta">{plural(total, 'call')}</Fragment>
+  <p class="card__lede">
+    Over {SLOW_FACTOR} times the tool's usual time and over {duration(SLOW_FLOOR_MS)}, the furthest first. A tool needs {
+      count(USUAL_MIN_CALLS)
+    } timed calls for a usual time; shell commands are compared by what they were for.
+  </p>
+  {
+    groups.length === 0 ? (
+      <p class="card__empty">No unusually slow calls in this range.</p>
+    ) : (
+      <ul class="slow-calls__list">
+        {groups.slice(0, SHOWN).map((group) => (
+          <li class="slow-calls__item">
+            <Link class="slow-calls__name" href={stepsHref({ slow: group.key }, range)}>
+              {group.key}
+            </Link>
+            <span class="slow-calls__tally">
+              {count(group.calls)} took over {duration(group.overMs)}
+            </span>
+            <span class="slow-calls__usual">
+              Usually {duration(group.usualMs)}. Longest {duration(group.longestMs)}.
+            </span>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</Card>

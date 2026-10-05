@@ -1,0 +1,11 @@
+.tag {
+  color: var(--step-agent);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tag--flag {
+  color: var(--slow);
+}

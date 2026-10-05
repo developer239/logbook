@@ -1,0 +1,47 @@
+---
+import { logScale } from '../lib/scale'
+import type { ITimeRows } from '../lib/views/time-rows'
+import Row from './ui/Row.astro'
+import Rows from './ui/Rows.astro'
+import './TimeRows.css'
+
+type Props = ITimeRows
+
+const { rows, floor, ceiling } = Astro.props
+const scale = logScale(floor, ceiling)
+
+const WIDTH = 200
+const HEIGHT = 14
+const START = 5
+const END = 195
+const MIDDLE = 7
+const TICK_TOP = 1
+const TICK_BOTTOM = 13
+const DOT_RADIUS = 3.5
+const xAt = (ms: number): number => START + (END - START) * scale(ms)
+---
+
+<Rows isGrid class="time-rows">
+  {
+    rows.map((row, index) => (
+      <Row>
+        <span class:list={['rows__cell', index === 0 && 'time-rows__first']} title={row.title}>
+          {row.label}
+        </span>
+        <svg class="time-rows__track" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none" aria-hidden="true">
+          <line class="time-rows__line" x1={START} x2={END} y1={MIDDLE} y2={MIDDLE} />
+          {row.tick !== null && (
+            <>
+              <line class="time-rows__range" x1={xAt(row.dot)} x2={xAt(row.tick)} y1={MIDDLE} y2={MIDDLE} />
+              <line class="time-rows__tick" x1={xAt(row.tick)} x2={xAt(row.tick)} y1={TICK_TOP} y2={TICK_BOTTOM} />
+            </>
+          )}
+          <circle class="time-rows__dot" cx={xAt(row.dot)} cy={MIDDLE} r={DOT_RADIUS} />
+        </svg>
+        <span class="rows__cell rows__cell--time">
+          <b class="time-rows__lead">{row.lead}</b> {row.trail}
+        </span>
+      </Row>
+    ))
+  }
+</Rows>

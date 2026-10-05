@@ -1,0 +1,26 @@
+.trend-rows {
+  --rows-columns: minmax(0, 1fr) 3rem 4.75rem;
+  --rows-gap: 0.75rem;
+  --rows-height: 2.125rem;
+}
+
+.trend-rows__group {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-3) 0 var(--space-1);
+}
+
+.trend-rows__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trend-rows__aside {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-3);
+  white-space: nowrap;
+}

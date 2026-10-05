@@ -1,0 +1,50 @@
+---
+import { duration, plural, when } from '../../lib/format'
+import { mainInput } from '../../lib/inputs'
+import { purposeName, UNTITLED } from '../../lib/labels'
+import { conversationHref } from '../../lib/links'
+import type { steps } from '../../lib/queries/steps'
+import type { IRange } from '../../lib/range'
+import { stepKind } from '../../lib/step-kind'
+import StepLine from '../StepLine.astro'
+import Card from '../ui/Card.astro'
+import Pager from '../ui/Pager.astro'
+import Row from '../ui/Row.astro'
+import Rows from '../ui/Rows.astro'
+import './StepList.css'
+
+interface Props {
+  list: ReturnType<typeof steps>
+  range: IRange
+  page: number
+}
+
+const { list, range, page } = Astro.props
+---
+
+<Card title={plural(list.total, 'step')}>
+  <Fragment slot="meta">newest first</Fragment>
+  {
+    list.rows.length === 0 ? (
+      <p class="card__empty">Nothing in this range.</p>
+    ) : (
+      <Rows class="step-list__rows">
+        {list.rows.map((row) => (
+          <Row href={conversationHref(row.sessionId, { turn: row.turnId, step: row.id }, range)}>
+            <StepLine class="rows__cell rows__cell--main" kind={stepKind(row)} name={row.name} input={mainInput(row.inputJson, 90)} />
+            <span class:list={['rows__cell', 'rows__cell--muted', row.cause !== null && 'rows__cell--problem']}>
+              {row.cause ?? (row.status === 'error' ? 'a real result' : (purposeName(row.purpose) ?? ''))}
+            </span>
+            <span class="rows__cell rows__cell--num rows__cell--end">
+              {duration(row.durationMs)}
+              {row.usualMs !== null && <span class="step-list__usual">usually {duration(row.usualMs)}</span>}
+            </span>
+            <span class="rows__cell rows__cell--muted">{row.title ?? UNTITLED}</span>
+            <span class="rows__cell rows__cell--time">{when(row.at)}</span>
+          </Row>
+        ))}
+      </Rows>
+    )
+  }
+  <Pager slot="note" page={page} size={list.pageSize} total={list.total} />
+</Card>

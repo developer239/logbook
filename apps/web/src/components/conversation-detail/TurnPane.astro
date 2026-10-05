@@ -1,0 +1,29 @@
+---
+import { count, duration, plural, time, turnLabel } from '../../lib/format'
+import type { ISelectedStep, ITurnDetail } from '../../lib/queries/turn'
+import type { IRange } from '../../lib/range'
+import Card from '../ui/Card.astro'
+import ContextSplit from './ContextSplit.astro'
+import StepTree from './StepTree.astro'
+import TimeSplit from './TimeSplit.astro'
+import './TurnPane.css'
+
+interface Props {
+  turn: ITurnDetail
+  isNested: boolean
+  selected: ISelectedStep | null
+  range: IRange
+}
+
+const { turn, isNested, selected, range } = Astro.props
+
+const title = `${turnLabel(turn.number)}${isNested ? ` · ${turn.agent}` : ''}`
+const parts = turn.nestedSteps === 0 ? '' : `, ${count(turn.nestedSteps)} more in the agents it started`
+---
+
+<Card class="turn-pane" title={title} level={2} hasPinnedHeader data-turn-pane={turn.id}>
+  <Fragment slot="meta">{time(turn.startedAt)} · {duration(turn.durationMs)} · {plural(turn.steps.length, 'step')}{parts}</Fragment>
+  <TimeSplit slot="flush" modelMs={turn.modelMs} toolMs={turn.toolMs} idleMs={turn.idleMs} durationMs={turn.durationMs} />
+  {turn.context !== null && <ContextSplit slot="flush" first={turn.context.first} last={turn.context.last} isSame={turn.context.isSame} />}
+  <StepTree slot="flush" turn={turn} selected={selected} range={range} />
+</Card>

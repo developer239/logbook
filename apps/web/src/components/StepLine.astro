@@ -1,0 +1,28 @@
+---
+import type { StepKind } from '../lib/step-kind'
+import Tile from './ui/Tile.astro'
+import './StepLine.css'
+
+interface Props {
+  kind: StepKind
+  name: string
+  input?: string | undefined
+  class?: string | undefined
+}
+
+const { kind, name, input, class: className } = Astro.props
+---
+
+<span class:list={['step-line', className]}>
+  <Tile kind={kind} />
+  <span class="step-line__text">
+    <span class="step-line__title">{name}{input !== undefined && <code class="step-line__input">{input}</code>}</span>
+    {
+      Astro.slots.has('sub') && (
+        <span class="step-line__sub">
+          <slot name="sub" />
+        </span>
+      )
+    }
+  </span>
+</span>

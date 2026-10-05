@@ -1,0 +1,103 @@
+---
+import { clip, count, duration, tokensLine } from '../../lib/format'
+import { prettyInput } from '../../lib/inputs'
+import { purposeName } from '../../lib/labels'
+import { conversationHref, stepsHref } from '../../lib/links'
+import type { Step } from '../../lib/queries/turn'
+import type { IRange } from '../../lib/range'
+import Status from '../ui/Status.astro'
+import './StepDetail.css'
+
+interface Props {
+  step: Step
+  close: string
+  range: IRange
+  usualMs: number | null
+  isSlow: boolean
+  sameCauseFailures: number
+}
+
+const { step, close, range, usualMs, isSlow, sameCauseFailures } = Astro.props
+
+// The rest is in the transcript.
+const SHOWN = 8000
+---
+
+<div class="step-detail">
+  {
+    step.kind === 'tool' ? (
+      <div class="step-detail__texts">
+        <div>
+          <div class="step-detail__label">Input</div>
+          <pre class="step-detail__text">{clip(prettyInput(step.inputJson), SHOWN)}</pre>
+        </div>
+        <div>
+          <div class="step-detail__label">Output</div>
+          <pre class="step-detail__text">{step.output === null || step.output === '' ? 'No output recorded' : clip(step.output, SHOWN)}</pre>
+        </div>
+      </div>
+    ) : (
+      <div class="step-detail__texts">
+        <div>
+          <div class="step-detail__label">Thinking</div>
+          <pre class="step-detail__text">{step.reasoning === null ? 'No thinking recorded' : clip(step.reasoning, SHOWN)}</pre>
+        </div>
+        <div>
+          <div class="step-detail__label">Wrote</div>
+          <pre class="step-detail__text">{step.text === null ? 'Only tool calls' : clip(step.text, SHOWN)}</pre>
+        </div>
+      </div>
+    )
+  }
+  <div class="step-detail__facts">
+    {
+      step.kind === 'tool' ? (
+        <>
+          {step.isFailed ? (
+            <Status tone="problem" form="text">
+              failed
+            </Status>
+          ) : (
+            <Status tone="good" form="text">
+              done
+            </Status>
+          )}
+          {step.isFailed && <span>{step.cause ?? 'a real result, not a problem'}</span>}
+          {step.purpose !== null && <span>{purposeName(step.purpose)}</span>}
+          <span>
+            {duration(step.durationMs)}
+            {usualMs !== null && `, ${step.name} usually takes ${duration(usualMs)}`}
+          </span>
+          {isSlow && (
+            <Status tone="slow" form="text">
+              slow
+            </Status>
+          )}
+          {step.started !== null && (
+            <a class="step-detail__link" href={conversationHref(step.started.sessionId, {}, range)}>
+              Open {step.started.agent}'s conversation
+            </a>
+          )}
+        </>
+      ) : (
+        <>
+          {step.model !== null && <span class="step-detail__model">{step.model}</span>}
+          <span>{tokensLine(step)}</span>
+          <span>{duration(step.durationMs)}</span>
+        </>
+      )
+    }
+    <span class="step-detail__end">
+      {
+        step.kind === 'tool' && step.cause !== null && (
+          <a class="step-detail__link" href={stepsHref({ cause: step.cause, range: 'all' }, null)}>
+            {count(sameCauseFailures)} like this
+          </a>
+        )
+      }
+      <a class="step-detail__link" href={close}>
+        Close
+      </a>
+    </span>
+  </div>
+</div>

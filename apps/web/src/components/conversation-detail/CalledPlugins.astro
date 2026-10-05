@@ -1,0 +1,48 @@
+---
+import { count, plural, tokensCompact } from '../../lib/format'
+import { sumBy } from '../../lib/lists'
+import type { ICalledPlugin } from '../../lib/plugins'
+import Plugins from './Plugins.astro'
+
+interface Props {
+  plugins: ICalledPlugin[]
+  definitions: 'recorded' | 'today'
+}
+
+const { plugins, definitions } = Astro.props
+
+const size = (tokens: number | null): string => (tokens === null ? 'unknown' : tokensCompact(tokens))
+const toolCount = sumBy(plugins, (plugin) => plugin.tools.length)
+---
+
+<Plugins>
+  <Fragment slot="summary">
+    tools offered unknown, {count(toolCount)} used from {plural(plugins.length, 'plugin')}
+  </Fragment>
+  {
+    plugins.map((plugin) => (
+      <div>
+        <div class="plugins__group-head">
+          <b class="plugins__group-name">{plugin.plugin ?? 'not in the cookbook now'}</b>
+          <span class="plugins__group-meta">{count(plugin.tools.length)} used</span>
+        </div>
+        <ul class="plugins__list">
+          {plugin.tools.map((tool) => (
+            <li class="plugins__item">
+              <code class="plugins__code">{tool.name}</code>
+              <span class="plugins__use">used {count(tool.calls)}×</span>
+              <span class:list={['plugins__size', tool.definitionTokens === null && 'plugins__size--unknown']}>{size(tool.definitionTokens)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))
+  }
+  <p class="plugins__note">
+    {
+      definitions === 'today'
+        ? "OpenCode records neither which tools it offered nor their definitions; it sends every tool the agent's permissions allow in full on every request. Sizes are the cookbook's definitions today; unknown for a tool the cookbook no longer has."
+        : 'This transcript is from before Claude Code recorded the tools it offered. Sizes are the definitions it recorded loading; unknown where it recorded none.'
+    }
+  </p>
+</Plugins>

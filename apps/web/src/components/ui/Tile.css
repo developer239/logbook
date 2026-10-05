@@ -1,0 +1,30 @@
+.tile {
+  --icon-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  flex: none;
+  background: color-mix(in oklab, currentColor 13%, transparent);
+}
+
+.tile--tool {
+  color: var(--kind-tool);
+}
+
+.tile--model {
+  color: var(--kind-model);
+}
+
+.tile--agent {
+  color: var(--kind-agent);
+}
+
+.tile--fail {
+  color: var(--problem);
+}
+
+.tile--untimed {
+  color: var(--text-3);
+}

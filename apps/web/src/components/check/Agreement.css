@@ -1,0 +1,5 @@
+.agreement__rows {
+  --rows-columns: minmax(0, 1fr) 4rem 4rem;
+  --rows-gap: 0.75rem;
+  --rows-height: 2.125rem;
+}

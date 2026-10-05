@@ -1,0 +1,37 @@
+---
+import { emptyFilter } from '../../lib/filter'
+import { UNTITLED } from '../../lib/labels'
+import { conversationHref, conversationsHref } from '../../lib/links'
+import type { IConversation } from '../../lib/queries/conversation'
+import type { IRange } from '../../lib/range'
+import Chip from '../ui/Chip.astro'
+import Link from '../ui/Link.astro'
+import './ConversationHead.css'
+
+interface Props {
+  id: string
+  title: string
+  parent: IConversation['parent']
+  range: IRange
+}
+
+const { id, title, parent, range } = Astro.props
+---
+
+<div class="conversation-head__crumb">
+  <Link href={conversationsHref(emptyFilter(), range)}>Conversations</Link>
+  {
+    parent !== null && (
+      <>
+        <span class="conversation-head__sep">/</span>
+        <Link href={conversationHref(parent.sessionId, { turn: parent.turnId }, range)}>{parent.title ?? UNTITLED}</Link>
+      </>
+    )
+  }
+  <span class="conversation-head__sep">/</span>
+  <Chip class="conversation-head__id" isMono>
+    <span class="chip__field">id</span>
+    {id}
+  </Chip>
+</div>
+<h1 class="conversation-head__title">{title}</h1>

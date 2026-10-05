@@ -1,0 +1,14 @@
+---
+import Status from './Status.astro'
+import './PageProblem.css'
+
+interface Props {
+  problem: string
+}
+
+const { problem } = Astro.props
+---
+
+<p class="page-problem">
+  <Status tone="problem" form="text">{problem}</Status>
+</p>

@@ -1,0 +1,34 @@
+---
+import { CHARS_PER_TOKEN } from '../../lib/context'
+import { plural } from '../../lib/format'
+import type { IToolTokens } from '../../lib/queries/tool-tokens'
+import type { IRange } from '../../lib/range'
+import { mostTotal } from '../../lib/views/tool-tokens'
+import ToolTokenRows from '../dashboard/ToolTokenRows.astro'
+import Card from '../ui/Card.astro'
+
+interface Props {
+  rows: IToolTokens[]
+  range: IRange
+}
+
+const { rows, range } = Astro.props
+---
+
+<Card title={`${plural(rows.length, 'tool')} and skills`}>
+  <Fragment slot="meta">most tokens first, estimated</Fragment>
+  {
+    rows.length === 0 ? (
+      <p class="card__empty">No calls in this range.</p>
+    ) : (
+      <ToolTokenRows rows={rows} range={range} most={mostTotal(rows)} hasDefinitions />
+    )
+  }
+  <Fragment slot="note">
+    What each call puts in the context, from its text at about {CHARS_PER_TOKEN} characters a token: the call and its result,
+    or the skill's text each time it loads. Every later request reads it again. A tool opens its calls. Definition is what a
+    cookbook tool's name, description and input schema add to every request that carries it, whether or not it is called:
+    OpenCode sends every plugin's tools, Claude Code may hold them back until a search loads them. Unused means not called
+    in this range; removed means the cookbook no longer offers it.
+  </Fragment>
+</Card>

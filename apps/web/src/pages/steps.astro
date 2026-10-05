@@ -1,0 +1,36 @@
+---
+import StepList from '../components/steps/StepList.astro'
+import PageHead from '../components/ui/PageHead.astro'
+import Layout from '../layouts/Layout.astro'
+import { load } from '../lib/load'
+import { checkPage, parsePage } from '../lib/paging'
+import { parseStepsQuery, steps } from '../lib/queries/steps'
+import { parseRange } from '../lib/range'
+import { stepsHeading } from '../lib/views/steps'
+
+const page = load(() => {
+  const range = parseRange(Astro.url.searchParams)
+  const query = parseStepsQuery(Astro.url.searchParams)
+  const pageNumber = parsePage(Astro.url.searchParams)
+  const list = steps(query, range, pageNumber)
+
+  checkPage(pageNumber, list.total, list.pageSize)
+
+  return { range, query, pageNumber, list }
+})
+
+if (!page.ok) {
+  Astro.response.status = page.status
+}
+---
+
+<Layout title="Steps" current={null} range={page.ok ? page.data.range : null} syncedAt={page.syncedAt} problem={page.ok ? null : page.problem}>
+  {
+    page.ok && (
+      <>
+        <PageHead title={stepsHeading(page.data.query)} range={page.data.range} />
+        <StepList list={page.data.list} range={page.data.range} page={page.data.pageNumber} />
+      </>
+    )
+  }
+</Layout>

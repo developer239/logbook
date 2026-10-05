@@ -1,0 +1,24 @@
+---
+import type { HTMLAttributes } from 'astro/types'
+import Icon from './Icon.astro'
+import './Disclosure.css'
+
+interface Props extends HTMLAttributes<'details'> {
+  rememberKey?: string | undefined
+  isOpen?: boolean | undefined
+  summaryClass?: string | undefined
+  bodyClass?: string | undefined
+}
+
+const { rememberKey, isOpen = false, summaryClass, bodyClass, class: className, ...rest } = Astro.props
+---
+
+<details class:list={['disclosure', className]} data-remember={rememberKey} open={isOpen} {...rest}>
+  <summary class:list={['disclosure__summary', summaryClass]}>
+    <Icon name="chevron" class="disclosure__chevron" />
+    <slot name="summary" />
+  </summary>
+  <div class:list={['disclosure__body', bodyClass]}>
+    <slot />
+  </div>
+</details>

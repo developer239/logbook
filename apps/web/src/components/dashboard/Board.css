@@ -1,0 +1,43 @@
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.board__stack {
+  display: contents;
+}
+
+@media (min-width: 48rem) {
+  .board {
+    display: block;
+    column-count: 2;
+    column-gap: var(--space-4);
+  }
+
+  .board__stack > * {
+    break-inside: avoid;
+    margin-bottom: var(--space-4);
+  }
+}
+
+@media (min-width: 75rem) {
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--space-4);
+  }
+
+  .board__stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  .board__stack > * {
+    margin-bottom: 0;
+  }
+}

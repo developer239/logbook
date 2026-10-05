@@ -1,0 +1,12 @@
+---
+import './Label.css'
+
+interface Props {
+  as?: 'span' | 'div' | undefined
+  class?: string | undefined
+}
+
+const { as: Tag = 'span', class: className } = Astro.props
+---
+
+<Tag class:list={['label', className]}><slot /></Tag>

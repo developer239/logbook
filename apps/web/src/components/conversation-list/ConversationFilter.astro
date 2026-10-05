@@ -1,0 +1,56 @@
+---
+import { type FilterField, hasTerms, type IFilter, toggleTerms } from '../../lib/filter'
+import { DIDNT_FINISH } from '../../lib/labels'
+import { conversationsHref } from '../../lib/links'
+import type { IRange } from '../../lib/range'
+import Button from '../ui/Button.astro'
+import Chip from '../ui/Chip.astro'
+import FilterHelp from '../ui/FilterHelp.astro'
+import './ConversationFilter.css'
+
+interface Props {
+  query: string
+  filter: IFilter
+  range: IRange
+}
+
+const { query, filter, range } = Astro.props
+
+const QUICK: { label: string; field: FilterField; values: readonly string[] }[] = [
+  { label: 'Started by me', field: 'by', values: ['me'] },
+  { label: 'Started by an agent', field: 'by', values: ['agent'] },
+  { label: "Didn't finish", field: 'outcome', values: DIDNT_FINISH },
+  { label: 'Failed steps', field: 'has', values: ['failures'] },
+  { label: 'Retry loops', field: 'has', values: ['retry'] },
+  { label: 'Corrections', field: 'has', values: ['correction'] },
+  { label: 'Spawned agents', field: 'has', values: ['spawned'] },
+]
+---
+
+<div class="conversation-filter">
+  <form class="conversation-filter__form" method="get" action="/conversations">
+    <input
+      class="conversation-filter__input"
+      type="search"
+      name="q"
+      value={query}
+      placeholder="goal:review outcome:failed, or words to look for"
+      aria-label="Filter"
+    />
+    {Object.entries(range.params).map(([name, value]) => <input type="hidden" name={name} value={value} />)}
+    <Button class="conversation-filter__submit" variant="accent" type="submit">Filter</Button>
+  </form>
+  <FilterHelp />
+  <div class="conversation-filter__quick">
+    {
+      QUICK.map((quick) => (
+        <Chip
+          href={conversationsHref(toggleTerms(filter, quick.field, quick.values), range)}
+          aria-current={hasTerms(filter, quick.field, quick.values) ? 'true' : undefined}
+        >
+          {quick.label}
+        </Chip>
+      ))
+    }
+  </div>
+</div>

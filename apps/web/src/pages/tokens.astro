@@ -1,0 +1,38 @@
+---
+import AllToolTokens from '../components/tokens/AllToolTokens.astro'
+import PluginTokens from '../components/tokens/PluginTokens.astro'
+import PageHead from '../components/ui/PageHead.astro'
+import Stack from '../components/ui/Stack.astro'
+import Layout from '../layouts/Layout.astro'
+import { load } from '../lib/load'
+import { toolTokens } from '../lib/queries/tool-tokens'
+import { parseRange } from '../lib/range'
+import { pluginGroups } from '../lib/views/tool-tokens'
+
+const page = load(() => {
+  const range = parseRange(Astro.url.searchParams)
+  const rows = toolTokens(range)
+
+  return { range, rows, ...pluginGroups(rows) }
+})
+
+if (!page.ok) {
+  Astro.response.status = page.status
+}
+---
+
+<Layout title="Tokens by tool" current={null} range={page.ok ? page.data.range : null} syncedAt={page.syncedAt} problem={page.ok ? null : page.problem}>
+  {
+    page.ok && (
+      <>
+        <PageHead title="Tokens by tool" range={page.data.range} />
+        <Stack>
+          {page.data.groups.length > 0 && (
+            <PluginTokens groups={page.data.groups} mostPlugin={page.data.mostPlugin} range={page.data.range} />
+          )}
+          <AllToolTokens rows={page.data.rows} range={page.data.range} />
+        </Stack>
+      </>
+    )
+  }
+</Layout>

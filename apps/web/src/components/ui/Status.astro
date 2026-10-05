@@ -1,0 +1,13 @@
+---
+import './Status.css'
+
+interface Props {
+  tone?: string | undefined
+  form?: 'pill' | 'text' | undefined
+  class?: string | undefined
+}
+
+const { tone, form, class: className } = Astro.props
+---
+
+<span class:list={['status', tone && `status--${tone}`, form && `status--${form}`, className]}><slot /></span>

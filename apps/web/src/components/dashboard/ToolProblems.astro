@@ -1,0 +1,95 @@
+---
+import { count, day, pct, plural } from '../../lib/format'
+import { stepsHref } from '../../lib/links'
+import type { IToolProblems } from '../../lib/queries/problems'
+import type { IRange } from '../../lib/range'
+import Bar from '../ui/Bar.astro'
+import Card from '../ui/Card.astro'
+import Link from '../ui/Link.astro'
+import Row from '../ui/Row.astro'
+import Rows from '../ui/Rows.astro'
+import Sparkline from '../ui/Sparkline.astro'
+import Status from '../ui/Status.astro'
+import './ToolProblems.css'
+
+type Props = IToolProblems & { range: IRange }
+
+const { range, causes, failed, realResults, bugs } = Astro.props
+const most = Math.max(1, ...causes.map((cause) => cause.calls))
+const HEADS = [{ label: 'Cause' }, { label: 'Calls', isEnd: true }, { label: '' }, { label: 'Last 7 days' }]
+---
+
+<Card title="Tool problems">
+  <Fragment slot="meta">
+    <Link href={stepsHref({ failed: '1' }, range)}>{plural(failed, 'failed call')}</Link> by cause, shell included
+  </Fragment>
+  {
+    causes.length === 0 ? (
+      <p class="card__empty">No calls went wrong in this range.</p>
+    ) : (
+      <Rows isGrid class="tool-problems__rows" heads={HEADS}>
+        {causes.map((cause) => {
+          const href = stepsHref({ cause: cause.cause }, range)
+          const isRising = cause.roseFrom !== null
+
+          return (
+            <Row>
+              <span class="rows__cell tool-problems__cause">
+                <span class="tool-problems__line">
+                  <Link href={href}>{cause.cause}</Link>
+                  {cause.roseFrom !== null && (
+                    <Status class="tool-problems__flag" tone="problem" form="text">
+                      up from {count(cause.roseFrom)}
+                    </Status>
+                  )}
+                </span>
+                <span class="tool-problems__tools">{cause.tools.join(', ')}</span>
+              </span>
+              <Link class:list={['rows__cell', 'tool-problems__calls', isRising && 'tool-problems__calls--rising']} href={href}>
+                {count(cause.calls)}
+              </Link>
+              <Bar
+                isTrack
+                class="rows__cell"
+                segments={[{ kind: isRising ? 'problem' : 'tool', width: pct(cause.calls / most, 1) }]}
+              />
+              <Sparkline values={cause.dailyFailures} isProblem={isRising} />
+            </Row>
+          )
+        })}
+      </Rows>
+    )
+  }
+  <Fragment slot="flush">
+    {
+      realResults > 0 && (
+        <p class="card__note">
+          Left out: <Link href={stepsHref({ real: '1' }, range)}>{count(realResults)} real results</Link> such as failing tests,
+          searches that found nothing and type errors found.
+        </p>
+      )
+    }
+    {
+      bugs.length > 0 && (
+        <div class="tool-problems__bugs">
+          <h4 class="tool-problems__bugs-title">
+            Tool bugs <span class="tool-problems__bugs-aside">in tools you maintain</span>
+          </h4>
+          {bugs.map((bug) => (
+            <a class="tool-problems__bug" href={stepsHref({ cause: 'Tool bug', tool: bug.name }, range)}>
+              <code class="tool-problems__bug-tool">{bug.name}</code>
+              <span class="tool-problems__bug-tally">
+                {count(bug.failures)} failures, last on {day(bug.lastFailureAt)}
+              </span>
+              <Status class="tool-problems__bug-state" tone={bug.successesSince > 0 ? 'good' : 'problem'} form="text">
+                {bug.successesSince > 0
+                  ? `${plural(bug.successesSince, 'successful call')} since`
+                  : 'no successful call since'}
+              </Status>
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </Fragment>
+</Card>

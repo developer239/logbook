@@ -1,0 +1,99 @@
+---
+import CalledPlugins from '../../components/conversation-detail/CalledPlugins.astro'
+import ConversationFacts from '../../components/conversation-detail/ConversationFacts.astro'
+import ConversationHead from '../../components/conversation-detail/ConversationHead.astro'
+import ConversationPanes from '../../components/conversation-detail/ConversationPanes.astro'
+import OfferedPlugins from '../../components/conversation-detail/OfferedPlugins.astro'
+import SessionMap from '../../components/conversation-detail/SessionMap.astro'
+import Layout from '../../layouts/Layout.astro'
+import { NotFoundError, ParamError } from '../../lib/errors'
+import { UNTITLED } from '../../lib/labels'
+import { sumBy } from '../../lib/lists'
+import { conversationHref, decodeId } from '../../lib/links'
+import { load } from '../../lib/load'
+import { conversation } from '../../lib/queries/conversation'
+import { sessionPlugins } from '../../lib/queries/plugins-view'
+import { sessionCache } from '../../lib/queries/session'
+import { thread } from '../../lib/queries/thread'
+import { shownTurn } from '../../lib/queries/turn'
+import { parseRange } from '../../lib/range'
+import { conversationFacts } from '../../lib/views/conversation-facts'
+
+const page = load(() => {
+  const id = decodeId(Astro.url.pathname.slice('/conversations/'.length))
+  const range = parseRange(Astro.url.searchParams)
+  const head = conversation(id)
+  if (head === null) {
+    throw new NotFoundError(`No conversation ${id}`)
+  }
+
+  const cache = sessionCache()
+  const own = thread(cache, id)
+  const turnId = Astro.url.searchParams.get('turn')
+  const stepId = Astro.url.searchParams.get('step')
+
+  if (stepId !== null && turnId === null) {
+    throw new ParamError(`Step ${stepId} needs the turn it is in`)
+  }
+
+  const first = own.turns[0]?.id
+
+  return {
+    id,
+    range,
+    head,
+    facts: conversationFacts(head),
+    own,
+    messages: sumBy(own.turns, (turn) => (turn.prompt === null ? 0 : 1) + (turn.reply === null ? 0 : 1)),
+    shown: first === undefined ? null : shownTurn(cache, id, turnId ?? first, stepId),
+    plugins: sessionPlugins(cache, id),
+  }
+})
+
+if (!page.ok) {
+  Astro.response.status = page.status
+}
+
+const title = page.ok ? (page.data.head.title ?? UNTITLED) : 'Conversation'
+---
+
+<Layout
+  title={title}
+  current={null}
+  range={page.ok ? page.data.range : null}
+  syncedAt={page.syncedAt}
+  conversation={page.ok ? { title, href: conversationHref(page.data.id, {}, page.data.range) } : undefined}
+  problem={page.ok ? null : page.problem}
+>
+  {
+    page.ok && (
+      <>
+        <ConversationHead id={page.data.id} title={title} parent={page.data.head.parent} range={page.data.range} />
+        <ConversationFacts facts={page.data.facts} head={page.data.head} />
+        {
+          page.data.plugins.offers === 'recorded' ? (
+            <OfferedPlugins servers={page.data.plugins.servers} />
+          ) : (
+            <CalledPlugins plugins={page.data.plugins.plugins} definitions={page.data.plugins.definitions} />
+          )
+        }
+        {page.data.own.turns.length > 0 && <SessionMap turns={page.data.own.turns} />}
+        <ConversationPanes
+          id={page.data.id}
+          turns={page.data.own.turns}
+          agent={page.data.own.agent}
+          messages={page.data.messages}
+          promptBy={page.data.head.startedBy === 'me' ? 'You' : 'Prompt'}
+          shown={page.data.shown}
+          range={page.data.range}
+        />
+      </>
+    )
+  }
+</Layout>
+
+<script>
+  import { followThread } from '../../scripts/follow'
+
+  followThread()
+</script>

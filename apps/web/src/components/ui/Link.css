@@ -1,0 +1,10 @@
+.link {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.1875rem;
+}
+
+.link:hover {
+  color: var(--accent);
+  text-decoration-color: currentcolor;
+}

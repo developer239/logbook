@@ -1,0 +1,56 @@
+.tool-token-rows {
+  --rows-columns: minmax(0, 1fr) 3rem 3rem 2.5rem;
+  --rows-gap: 0.5rem;
+  --rows-height: 2.125rem;
+}
+
+.tool-token-rows--definitions {
+  --rows-columns: minmax(0, 1fr) 3.75rem 3.25rem 0 2.5rem;
+}
+
+.tool-token-rows__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-2);
+  min-width: 0;
+}
+
+.tool-token-rows__tool {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tool-token-rows__tool--unused {
+  color: var(--text-2);
+}
+
+.tool-token-rows__calls {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-3);
+}
+
+.tool-token-rows__unused {
+  color: var(--text-3);
+}
+
+@media (min-width: 48rem) {
+  .tool-token-rows--definitions {
+    --rows-columns: minmax(0, 1.8fr) 4rem 5.25rem minmax(0, 1fr) 2.75rem;
+    --rows-gap: 0.75rem;
+  }
+}
+
+@media (min-width: 75rem) {
+  .tool-token-rows:not(.tool-token-rows--definitions) {
+    --rows-columns: minmax(0, 1.8fr) 2.5rem minmax(0, 1fr) 2.5rem;
+    --rows-gap: 0.75rem;
+  }
+
+  .tool-token-rows__name {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+  }
+}

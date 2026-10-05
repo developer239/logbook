@@ -1,0 +1,37 @@
+---
+import { count, plural, wait } from '../../lib/format'
+import { LONG_TURN_MS, ONE_IN_TEN_MIN_TURNS, type timePerTurn } from '../../lib/queries/effort'
+import { shareWords, turnTimeRows } from '../../lib/views/time-per-turn'
+import TimeRows from '../TimeRows.astro'
+import Card from '../ui/Card.astro'
+
+type Props = ReturnType<typeof timePerTurn>
+
+const { rows, prompts, longWaitShare } = Astro.props
+---
+
+<Card title="Time per turn">
+  <Fragment slot="meta">{plural(prompts, 'prompt')}</Fragment>
+  {
+    prompts === 0 ? (
+      <p class="card__empty">No prompts in this range.</p>
+    ) : (
+      <>
+        <p class="card__lede">
+          From my prompt to the final reply, without the time the agent waited on me. Dot: typical. Tick: 1 in 10 take longer,
+          shown from {count(ONE_IN_TEN_MIN_TURNS)} turns.
+        </p>
+        <TimeRows {...turnTimeRows(rows)} />
+      </>
+    )
+  }
+  <Fragment slot="note">
+    {
+      longWaitShare !== null && (
+        <>
+          In turns over {wait(LONG_TURN_MS)}, {shareWords(longWaitShare)} of the time is waiting on background work.
+        </>
+      )
+    }
+  </Fragment>
+</Card>
