@@ -304,3 +304,142 @@ describe('golden file regeneration', () => {
     })
   })
 })
+
+// A copy of the minimal adapter whose reader is changed by `reader`, keeping everything else.
+const brokenReader = (
+  change: (
+    reader: Awaited<ReturnType<IHarnessAdapter['openSource']>>,
+    location: IHarnessLocation
+  ) => Partial<Awaited<ReturnType<IHarnessAdapter['openSource']>>>
+): IHarnessAdapter => ({
+  ...minimalAdapter,
+  openSource: async (location, context) => {
+    const reader = await minimalAdapter.openSource(location, context)
+    return { ...reader, ...change(reader, location) }
+  },
+})
+
+// Each unit's sessions changed by `change`.
+const brokenOutput = (change: (session: IImportedSession) => IImportedSession): IHarnessAdapter =>
+  brokenReader((reader) => ({
+    importUnit: async (unit) => {
+      const imported = await reader.importUnit(unit)
+      return { ...imported, sessions: imported.sessions.map((session) => change(session)) }
+    },
+  }))
+
+// A correct minimal adapter with one defect each, and the cases meant to catch it.
+const BROKEN_ADAPTERS: readonly { defect: string; adapter: IHarnessAdapter; mustFail: readonly string[] }[] = [
+  {
+    defect: 'returns a time as a string',
+    adapter: brokenOutput((session) => ({
+      ...session,
+      messages: session.messages.map((message) => ({
+        ...message,
+        createdAt: new Date(message.createdAt).toISOString() as unknown as number,
+      })),
+    })),
+    mustFail: ['valid output', 'stores cleanly'],
+  },
+  {
+    defect: 'puts its own id into a session title',
+    adapter: brokenOutput((session) => ({ ...session, session: { ...session.session, title: `${MINIMAL_ID} log` } })),
+    mustFail: ['valid output', 'no harness id leak'],
+  },
+  {
+    defect: 'lists one unit twice under the same locator',
+    adapter: brokenReader((reader) => ({
+      listUnits: async () => {
+        const units = await reader.listUnits()
+        return [...units, ...units.slice(0, 1)]
+      },
+    })),
+    mustFail: ['listing'],
+  },
+  {
+    defect: 'writes a file into the fixture copy while importing',
+    adapter: brokenReader((reader, location) => ({
+      importUnit: async (unit) => {
+        await writeFile(join(location.root, 'import.cache'), unit.locator)
+        return reader.importUnit(unit)
+      },
+    })),
+    mustFail: ['read-only'],
+  },
+  {
+    defect: 'opens a file it must never read when it exists',
+    adapter: brokenReader((reader, location) => ({
+      listUnits: async () => {
+        await readFile(join(location.root, '..', 'credentials.json')).catch((error: unknown) => {
+          if (!isErrnoCode(error, 'ENOENT')) {
+            throw error
+          }
+        })
+        return reader.listUnits()
+      },
+    })),
+    mustFail: ['reads only what is listed'],
+  },
+]
+
+// The cases an adapter fails on a copy of the fixture set whose golden files are its own output, so the golden case
+// never masks which case caught a defect.
+const failingCases = async (adapter: IHarnessAdapter, directory: string): Promise<string[]> => {
+  await cp(FIXTURE_ROOT, directory, { recursive: true })
+  const fixture = minimalFixture(directory)
+  const cases = conformanceCases(adapter, [fixture])
+  vi.stubEnv('LOGBOOK_UPDATE_GOLDEN', '1')
+  await cases.find((testCase) => testCase.name === '1.0: golden output')?.run()
+  vi.unstubAllEnvs()
+  const outcomes = await Promise.all(
+    cases.map(async (testCase) =>
+      testCase.run().then(
+        () => [],
+        () => [testCase.name.slice('1.0: '.length)]
+      )
+    )
+  )
+  return outcomes.flat()
+}
+
+describe('the conformance suite on broken adapters', () => {
+  let directory = ''
+
+  afterEach(async () => {
+    vi.unstubAllEnvs()
+    await rm(directory, { recursive: true, force: true })
+  })
+
+  it.each([
+    {
+      defect: 'none: the minimal adapter they derive from',
+      adapter: minimalAdapter,
+      mustFail: [] as readonly string[],
+    },
+    ...BROKEN_ADAPTERS,
+  ])('an adapter whose defect is $defect fails exactly the cases meant to catch it', async ({ adapter, mustFail }) => {
+    // Arrange
+    directory = await realpath(await mkdtemp(join(tmpdir(), 'log-book-broken-')))
+
+    // Act
+    const failing = await failingCases(adapter, join(directory, 'fixture'))
+
+    // Assert
+    expect(failing).toStrictEqual(mustFail)
+  })
+
+  it("rejects a string time through the warehouse's STRICT tables", async () => {
+    // Arrange
+    directory = await realpath(await mkdtemp(join(tmpdir(), 'log-book-broken-')))
+    const [timeAsString] = BROKEN_ADAPTERS
+    const storesCleanly = conformanceCases(timeAsString?.adapter ?? minimalAdapter, [
+      minimalFixture(FIXTURE_ROOT),
+    ]).find((testCase) => testCase.name === '1.0: stores cleanly')
+
+    // Act
+    const storing = storesCleanly?.run()
+
+    // Assert
+    await expect(storing).rejects.toThrow('cannot store TEXT value in INTEGER column message.created_at')
+  })
+})
