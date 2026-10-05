@@ -1,4 +1,5 @@
 import { readdir } from 'node:fs/promises'
+import { join } from 'node:path'
 import {
   ADAPTER_ERROR_CODES,
   type IAdapterContext,
@@ -7,14 +8,16 @@ import {
   type IHarnessLocation,
   type ISourceReader,
 } from '@log-book/adapter-api'
-import { ERROR_CODES, LogBookError } from '@log-book/core'
+import { LogBookError } from '@log-book/core'
 import { prepareCommands } from './commands.js'
+import { importTranscript } from './import-transcript.js'
 import { listTranscriptSets } from './listing.js'
 import { CONFIG_DIR_VARIABLE, locateProjects } from './locate.js'
+import { ADAPTER_ID } from './session-builder.js'
 
 // name, defaultAgent and filterAlias are the values the conversation filter has always used.
 const DESCRIPTOR: IHarnessDescriptor = {
-  id: 'claude-code',
+  id: ADAPTER_ID,
   name: 'Claude Code',
   defaultAgent: 'Claude',
   unitNoun: 'transcripts',
@@ -23,9 +26,6 @@ const DESCRIPTOR: IHarnessDescriptor = {
   testedVersions: ['2.1'],
   locationVariables: [CONFIG_DIR_VARIABLE],
 }
-
-const notImplemented = (what: string): Promise<never> =>
-  Promise.reject(new LogBookError(`The Claude Code adapter cannot ${what} yet.`, ERROR_CODES.INTERNAL_ERROR))
 
 // The reader holds no handle, so close does nothing; a transcript records no format marker besides each line's
 // version, which the imported unit's harness version already reports.
@@ -42,7 +42,7 @@ const openSource = async (location: IHarnessLocation, context: IAdapterContext):
   return {
     formatDrift: null,
     listUnits: () => listTranscriptSets(location.root, context.signal),
-    importUnit: () => notImplemented('import a transcript'),
+    importUnit: (unit) => importTranscript(join(location.root, unit.locator), unit.locator),
     close: () => Promise.resolve(),
   }
 }
