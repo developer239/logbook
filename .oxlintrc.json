@@ -452,6 +452,12 @@
       }
     },
     {
+      "files": ["packages/ci/src/stage/*.ts"],
+      "rules": {
+        "require-unicode-regexp": "off"
+      }
+    },
+    {
       "files": ["apps/cli/bin/*.cjs"],
       "rules": {
         "typescript/no-require-imports": "off",

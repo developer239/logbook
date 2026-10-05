@@ -24,6 +24,7 @@ catalog:
   '@commitlint/types': 21.2.3
   '@types/node': 24.19.1
   astro: 7.3.5
+  esbuild: 0.28.2
   husky: 9.1.7
   knip: 6.39.0
   lint-staged: 17.6.0

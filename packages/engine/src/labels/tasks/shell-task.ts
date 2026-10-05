@@ -1,4 +1,5 @@
 import { PromptLoaderService } from '@log-book/core'
+import { promptFile } from '../../prompts.js'
 import type { ILabelRunTask } from '../runner/label-task.js'
 import { codeFields, cutToPart, itemPart, taskInfo } from './item-text.js'
 
@@ -18,7 +19,7 @@ export const shellTask = (): ILabelRunTask => {
     fields: codeFields(info),
     batchSize: info.batchSize,
     system: 'You label shell commands for a telemetry analysis. Answer only with the requested lines.',
-    instructions: PromptLoaderService.load(new URL('../../prompts/shell-label.prompt.txt', import.meta.url)),
+    instructions: PromptLoaderService.load(promptFile('shell-label.prompt.txt')),
     candidates: (reader) =>
       reader
         .all<{ id: string; command: string; isFailed: number; output: string | null }>(

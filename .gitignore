@@ -14,3 +14,5 @@ mise.local.toml
 
 # demo dataset builds
 packages/demo/out/
+apps/cli/package/
+apps/cli/build/
