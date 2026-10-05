@@ -17,7 +17,11 @@ interface IProjectSpec {
   exclude?: string[]
   timeout: number
   isSerial?: boolean
+  // Runs before the project's own setup that builds the demo through the built CLI.
+  isBuiltCliNeeded?: boolean
 }
+
+const BUILT_CLI_CHECK = './test/cli-build-check.ts'
 
 const PROJECTS: IProjectSpec[] = [
   { name: 'root', include: ['test/**/*.test.ts'], timeout: UNIT_TIMEOUT_MS },
@@ -31,7 +35,12 @@ const PROJECTS: IProjectSpec[] = [
   },
   { name: 'adapter-opencode', include: ['packages/adapter-opencode/src/**/*.test.ts'], timeout: ENGINE_TIMEOUT_MS },
   { name: 'engine', include: ['packages/engine/src/**/*.test.ts'], timeout: ENGINE_TIMEOUT_MS },
-  { name: 'web', include: ['apps/web/src/**/*.test.ts', 'apps/web/test/**/*.test.ts'], timeout: ENGINE_TIMEOUT_MS },
+  {
+    name: 'web',
+    include: ['apps/web/src/**/*.test.ts', 'apps/web/test/**/*.test.ts'],
+    timeout: ENGINE_TIMEOUT_MS,
+    isBuiltCliNeeded: true,
+  },
   {
     name: 'cli',
     include: ['apps/cli/src/**/*.test.ts', 'apps/cli/test/composition/**/*.test.ts'],
@@ -46,7 +55,13 @@ const PROJECTS: IProjectSpec[] = [
     timeout: UNIT_TIMEOUT_MS,
   },
   { name: 'docs-browser', include: ['apps/docs/**/*.browser.test.ts'], timeout: BROWSER_TIMEOUT_MS },
-  { name: 'e2e', include: ['apps/cli/test/e2e/**/*.e2e.test.ts'], timeout: E2E_TIMEOUT_MS, isSerial: true },
+  {
+    name: 'e2e',
+    include: ['apps/cli/test/e2e/**/*.e2e.test.ts'],
+    timeout: E2E_TIMEOUT_MS,
+    isSerial: true,
+    isBuiltCliNeeded: true,
+  },
   { name: 'demo-build', include: ['packages/demo/test/**/*.test.ts'], timeout: DEMO_BUILD_TIMEOUT_MS },
 ]
 
@@ -69,7 +84,7 @@ export default defineConfig({
     // Three and a half hours behind UTC in winter, so a test assuming UTC or whole-hour offsets fails everywhere.
     env: { TZ: 'America/St_Johns' },
     sequence: { shuffle: process.env.CI === 'true' ? { files: true, tests: true } : false },
-    projects: PROJECTS.map(({ name, include, exclude = [], timeout, isSerial = false }) => ({
+    projects: PROJECTS.map(({ name, include, exclude = [], timeout, isSerial = false, isBuiltCliNeeded = false }) => ({
       extends: true,
       test: {
         name,
@@ -78,6 +93,7 @@ export default defineConfig({
         testTimeout: timeout,
         hookTimeout: timeout,
         fileParallelism: !isSerial,
+        globalSetup: isBuiltCliNeeded ? [BUILT_CLI_CHECK] : [],
       },
     })),
   },
