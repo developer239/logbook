@@ -20,7 +20,8 @@
   },
   "dependencies": {
     "@log-book/adapter-api": "workspace:*",
-    "@log-book/core": "workspace:*"
+    "@log-book/core": "workspace:*",
+    "@log-book/warehouse": "workspace:*"
   },
   "devDependencies": {
     "vitest": "catalog:"

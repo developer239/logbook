@@ -6,7 +6,8 @@ import {
   type ISourceReader,
   type ISourceUnit,
 } from '@log-book/adapter-api'
-import { ERROR_CODES, LogBookError, type ISqliteDb } from '@log-book/core'
+import { LogBookError, type ISqliteDb } from '@log-book/core'
+import { importSession } from './import-session.js'
 
 // The newest of the 48 migrations of OpenCode 2.0.21, the release fixture set 2.0 comes from. The pull request that adds
 // a fixture set for a newer version updates it.
@@ -128,10 +129,7 @@ export const openDatabase = async (location: IHarnessLocation, context: IAdapter
     return {
       formatDrift,
       listUnits: async () => Promise.resolve(listSessions(db, context.signal)),
-      importUnit: async () =>
-        Promise.reject(
-          new LogBookError('The OpenCode adapter cannot import a session yet.', ERROR_CODES.INTERNAL_ERROR)
-        ),
+      importUnit: async (unit) => Promise.resolve(importSession(db, unit.locator, tables.has('message'))),
       close: async () => {
         db.close()
         await Promise.resolve()
