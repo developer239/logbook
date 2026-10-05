@@ -986,7 +986,7 @@ describe('WarehouseStore derived tables and labels', () => {
     expect(opened.all('SELECT value, labelled_at FROM label')).toStrictEqual([{ value: 'second', labelled_at: 2_000 }])
   })
 
-  it("drops one labeller's fields, returns the count, and keeps another model's and the rules' labels", async () => {
+  it("drops one labeller's fields, returns the records, and keeps another model's and the rules' labels", async () => {
     // Arrange
     const opened = await openStore()
     opened.writeLabels([
@@ -998,11 +998,11 @@ describe('WarehouseStore derived tables and labels', () => {
     ])
 
     // Act
-    const count = opened.dropLabels('tool_call', 'model-a', ['purpose', 'failure'])
+    const count = opened.dropTaskLabels('model-a', [{ recordType: 'tool_call', names: ['purpose', 'failure'] }])
 
     // Assert
     expect({ count, rows: opened.all('SELECT labeller, name FROM label ORDER BY labeller, name') }).toStrictEqual({
-      count: 2,
+      count: 1,
       rows: [
         { labeller: 'model-a', name: 'kept' },
         { labeller: 'model-b', name: 'purpose' },
@@ -1242,7 +1242,7 @@ describe('WarehouseStore labelling run record', () => {
     opened.writeLabelRunBatch(id, 'shell', [labelRecord({})], 1)
 
     // Act
-    const dropped = opened.dropLabels('tool_call', 'model-a', ['purpose'])
+    const dropped = opened.dropTaskLabels('model-a', [{ recordType: 'tool_call', names: ['purpose'] }])
 
     // Assert
     expect({

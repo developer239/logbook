@@ -87,6 +87,10 @@ const tightenModes = (path: string, isDirectoryOwned: boolean): void => {
 
 // The warehouse database. open() is the only way to write it; every write goes through a typed method, and the store
 // never reads the clock: every time it writes comes from its caller.
+// One labeller's labels of a record type with these names.
+const labelsOfWhere = (names: readonly string[]): string =>
+  `record_type = ? AND labeller = ? AND name IN (${names.map(() => '?').join(', ')})`
+
 export class WarehouseStore implements IWarehouseReader {
   // The version the file had when it was opened, and the version it has now.
   public readonly previousVersion: number
@@ -346,15 +350,28 @@ export class WarehouseStore implements IWarehouseReader {
     })
   }
 
-  // Deletes one labeller's labels of some fields of a record type and returns how many rows went.
-  public readonly dropLabels = (recordType: LabelRecordType, labeller: string, names: readonly string[]): number =>
+  // One labeller's labels of a task's record types and field names, all or none. Returns the records of the first
+  // group (the task's main record type) whose labels went.
+  public readonly dropTaskLabels = (
+    labeller: string,
+    groups: readonly { recordType: LabelRecordType; names: readonly string[] }[]
+  ): number =>
     this.transaction(() => {
-      const where = `record_type = ? AND labeller = ? AND name IN (${names.map(() => '?').join(', ')})`
-      const { count } = this.db
-        .prepare(`SELECT count(*) AS count FROM label WHERE ${where}`)
-        .get(recordType, labeller, ...names) as { count: number }
-      this.db.prepare(`DELETE FROM label WHERE ${where}`).run(recordType, labeller, ...names)
-      return count
+      const [main] = groups
+      const records =
+        main === undefined
+          ? 0
+          : (
+              this.db
+                .prepare(`SELECT count(DISTINCT record_id) AS count FROM label WHERE ${labelsOfWhere(main.names)}`)
+                .get(main.recordType, labeller, ...main.names) as { count: number }
+            ).count
+      for (const group of groups) {
+        this.db
+          .prepare(`DELETE FROM label WHERE ${labelsOfWhere(group.names)}`)
+          .run(group.recordType, labeller, ...group.names)
+      }
+      return records
     })
 
   // The records one labeller has labelled for a record type, a field and a version.
