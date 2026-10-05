@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Production dependencies end up in the CLI's bundle, so their update releases a patch; a tooling update releases
+  # nothing.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+      include: scope

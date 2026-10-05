@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# A new push to a pull request cancels its run in progress; on main every run finishes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # The repository's rules in one fixed order, cheapest first, so the step a change fails at names the first rule it
+  # broke.
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The whole history, so commitlint reaches both ends of a pull request's commits.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          check-latest: true
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Values from the event reach the shell through env, never written into the script.
+      - name: 1. Commit messages
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+          printf '%s\n' "$PR_TITLE" | pnpm exec commitlint --verbose
+      - name: 2. Format
+        run: pnpm format:check
+      - name: 9. Build packages
+        run: pnpm build:packages
+      - name: 10. Lint
+        run: pnpm lint
+      - name: 11. Typecheck
+        run: pnpm typecheck
+      - name: 12. Unused code
+        run: pnpm knip
+
+      # The first eight hexadecimal digits of the head commit, so a re-run of the same commit shuffles the same way.
+      - name: Shuffle seed
+        id: seed
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          seed=$((16#${HEAD_SHA:0:8}))
+          echo "seed=$seed" >> "$GITHUB_OUTPUT"
+          echo "Shuffle seed: $seed"
+          {
+            echo "Shuffle seed: $seed"
+            echo
+            echo "Reproduce the test order with: \`pnpm test --sequence.shuffle --sequence.seed=$seed\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: 13. Unit to composition tests
+        env:
+          SEED: ${{ steps.seed.outputs.seed }}
+        run: pnpm test --sequence.seed="$SEED"
