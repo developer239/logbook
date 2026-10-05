@@ -1,0 +1,54 @@
+{
+  "harnessVersion": "1.2.0",
+  "sessions": [
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 5000,
+          "gitBranch": null,
+          "id": "minimal-harness:beta/m1",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "minimal-harness:beta",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "minimal-harness:beta/m1",
+          "sessionId": "minimal-harness:beta",
+          "text": "fix rounding in invoice totals",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": null,
+        "endedAt": 5000,
+        "harness": "minimal-harness",
+        "id": "minimal-harness:beta",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/billing",
+        "sourceId": "beta",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 5000,
+        "title": null
+      },
+      "toolCalls": []
+    }
+  ]
+}

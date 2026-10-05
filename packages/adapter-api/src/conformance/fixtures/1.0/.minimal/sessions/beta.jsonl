@@ -1,0 +1,2 @@
+{"type":"meta","version":"1.2.0","project":"/home/example/work/billing"}
+{"type":"message","id":"m1","role":"user","text":"fix rounding in invoice totals","at":5000}

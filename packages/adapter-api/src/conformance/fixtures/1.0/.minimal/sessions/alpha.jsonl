@@ -1,0 +1,4 @@
+{"type":"meta","version":"1.0.3","project":"/home/example/work/shop"}
+{"type":"message","id":"m1","role":"user","text":"/release the discount code field","at":1000}
+{"type":"message","id":"m2","role":"assistant","text":"Released it.","at":2000}
+{"type":"mystery","note":"a record this harness version added","at":2500}
