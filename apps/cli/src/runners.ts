@@ -1,3 +1,4 @@
+import { createReadRunners } from './read-commands.js'
 import type { CommandRunner } from './run-cli.js'
 import { createSyncRunner } from './sync.js'
 
@@ -5,4 +6,5 @@ import { createSyncRunner } from './sync.js'
 // fails with a line saying so, never silently.
 export const COMMAND_RUNNERS: Readonly<Record<string, CommandRunner>> = {
   sync: createSyncRunner(),
+  ...createReadRunners(),
 }
