@@ -270,3 +270,9 @@ export interface ILabelRunEndRecord {
   // The message the run ended with for `limit`, `unreachable` and `failed`, null for `ok` and `stopped`.
   error: string | null
 }
+
+// What forgetting removed: every session, subagent descendants included, and the label rows that went with them.
+export interface IForgetResult {
+  sessionIds: string[]
+  labelCount: number
+}

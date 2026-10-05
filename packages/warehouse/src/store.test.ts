@@ -1253,6 +1253,205 @@ describe('WarehouseStore labelling run record', () => {
   })
 })
 
+const FORGOTTEN_PARENT = 'test-harness:ses_a1'
+const FORGOTTEN_IDS = [FORGOTTEN_PARENT, `${FORGOTTEN_PARENT}-child`, `${FORGOTTEN_PARENT}-grandchild`]
+// Differs from the forgotten parent only where its id has `_`.
+const KEPT = 'test-harness:sesXa1'
+const OTHER_PROJECT = 'test-harness:ses_b1'
+
+// Every kind of row the warehouse holds about a session: its import, links, turn, command and labels of the session,
+// a message, a tool call and a reaction.
+const recordsAbout = (
+  sessionId: string
+): { turn: ITurnRecord; command: ISessionCommandRecord; labels: ILabelRecord[] } => ({
+  turn: { ...turnRecord(`${sessionId}/m1`), sessionId },
+  command: { ...commandRecord('review'), sessionId, messageId: `${sessionId}/m1` },
+  labels: [
+    labelRecord({ recordType: 'session', recordId: sessionId, name: 'outcome' }),
+    labelRecord({ recordType: 'message', recordId: `${sessionId}/m1`, name: 'act' }),
+    labelRecord({ recordType: 'tool_call', recordId: `${sessionId}/c1`, name: 'purpose' }),
+    labelRecord({ recordType: 'reaction', recordId: `${sessionId}/m1#0`, name: 'reaction' }),
+  ],
+})
+
+const seedForget = (opened: WarehouseStore): void => {
+  const sessions = [
+    importedSession(FORGOTTEN_PARENT, 'the parent asked about walrus tariffs'),
+    importedSession(`${FORGOTTEN_PARENT}-child`, 'the child read walrus tariffs'),
+    importedSession(`${FORGOTTEN_PARENT}-grandchild`, 'the grandchild found walrus tariffs'),
+    importedSession(KEPT, 'a kept session about penguin budgets'),
+    {
+      ...importedSession(OTHER_PROJECT, 'another project about otter rates'),
+      session: { ...importedSession(OTHER_PROJECT, '').session, projectDir: '/work/other' },
+    },
+  ]
+  opened.writeImportedUnit(sessions, sourceState('fingerprint-1'))
+  opened.replaceLinks([
+    subagentLink(FORGOTTEN_PARENT, `${FORGOTTEN_PARENT}-child`),
+    subagentLink(`${FORGOTTEN_PARENT}-child`, `${FORGOTTEN_PARENT}-grandchild`),
+    subagentLink(KEPT, OTHER_PROJECT),
+  ])
+  const records = [...FORGOTTEN_IDS, KEPT, OTHER_PROJECT].map((id) => recordsAbout(id))
+  opened.replaceTurns(records.map((record) => record.turn))
+  opened.replaceSessionCommands(records.map((record) => record.command))
+  opened.writeLabels(records.flatMap((record) => record.labels))
+  const runId = opened.startLabelRun(runStart(['shell']))
+  opened.writeLabelRunBatch(runId, 'shell', [], 1)
+}
+
+// The tables a session's rows live in; the full-text index is checked by searching it.
+const SESSION_TABLES_READ =
+  "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'part_fts%' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+
+// The tables, other than forgotten, with a row holding one of the ids.
+const tablesHolding = (opened: WarehouseStore, ids: readonly string[]): string[] =>
+  opened
+    .all<{ name: string }>(SESSION_TABLES_READ)
+    .map((row) => row.name)
+    .filter((table) => table !== 'forgotten')
+    .filter((table) => {
+      const text = JSON.stringify(opened.all(`SELECT * FROM ${table}`))
+      return ids.some((id) => text.includes(`"${id}`))
+    })
+
+describe('WarehouseStore forget', () => {
+  let directory = ''
+  let store: WarehouseStore | null = null
+
+  const openStore = async (): Promise<WarehouseStore> => {
+    store = await WarehouseStore.open(join(directory, 'warehouse.db'))
+    return store
+  }
+
+  beforeEach(async () => {
+    directory = await realpath(await mkdtemp(join(tmpdir(), 'log-book-forget-')))
+    vi.stubEnv('XDG_DATA_HOME', join(directory, 'data'))
+  })
+
+  afterEach(async () => {
+    store?.close()
+    store = null
+    await rm(directory, { recursive: true, force: true })
+  })
+
+  it('forgets a session with its subagent child and grandchild, keeping only their ids in forgotten', async () => {
+    // Arrange
+    const opened = await openStore()
+    seedForget(opened)
+
+    // Act
+    const result = opened.forgetSessions([FORGOTTEN_PARENT], 9_000)
+
+    // Assert
+    expect({
+      result,
+      holding: tablesHolding(opened, FORGOTTEN_IDS),
+      forgotten: opened.all('SELECT session_id, forgotten_at FROM forgotten ORDER BY session_id'),
+    }).toStrictEqual({
+      result: { sessionIds: FORGOTTEN_IDS.toSorted(), labelCount: 12 },
+      holding: [],
+      forgotten: FORGOTTEN_IDS.toSorted().map((id) => ({ session_id: id, forgotten_at: 9_000 })),
+    })
+  })
+
+  it('keeps every row of the other sessions, their labels included, and the search finds only their text', async () => {
+    // Arrange
+    const opened = await openStore()
+    seedForget(opened)
+    const keptRows = (): unknown =>
+      opened
+        .all<{ name: string }>(SESSION_TABLES_READ)
+        .map((row) => row.name)
+        .filter((table) => table !== 'forgotten')
+        .map((table) => [
+          table,
+          opened
+            .all(`SELECT * FROM ${table}`)
+            .filter((row) => JSON.stringify(row).includes(KEPT) || JSON.stringify(row).includes(OTHER_PROJECT)),
+        ])
+    const before = keptRows()
+
+    // Act
+    opened.forgetSessions([FORGOTTEN_PARENT], 9_000)
+
+    // Assert
+    expect({
+      rows: keptRows(),
+      forgottenPhrase: search(opened, 'walrus tariffs'),
+      keptPhrase: search(opened, 'penguin budgets'),
+      labels: opened.all('SELECT record_id FROM label ORDER BY record_id'),
+    }).toStrictEqual({
+      rows: before,
+      forgottenPhrase: [],
+      keptPhrase: [KEPT],
+      labels: [
+        OTHER_PROJECT,
+        `${OTHER_PROJECT}/c1`,
+        `${OTHER_PROJECT}/m1`,
+        `${OTHER_PROJECT}/m1#0`,
+        KEPT,
+        `${KEPT}/c1`,
+        `${KEPT}/m1`,
+        `${KEPT}/m1#0`,
+      ]
+        .toSorted()
+        .map((recordId) => ({ record_id: recordId })),
+    })
+  })
+
+  it('refuses a known id together with an unknown one, naming the unknown one, and deletes nothing', async () => {
+    // Arrange
+    const opened = await openStore()
+    seedForget(opened)
+    const before = counts(opened)
+
+    // Act
+    const forgetting = (): unknown => opened.forgetSessions([FORGOTTEN_PARENT, 'test-harness:ses_missing'], 9_000)
+
+    // Assert
+    expect(forgetting).toThrow(
+      new LogBookError(
+        'The warehouse holds no session test-harness:ses_missing.',
+        WAREHOUSE_ERROR_CODES.WAREHOUSE_SESSION_UNKNOWN
+      )
+    )
+    expect({ counts: counts(opened), forgotten: opened.all('SELECT session_id FROM forgotten') }).toStrictEqual({
+      counts: before,
+      forgotten: [],
+    })
+  })
+
+  it("expands a project directory to that directory's sessions only", async () => {
+    // Arrange
+    const opened = await openStore()
+    seedForget(opened)
+
+    // Act
+    const sessions = opened.sessionsInProject('/work/other')
+
+    // Assert
+    expect(sessions).toStrictEqual([OTHER_PROJECT])
+  })
+
+  it('leaves the source state and the labelling run records as they were', async () => {
+    // Arrange
+    const opened = await openStore()
+    seedForget(opened)
+    const read = (): unknown => ({
+      sourceState: opened.all('SELECT * FROM source_state'),
+      runs: opened.all('SELECT * FROM label_run'),
+      tasks: opened.all('SELECT * FROM label_run_task'),
+    })
+    const before = read()
+
+    // Act
+    opened.forgetSessions([FORGOTTEN_PARENT, OTHER_PROJECT], 9_000)
+
+    // Assert
+    expect(read()).toStrictEqual(before)
+  })
+})
+
 describe('WarehouseStore compaction', () => {
   let directory = ''
   let store: WarehouseStore | null = null
