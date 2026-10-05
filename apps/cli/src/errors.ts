@@ -10,6 +10,25 @@ import { tildePath } from './format.js'
 import { EXIT_CODES, PACKAGE, type ExitCodeName } from './grammar.js'
 import { lockLine } from './lock-lines.js'
 
+// The host's port is taken, by another Log Book (on another warehouse, since one on this warehouse is found before
+// binding) or by another program. The host never moves to another port: a bookmarked URL would point at the other.
+export class PortTakenError extends Error {
+  constructor(
+    public readonly port: number,
+    public readonly isLogBook: boolean
+  ) {
+    super(`Port ${String(port)} on 127.0.0.1 is taken.`)
+    this.name = 'PortTakenError'
+  }
+}
+
+const portTakenLine = ({ port, isLogBook }: PortTakenError): string => {
+  const next = `${PACKAGE.binary} --port ${String(port + 1)}`
+  return isLogBook
+    ? `Port ${String(port)} on 127.0.0.1 is used by another Log Book, on a different warehouse. Start this one on another port: ${next}`
+    : `Port ${String(port)} on 127.0.0.1 is in use by another program. Start Log Book on another port: ${next}`
+}
+
 export interface IErrorReport {
   code: number
   // The last line of stderr.
@@ -58,6 +77,9 @@ const unknownSessionLine = ({ target }: WarehouseSessionUnknownError, home: stri
 export const errorReport = (error: unknown, context: IErrorContext): IErrorReport => {
   if (error instanceof WarehouseVersionError) {
     return versionReport(error, context)
+  }
+  if (error instanceof PortTakenError) {
+    return { code: exitCodeOf('port in use'), line: portTakenLine(error) }
   }
   if (error instanceof WarehouseSessionUnknownError) {
     return { code: exitCodeOf('usage error'), line: unknownSessionLine(error, context.home) }

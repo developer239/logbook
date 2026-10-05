@@ -1,14 +1,38 @@
-import { describe, expect, it } from 'vitest'
-import { startHost, waitForStop, type IServing, type IStartSteps } from './host.js'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { createServer, type Server } from 'node:http'
+import type { AddressInfo } from 'node:net'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { errorReport } from './errors.js'
+import { hostFilePath, writeHostFile } from './host-file.js'
+import {
+  bindHost,
+  createHostRunner,
+  findRunningHost,
+  startHost,
+  waitForStop,
+  type IHostSources,
+  type IServing,
+  type IStartSteps,
+} from './host.js'
 
 const PATHS = { warehousePath: '/home/example/warehouse.db', dataDirectory: '/home/example' }
 const OPENED = { path: PATHS.warehousePath, previousVersion: 0, version: 1 }
 
-// Stand-ins for the steps; each records its call, and whether the warehouse was open when it ran.
-const recordingSteps = (calls: string[]): IStartSteps => ({
+const SERVING: IServing = { port: 7314, stop: async () => Promise.resolve(), kill: () => undefined }
+// A pid no process has.
+const DEAD_PID = 999_999
+
+// Stand-ins for the steps; each records its call. `runningPort` is the port of a host already on the warehouse.
+const recordingSteps = (calls: string[], runningPort: number | null = null): IStartSteps => ({
   resolvePaths: () => {
     calls.push('resolvePaths')
     return PATHS
+  },
+  findRunningHost: async () => {
+    calls.push('findRunningHost')
+    return Promise.resolve(runningPort)
   },
   migrate: async () => {
     calls.push('migrate')
@@ -20,7 +44,10 @@ const recordingSteps = (calls: string[]): IStartSteps => ({
   },
   serve: async () => {
     calls.push('serve')
-    return Promise.resolve({ stop: async () => Promise.resolve(), kill: () => undefined })
+    return Promise.resolve(SERVING)
+  },
+  recordHost: () => {
+    calls.push('recordHost')
   },
   detect: () => {
     calls.push('detect')
@@ -57,7 +84,29 @@ describe('startHost', () => {
     await startHost(recordingSteps(calls))
 
     // Assert
-    expect(calls).toStrictEqual(['resolvePaths', 'migrate', 'announce', 'serve', 'detect'])
+    expect(calls).toStrictEqual([
+      'resolvePaths',
+      'findRunningHost',
+      'migrate',
+      'announce',
+      'serve',
+      'recordHost',
+      'detect',
+    ])
+  })
+
+  it('stops after the one-host check when a host runs on the warehouse, before anything opens it', async () => {
+    // Arrange
+    const calls: string[] = []
+
+    // Act
+    const outcome = await startHost(recordingSteps(calls, 7314))
+
+    // Assert
+    expect({ outcome, calls }).toStrictEqual({
+      outcome: { kind: 'already running', port: 7314 },
+      calls: ['resolvePaths', 'findRunningHost'],
+    })
   })
 })
 
@@ -67,6 +116,7 @@ describe('waitForStop', () => {
     const events: string[] = []
     const { promise: stopped, resolve: finishStop } = Promise.withResolvers<undefined>()
     const serving: IServing = {
+      port: 7314,
       stop: async () => {
         events.push('stop')
         await stopped
@@ -89,6 +139,7 @@ describe('waitForStop', () => {
     // Arrange
     const events: string[] = []
     const serving: IServing = {
+      port: 7314,
       stop: async () => {
         events.push('stop')
         return new Promise(() => undefined)
@@ -109,5 +160,176 @@ describe('waitForStop', () => {
       events: ['stop', 'kill'],
       listeners: 0,
     })
+  })
+})
+
+const servers: Server[] = []
+let directory = ''
+
+// A server on a port the system picks, answering with the Log Book header or without it.
+const serverOnPort = async (isLogBook: boolean): Promise<number> => {
+  const server = createServer((_req, res) => {
+    res.writeHead(200, isLogBook ? { 'x-log-book': '0.0.0-development' } : {})
+    res.end()
+  })
+  servers.push(server)
+  await new Promise<void>((resolve) => {
+    server.listen(0, '127.0.0.1', resolve)
+  })
+  return (server.address() as AddressInfo).port
+}
+
+// A source the runner must not reach.
+const refuse = async (): Promise<never> => Promise.reject(new Error('not reached'))
+
+const warehouseIn = async (): Promise<string> => {
+  directory = await mkdtemp(join(tmpdir(), 'host-one-'))
+  return join(directory, 'warehouse.db')
+}
+
+afterEach(async () => {
+  await Promise.all(
+    servers.splice(0).map(
+      async (server) =>
+        new Promise((resolve) => {
+          server.close(resolve)
+        })
+    )
+  )
+  if (directory !== '') {
+    await rm(directory, { recursive: true, force: true })
+    directory = ''
+  }
+})
+
+describe('findRunningHost', () => {
+  it('names the port of a host that runs on the warehouse: its pid lives and its port answers as Log Book', async () => {
+    // Arrange
+    const warehouse = await warehouseIn()
+    const port = await serverOnPort(true)
+    writeHostFile(hostFilePath(warehouse), { pid: process.pid, port, version: '0.0.0-development', startedAt: 1 })
+
+    // Act
+    const found = await findRunningHost(warehouse)
+
+    // Assert
+    expect(found).toBe(port)
+  })
+
+  it('takes a host file whose pid is gone, or whose port answers without the header, as stale', async () => {
+    // Arrange
+    const [dead, other] = [await warehouseIn(), join(directory, 'other.db')]
+    const logBookPort = await serverOnPort(true)
+    const otherPort = await serverOnPort(false)
+    writeHostFile(hostFilePath(dead), { pid: DEAD_PID, port: logBookPort, version: '0.0.0-development', startedAt: 1 })
+    writeHostFile(hostFilePath(other), {
+      pid: process.pid,
+      port: otherPort,
+      version: '0.0.0-development',
+      startedAt: 1,
+    })
+
+    // Act
+    const found = [await findRunningHost(dead), await findRunningHost(other)]
+
+    // Assert
+    expect(found).toStrictEqual([null, null])
+  })
+
+  it('finds no host where there is no host file', async () => {
+    // Act
+    const found = await findRunningHost(await warehouseIn())
+
+    // Assert
+    expect(found).toBeNull()
+  })
+})
+
+describe('the host runner on a warehouse a host already serves', () => {
+  it('prints the running host and exits 0 without opening the warehouse', async () => {
+    // Arrange
+    const warehouse = await warehouseIn()
+    const port = await serverOnPort(true)
+    writeHostFile(hostFilePath(warehouse), { pid: process.pid, port, version: '0.0.0-development', startedAt: 1 })
+    vi.stubEnv('LOGBOOK_DB', warehouse)
+    const opened: string[] = []
+    const sources: IHostSources = {
+      openWarehouse: async (path) => {
+        opened.push(path)
+        return refuse()
+      },
+      environment: () => {
+        throw new Error('not reached')
+      },
+      loadWebApp: refuse,
+      detect: refuse,
+      createRegistry: () => {
+        throw new Error('not reached')
+      },
+      signals: () => () => undefined,
+    }
+    let stdout = ''
+
+    // Act
+    const code = await createHostRunner(sources)({
+      command: 'start',
+      values: { port: 0 },
+      positionals: [],
+      version: '0.0.0-development',
+      io: {
+        argv: [],
+        env: {},
+        home: '/home/example',
+        stdout: (text) => {
+          stdout += text
+        },
+        stderr: () => undefined,
+        isStderrTty: false,
+        signal: new AbortController().signal,
+      },
+    })
+
+    // Assert
+    expect({ code, stdout, opened }).toStrictEqual({
+      code: 0,
+      stdout: `Log Book is already running at http://127.0.0.1:${String(port)}\n`,
+      opened: [],
+    })
+  })
+})
+
+describe('bindHost', () => {
+  it('exits 4 naming another Log Book when the taken port answers with its header', async () => {
+    // Arrange
+    const port = await serverOnPort(true)
+
+    // Act
+    const binding = bindHost(() => undefined, port)
+
+    // Assert
+    const error = await binding.catch((caught: unknown) => caught)
+    expect(errorReport(error, { version: '0.0.0-development', home: '/home/example', command: 'start' })).toStrictEqual(
+      {
+        code: 4,
+        line: `Port ${String(port)} on 127.0.0.1 is used by another Log Book, on a different warehouse. Start this one on another port: logbook --port ${String(port + 1)}`,
+      }
+    )
+  })
+
+  it('exits 4 naming another program when the taken port answers without the header', async () => {
+    // Arrange
+    const port = await serverOnPort(false)
+
+    // Act
+    const binding = bindHost(() => undefined, port)
+
+    // Assert
+    const error = await binding.catch((caught: unknown) => caught)
+    expect(errorReport(error, { version: '0.0.0-development', home: '/home/example', command: 'start' })).toStrictEqual(
+      {
+        code: 4,
+        line: `Port ${String(port)} on 127.0.0.1 is in use by another program. Start Log Book on another port: logbook --port ${String(port + 1)}`,
+      }
+    )
   })
 })
