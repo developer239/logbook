@@ -2,11 +2,8 @@ import { PromptLoaderService } from '@log-book/core'
 import { labelSql } from '../../read/label-sql.js'
 import type { ILabelRunTask } from '../runner/label-task.js'
 import { codeFields, itemPart, taskInfo } from './item-text.js'
-import { flat, headerFields, messageTexts, SESSION_HEADER_SQL, type ISessionHeader } from './session-texts.js'
+import { flat, headerFields, messageTexts, QUIET_MS, SESSION_HEADER_SQL, type ISessionHeader } from './session-texts.js'
 
-// A session is judged once it has been quiet this long: a label is never revised, so a session judged mid-way would
-// keep its mid-way outcome.
-const QUIET_MS = 60 * 60 * 1000
 const LATER_PROMPTS = 2
 
 interface IOutcomeRow extends ISessionHeader {

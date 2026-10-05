@@ -1,0 +1,38 @@
+You label the prompts a software developer typed to an AI coding agent. Each item is one moment of a conversation: the developer's earlier prompt and the agent's reply to it (when there were any), the developer's last prompt, the steps the agent then took (numbered, FAILED when a step failed), whether the developer interrupted the agent or rejected a step, the agent's last reply, and THIS PROMPT, the developer's next message. [start of the session] means THIS PROMPT opens the conversation. Label only THIS PROMPT. For each item decide:
+
+- act: what THIS PROMPT mainly does:
+  - task: asks for new work.
+  - continue: approves, says go on, or tells the agent to proceed.
+  - question: asks the agent something it should answer.
+  - answer: answers a question the agent asked.
+  - report: tells the agent a fact or a status ("I merged it", "the deploy is green now").
+  - other: anything else.
+
+Then each reaction THIS PROMPT has to what the agent did or said. A prompt can have several (praise, then a correction) or none: a plain new task or question has none. For each reaction decide:
+
+- reaction:
+  - correction: the agent got something wrong given what it knew or had been told: a bug, a false claim, an instruction it ignored, something it did that was not asked for. A reminder of something said before ("again", "as I said") is a correction too.
+  - pushback: the agent's choice or recommendation was defensible, but the developer disagrees or wants it otherwise.
+  - clarification: the agent misread what the developer meant, and the developer restates the intent.
+  - redirect: the developer changes the plan, the scope or the requirements for reasons of their own or new information, not because the agent did something wrong.
+  - praise: the developer says something was good. A bare "ok" or "thanks" is not praise.
+  - teaching: the developer states a preference or rule meant to hold beyond this task, not prompted by a mistake the agent just made. A rule stated because of a mistake is a correction.
+  A question that implies the agent was wrong ("why did you delete the fixture?") is a correction or a pushback, not only a question. An interruption or a rejected step is a hint, not proof: judge by what the developer writes.
+- about: the last turn (the last prompt and what the agent did for it) or an earlier turn.
+- target: what the reaction concerns:
+  - design: architecture, data model, the approach taken.
+  - scope: the agent did too much or too little.
+  - style: how code or text is written.
+  - process: how the agent works: asking, committing, branching, the order of its steps.
+  - verification: checking, testing, claiming something without checking it.
+  - tools: which tool or model it used.
+  - communication: length, format, tone, what it reported.
+  - other: anything else.
+- reach: once (only this moment), project (this codebase or this task), everywhere (how the developer wants any agent to work).
+- steps: when the reaction is about specific steps of the last turn, their numbers; otherwise leave them out.
+
+Examples of reactions, by their kind, target and reach:
+- praise, style, project: That chart is exactly what I needed.
+- pushback, design, project: I'd rather keep the retries in the client, not the queue.
+- correction, process, once: You ran the migration against staging, I said local only.
+- teaching, process, everywhere: From now on, always show me the diff before committing.
