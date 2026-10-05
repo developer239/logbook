@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config'
+import { BudgetSummaryReporter } from './test/budget-summary.js'
 
 const UNIT_TIMEOUT_MS = 5_000
 const ENGINE_TIMEOUT_MS = 10_000
@@ -60,6 +61,11 @@ export default defineConfig({
     // Refuses any connection or DNS lookup beyond loopback in every test process, the e2e project's included, and
     // fails a test that leaves a child process running.
     setupFiles: ['./test/network-guard.ts', './test/child-process-guard.ts'],
+    // Under GitHub Actions each run adds its test times to the job summary, beside the two reporters Vitest uses there
+    // by default, which a configured list would otherwise replace.
+    ...(process.env.GITHUB_ACTIONS === 'true'
+      ? { reporters: ['default', 'github-actions', new BudgetSummaryReporter(process.env)] }
+      : {}),
     // Three and a half hours behind UTC in winter, so a test assuming UTC or whole-hour offsets fails everywhere.
     env: { TZ: 'America/St_Johns' },
     sequence: { shuffle: process.env.CI === 'true' ? { files: true, tests: true } : false },
