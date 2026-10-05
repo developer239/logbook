@@ -5,3 +5,4 @@ export const clipChars = (text: string, max: number): string => {
   const characters = Array.from(text)
   return characters.length > max ? `${characters.slice(0, max).join('')}…` : text
 }
+const value = 1;
