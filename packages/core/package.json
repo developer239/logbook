@@ -1,7 +1,7 @@
 {
   "name": "@log-book/core",
   "version": "0.0.0-development",
-  "private": true,
+  "private": false,
   "type": "module",
   "license": "PolyForm-Noncommercial-1.0.0",
   "exports": {
