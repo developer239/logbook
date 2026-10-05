@@ -13,5 +13,10 @@
     "file": "packages/core/src/subprocess.ts",
     "calls": "starts a child process for its caller; what it starts is listed at each caller",
     "case": "local"
+  },
+  {
+    "file": "apps/cli/src/host-file.ts",
+    "calls": "asks 127.0.0.1 at a port whether a Log Book host answers there, by its x-log-book header",
+    "case": "local"
   }
 ]

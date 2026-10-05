@@ -70,6 +70,7 @@ export {
   type UnknownSessionTarget,
 } from './errors.js'
 export {
+  isProcessAlive,
   readLabelsLock,
   readSyncLock,
   takeLabelsLock,
