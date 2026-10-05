@@ -1,12 +1,13 @@
 import { existsSync } from 'node:fs'
 import { cp, mkdtemp, readFile, rm } from 'node:fs/promises'
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import { createServer, request, type IncomingHttpHeaders, type IncomingMessage, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createTestWarehouse, type ITestWarehouse } from '@log-book/warehouse/testing'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { HOST_REFUSAL, ORIGIN_REFUSAL } from '../src/lib/guard'
 
 type THandler = (req: IncomingMessage, res: ServerResponse, next?: (error?: unknown) => void) => void | Promise<void>
 
@@ -57,6 +58,28 @@ afterAll(async () => {
 
 const clientFile = (url: string): string => join(directory, 'dist', 'client', url.replace(/^\//u, ''))
 
+interface IReply {
+  status: number
+  headers: IncomingHttpHeaders
+  body: string
+}
+
+// fetch will not send a Host header of its own choosing; node:http will.
+const send = async (method: string, path: string, headers: Record<string, string>, body = ''): Promise<IReply> =>
+  new Promise((resolve, reject) => {
+    const outgoing = request(`${origin}${path}`, { method, headers }, (incoming) => {
+      const chunks: Buffer[] = []
+      incoming.on('data', (chunk: Buffer) => chunks.push(chunk))
+      incoming.on('end', () => {
+        resolve({ status: incoming.statusCode ?? 0, headers: incoming.headers, body: Buffer.concat(chunks).toString() })
+      })
+    })
+    outgoing.on('error', reject)
+    outgoing.end(body)
+  })
+
+const POLICY_HEADERS = ['content-security-policy', 'x-content-type-options', 'referrer-policy', 'x-log-book']
+
 describe('the built handler, away from the repository', () => {
   it('answers GET / with 200, and every stylesheet and font the page names is a file of its client build', async () => {
     // Act
@@ -78,5 +101,52 @@ describe('the built handler, away from the repository', () => {
       fonts: ['/fonts/Geist-Variable.woff2', '/fonts/GeistMono-Variable.woff2'],
       missing: [],
     })
+  })
+})
+
+describe('the guard in the built handler', () => {
+  it('refuses a request addressed to another name with 403, the reason and none of the page headers', async () => {
+    // Act
+    const reply = await send('GET', '/', { Host: 'evil.example:4321' })
+
+    // Assert
+    expect({
+      status: reply.status,
+      body: reply.body,
+      policy: POLICY_HEADERS.filter((name) => name in reply.headers),
+    }).toStrictEqual({ status: 403, body: HOST_REFUSAL, policy: [] })
+  })
+
+  it('sends the policy headers on an accepted page, and no version', async () => {
+    // Act
+    const reply = await send('GET', '/', {})
+
+    // Assert
+    expect({
+      status: reply.status,
+      policy: POLICY_HEADERS.filter((name) => name in reply.headers),
+      nosniff: reply.headers['x-content-type-options'],
+      referrer: reply.headers['referrer-policy'],
+      frames: reply.headers['content-security-policy']?.includes("frame-ancestors 'none'"),
+    }).toStrictEqual({
+      status: 200,
+      policy: ['content-security-policy', 'x-content-type-options', 'referrer-policy'],
+      nosniff: 'nosniff',
+      referrer: 'no-referrer',
+      frames: true,
+    })
+  })
+
+  it('refuses a cross-site POST that is not form-like, which the framework lets through', async () => {
+    // Act
+    const reply = await send(
+      'POST',
+      '/sync',
+      { 'Content-Type': 'application/json', 'Origin': 'http://evil.example' },
+      '{"back":"/"}'
+    )
+
+    // Assert
+    expect({ status: reply.status, body: reply.body }).toStrictEqual({ status: 403, body: ORIGIN_REFUSAL })
   })
 })

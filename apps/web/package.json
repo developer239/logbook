@@ -3,7 +3,7 @@
   "version": "0.0.0-development",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && tsc -p tsconfig.guard.json",
     "typecheck": "tsc --noEmit --runExternalCode"
   },
   "license": "PolyForm-Noncommercial-1.0.0",
@@ -13,6 +13,10 @@
     ".": {
       "types": "./types/entry.d.ts",
       "default": "./dist/server/entry.mjs"
+    },
+    "./guard": {
+      "types": "./dist/guard.d.ts",
+      "default": "./dist/guard.js"
     }
   },
   "dependencies": {
