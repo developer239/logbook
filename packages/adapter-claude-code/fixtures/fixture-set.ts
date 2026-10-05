@@ -133,7 +133,7 @@ export const fixtureSet21: IFixtureSet = {
     '.claude/.credentials.json',
     '.claude/settings.json',
     '.claude/skills/review-checklist/SKILL.md',
-    `${PROJECTS}/${SHOP}/5f0c2a1e-0000-4000-8000-000000000001/subagents/agent-a1b2c3.meta.json`,
+    `${PROJECTS}/${SHOP}/5f0c2a1e-0000-4000-8000-000000000001/subagents/agent-example07.meta.json`,
     `${PROJECTS}/${SHOP}/5f0c2a1e-0000-4000-8000-000000000001/tool-results/toolu_example01.txt`,
   ],
 }

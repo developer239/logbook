@@ -1,4 +1,6 @@
 import { dependencyFindings } from './checks/deps.js'
+import { fixtureFindings } from './checks/fixtures.js'
+import { checkTests } from './checks/tests.js'
 
 // Where a command writes: findings and refusals go to stderr, one line each.
 export interface ICiIo {
@@ -29,6 +31,14 @@ const check =
 // Every rule CI enforces, by the name its root script passes; each check's ticket adds its command here.
 const COMMANDS: Readonly<Record<string, CiCommand>> = {
   deps: check(dependencyFindings),
+  fixtures: check(fixtureFindings),
+  tests: async (args, io) => {
+    if (args.length > 0) {
+      io.stderr(`This command takes no arguments; got ${args.join(' ')}.\n`)
+      return WRONG_ARGUMENTS
+    }
+    return checkTests(process.cwd(), { ...io, env: process.env })
+  },
 }
 
 const commandList = (): string => {
