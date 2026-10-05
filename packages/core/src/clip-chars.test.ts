@@ -24,3 +24,6 @@ describe('clipChars', () => {
     expect(clipped).toBe('a😀…')
   })
 })
+
+// flaky: https://github.com/developer239/logbook/issues/12
+it.skip('reads a cut line', () => {})
