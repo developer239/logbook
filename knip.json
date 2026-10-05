@@ -18,7 +18,7 @@
     },
     "packages/demo": {
       "entry": ["src/index.ts", "src/command.ts"],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts", "test/**/*.ts"]
     },
     "apps/*": {
       "project": ["src/**/*.ts"]

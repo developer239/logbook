@@ -36,6 +36,10 @@ interface IManifest {
 export interface IWrittenDemo {
   plan: IDemoPlan
   manifest: IManifest
+  // What the adapters will import from the home: every session the writers wrote.
+  expected: readonly IImportedSession[]
+  // Every file the writers wrote, relative to the home.
+  homeFiles: readonly string[]
 }
 
 const sha256 = (data: string | Buffer): string => createHash('sha256').update(data).digest('hex')
@@ -132,5 +136,5 @@ export const writeDemo = async (
     texts: [...new Set(textsOf(expected).map(sha256))].toSorted(byCodeUnit),
   }
   await writeFile(join(out, MANIFEST_FILE), `${JSON.stringify(manifest, null, 2)}\n`)
-  return { plan, manifest }
+  return { plan, manifest, expected, homeFiles: files }
 }
