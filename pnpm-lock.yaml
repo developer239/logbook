@@ -107,7 +107,15 @@ importers:
         specifier: 'catalog:'
         version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(jiti@2.7.0)(yaml@2.9.1))
 
-  packages/engine: {}
+  packages/engine:
+    dependencies:
+      '@log-book/warehouse':
+        specifier: workspace:*
+        version: link:../warehouse
+    devDependencies:
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(jiti@2.7.0)(yaml@2.9.1))
 
   packages/warehouse:
     dependencies:

@@ -17,5 +17,11 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@log-book/warehouse": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
   }
 }
