@@ -1,5 +1,6 @@
 import type { PromptAct, SessionGoal } from '@log-book/engine'
 import type { CommandName } from './commands.js'
+import type { ReactionName } from './prompts.js'
 import type { ClosingKind } from './replies.js'
 import type { ProjectToolName, SharedToolName, SkillName } from './tools.js'
 
@@ -21,6 +22,10 @@ export type TurnEvent = 'compaction' | 'failed-request' | 'agent-switch' | 'mode
 export interface ITurnShape {
   // The act of the prompt that opens the turn.
   act: PromptAct
+  // The developer's reactions its prompt carries, in an interactive session.
+  reaction?: ReactionName
+  // The reactions in place of `reaction` when the turn before was stopped: pushback or a correction about process.
+  afterStop?: ReactionName
   // Opens the turn in place of the prompt where the writer records the command.
   command?: { name: CommandName; arguments: string }
   // A built-in command typed before the prompt where the writer records typed commands, with the session's model as
@@ -81,7 +86,7 @@ export const SHAPES: IShapeCorpus = {
   shapes: {
     'feature through a subagent': {
       goals: ['build a feature'],
-      rows: [3, 7, 14, 15],
+      rows: [3, 7, 14, 15, 16],
       turns: [
         {
           act: 'task',
@@ -89,16 +94,23 @@ export const SHAPES: IShapeCorpus = {
           stop: 'refuse',
           closing: 'progress',
         },
-        { act: 'continue', uses: ['spawn:check-discount'], closing: 'done' },
+        { act: 'continue', afterStop: 'push-refused', uses: ['spawn:check-discount'], closing: 'done' },
+        {
+          act: 'continue',
+          reaction: 'meant-optional',
+          uses: ['read-source', 'edit-source', 'run-tests'],
+          closing: 'reverses',
+        },
       ],
     },
     'feature that runs a question': {
       goals: ['build a feature'],
-      rows: [4, 5, 12, 15],
+      rows: [4, 5, 12, 15, 16],
       turns: [
         { act: 'task', uses: ['run-scripted', 'read-source'], closing: 'asks' },
         {
           act: 'answer',
+          reaction: 'meant-saved-cart',
           uses: ['health-down', 'health-down', 'health-down', 'health-up', 'ask-human', 'edit-source', 'git-status'],
           closing: 'handoff',
         },
@@ -106,7 +118,7 @@ export const SHAPES: IShapeCorpus = {
     },
     'review through a subagent': {
       goals: ['review'],
-      rows: [3, 9, 10, 11, 12],
+      rows: [3, 9, 10, 11, 12, 15, 16],
       turns: [
         {
           act: 'task',
@@ -123,11 +135,12 @@ export const SHAPES: IShapeCorpus = {
           closing: 'progress',
         },
         { act: 'continue', uses: ['spawn:review-form'], closing: 'unclear' },
+        { act: 'continue', reaction: 'name-tests', uses: ['git-status'], closing: 'permission' },
       ],
     },
     'refactor in steps': {
       goals: ['refactor, migrate or clean up'],
-      rows: [6, 10, 11, 14, 15],
+      rows: [6, 10, 11, 14, 15, 16],
       turns: [
         {
           act: 'task',
@@ -136,7 +149,12 @@ export const SHAPES: IShapeCorpus = {
           stop: 'interrupt',
           closing: 'progress',
         },
-        { act: 'report', uses: ['test-typo', 'run-tests', 'edit-source'], closing: 'partly' },
+        {
+          act: 'report',
+          afterStop: 'tests-interrupted',
+          uses: ['test-typo', 'run-tests', 'edit-source'],
+          closing: 'caves',
+        },
       ],
     },
     'quick question': {
@@ -146,7 +164,7 @@ export const SHAPES: IShapeCorpus = {
     },
     'tracked bug fix': {
       goals: ['fix a bug'],
-      rows: [5, 7, 8, 12, 15],
+      rows: [5, 7, 8, 12, 15, 16],
       turns: [
         {
           act: 'task',
@@ -154,12 +172,17 @@ export const SHAPES: IShapeCorpus = {
           uses: ['load-tools', 'tracker-unauthorized', 'tracker-issue', 'read-source', 'web-search', 'ask-human'],
           closing: 'progress',
         },
-        { act: 'other', uses: ['edit-mismatch', 'edit-source', 'run-tests-slow'], closing: 'abandoned' },
+        {
+          act: 'other',
+          reaction: 'fix-in-code',
+          uses: ['edit-mismatch', 'edit-source', 'run-tests-slow'],
+          closing: 'pushback',
+        },
       ],
     },
     'feature with tests': {
       goals: ['build a feature'],
-      rows: [5, 7, 11, 12, 13],
+      rows: [5, 7, 11, 12, 13, 15, 16],
       turns: [
         {
           act: 'task',
@@ -176,6 +199,7 @@ export const SHAPES: IShapeCorpus = {
         },
         {
           act: 'continue',
+          reaction: 'tests-first',
           events: ['compaction', 'failed-request'],
           uses: ['jq-data', 'install', 'render-missing', 'other-tool', 'read-gone', 'run-tests'],
           closing: 'done',
@@ -184,19 +208,20 @@ export const SHAPES: IShapeCorpus = {
     },
     'plan a flow': {
       goals: ['plan or specify'],
-      rows: [5, 11, 14, 15],
+      rows: [5, 11, 14, 15, 16],
       turns: [
         { act: 'task', uses: ['web-search', 'read-source', 'web-fetch'], stop: 'interrupt', closing: 'asks' },
         {
           act: 'continue',
+          afterStop: 'stop-fetching',
           uses: ['write-doc', 'open-pr', 'wait-ci', 'curl-api', 'curl-timeout'],
-          closing: 'done',
+          closing: 'permission',
         },
       ],
     },
     'bug fix with tests': {
       goals: ['fix a bug'],
-      rows: [5, 6, 11, 14, 15],
+      rows: [5, 6, 11, 14, 15, 16],
       turns: [
         {
           act: 'task',
@@ -204,28 +229,35 @@ export const SHAPES: IShapeCorpus = {
           stop: 'refuse',
           closing: 'progress',
         },
-        { act: 'report', uses: ['pytest-failing', 'run-tests-slow', 'git-diff'], closing: 'failed' },
+        {
+          act: 'report',
+          afterStop: 'push-refused',
+          uses: ['pytest-failing', 'run-tests-slow', 'git-diff'],
+          closing: 'failed',
+        },
       ],
     },
     'debug through a subagent': {
       goals: ['debug or diagnose'],
-      rows: [3, 11, 12, 21],
+      rows: [3, 11, 12, 15, 16, 21],
       turns: [
         { act: 'task', uses: ['read-source', 'read-too-large', 'trace-drift', 'heredoc-write'], closing: 'progress' },
         { act: 'continue', uses: ['spawn:find-tests'], closing: 'blocked' },
+        { act: 'continue', reaction: 'leave-the-drift', uses: ['read-source'], closing: 'pushback' },
       ],
     },
     'fix through a subagent': {
       goals: ['fix a bug'],
-      rows: [3, 7, 11, 12],
+      rows: [3, 7, 11, 12, 15, 16],
       turns: [
         { act: 'task', uses: ['read-source', 'read-secret', 'edit-source', 'run-script'], closing: 'progress' },
         { act: 'continue', uses: ['spawn:check-fix'], closing: 'done' },
+        { act: 'continue', reaction: 'use-the-script', uses: ['run-tests'], closing: 'permission' },
       ],
     },
     'debug with a helper': {
       goals: ['debug or diagnose'],
-      rows: [5, 6, 7, 12, 13, 15],
+      rows: [5, 6, 7, 12, 13, 15, 16],
       turns: [
         {
           act: 'task',
@@ -235,15 +267,16 @@ export const SHAPES: IShapeCorpus = {
         },
         {
           act: 'other',
+          reaction: 'rates-in-repo',
           events: ['model-switch', 'idle'],
           uses: ['search-rate', 'fetch-empty', 'web-fetch', 'edit-source', 'run-tests'],
-          closing: 'done',
+          closing: 'corrects',
         },
       ],
     },
     'release with a command': {
       goals: ['ship and operate'],
-      rows: [9, 10, 11, 13, 15],
+      rows: [9, 10, 11, 13, 15, 16],
       turns: [
         {
           act: 'task',
@@ -253,9 +286,10 @@ export const SHAPES: IShapeCorpus = {
         },
         {
           act: 'question',
+          reaction: 'release-check',
           events: ['compaction', 'failed-request', 'idle'],
           uses: ['ask-human', 'git-tag'],
-          closing: 'done',
+          closing: 'holds',
         },
       ],
     },

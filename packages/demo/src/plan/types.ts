@@ -1,5 +1,14 @@
 import type { ICommandFile, ISessionScript } from '@log-book/adapter-api/source-writer'
-import type { PromptAct, SessionGoal, SessionOutcome } from '@log-book/engine'
+import type {
+  PromptAct,
+  Reaction,
+  ReactionAbout,
+  ReactionReach,
+  ReactionTarget,
+  ReplyCode,
+  SessionGoal,
+  SessionOutcome,
+} from '@log-book/engine'
 import type { ICommandCorpus } from '../corpus/commands.js'
 import type { IModelRates } from '../corpus/models.js'
 import type { IProject, ProjectName } from '../corpus/projects.js'
@@ -96,8 +105,29 @@ export interface IWriterScripts {
   scripts: ISessionScript[]
   // The act of each prompt step, by its key.
   acts: Record<string, PromptAct>
+  // The developer's reactions each prompt step carries, by its key; a prompt without any is left out.
+  reactions: Record<string, IPlannedReaction[]>
+  // The reply codes of the agent's last text before each next prompt in an interactive session, by its reply key.
+  replies: Record<string, IPlannedReply>
   // The labels each call step stands for, by its key.
   calls: Record<string, ICallLabels>
+}
+
+export interface IPlannedReaction {
+  // From 1, with no gap, in the prompt's order.
+  number: number
+  reaction: Reaction
+  about: ReactionAbout
+  target: ReactionTarget
+  reach: ReactionReach
+  // Call step keys of the turn before the prompt.
+  steps: string[]
+}
+
+export interface IPlannedReply {
+  codes: ReplyCode[]
+  // The words of the reply a quote copies, or null where its template marks none.
+  quote: string | null
 }
 
 export interface ICallLabels {
