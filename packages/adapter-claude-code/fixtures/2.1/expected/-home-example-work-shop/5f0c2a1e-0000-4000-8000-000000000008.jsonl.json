@@ -54,21 +54,21 @@
         },
         {
           "at": 1772445420000,
-          "dataJson": "{\"what\":\"record\",\"type\":\"brand-new-kind\",\"harnessVersion\":\"2.1.286\",\"raw\":{\"parentUuid\":null,\"isSidechain\":false,\"userType\":\"external\",\"cwd\":\"/home/example/work/shop\",\"sessionId\":\"5f0c2a1e-0000-4000-8000-000000000008\",\"version\":\"2.1.286\",\"gitBranch\":\"main\",\"uuid\":\"5f0c2a1e-0008-4000-8000-000000000062\",\"timestamp\":\"2026-03-02T09:57:00.000Z\",\"type\":\"brand-new-kind\",\"detail\":\"a kind this importer does not know\"}}",
+          "dataJson": "{\"what\":\"record\",\"type\":\"brand-new-kind\",\"harnessVersion\":\"2.1.286\",\"raw\":{\"parentUuid\":null,\"isSidechain\":false,\"userType\":\"external\",\"cwd\":\"/home/example/work/shop\",\"sessionId\":\"5f0c2a1e-0000-4000-8000-000000000008\",\"version\":\"2.1.286\",\"gitBranch\":\"main\",\"entrypoint\":\"cli\",\"uuid\":\"5f0c2a1e-0008-4000-8000-000000000062\",\"timestamp\":\"2026-03-02T09:57:00.000Z\",\"type\":\"brand-new-kind\",\"detail\":\"a kind this importer does not know\"}}",
           "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000062",
           "kind": "unknown",
           "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
         },
         {
           "at": 1772445421000,
-          "dataJson": "{\"what\":\"record\",\"type\":\"system:brand_new_notice\",\"harnessVersion\":\"2.1.286\",\"raw\":{\"parentUuid\":null,\"isSidechain\":false,\"userType\":\"external\",\"cwd\":\"/home/example/work/shop\",\"sessionId\":\"5f0c2a1e-0000-4000-8000-000000000008\",\"version\":\"2.1.286\",\"gitBranch\":\"main\",\"uuid\":\"5f0c2a1e-0008-4000-8000-000000000063\",\"timestamp\":\"2026-03-02T09:57:01.000Z\",\"type\":\"system\",\"subtype\":\"brand_new_notice\",\"level\":\"info\"}}",
+          "dataJson": "{\"what\":\"record\",\"type\":\"system:brand_new_notice\",\"harnessVersion\":\"2.1.286\",\"raw\":{\"parentUuid\":null,\"isSidechain\":false,\"userType\":\"external\",\"cwd\":\"/home/example/work/shop\",\"sessionId\":\"5f0c2a1e-0000-4000-8000-000000000008\",\"version\":\"2.1.286\",\"gitBranch\":\"main\",\"entrypoint\":\"cli\",\"uuid\":\"5f0c2a1e-0008-4000-8000-000000000063\",\"timestamp\":\"2026-03-02T09:57:01.000Z\",\"type\":\"system\",\"subtype\":\"brand_new_notice\",\"level\":\"info\"}}",
           "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000063",
           "kind": "unknown",
           "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
         },
         {
           "at": 1772445422000,
-          "dataJson": "{\"what\":\"record\",\"type\":\"attachment:brand_new_context\",\"harnessVersion\":\"2.1.286\",\"raw\":{\"parentUuid\":null,\"isSidechain\":false,\"userType\":\"external\",\"cwd\":\"/home/example/work/shop\",\"sessionId\":\"5f0c2a1e-0000-4000-8000-000000000008\",\"version\":\"2.1.286\",\"gitBranch\":\"main\",\"uuid\":\"5f0c2a1e-0008-4000-8000-000000000064\",\"timestamp\":\"2026-03-02T09:57:02.000Z\",\"type\":\"attachment\",\"attachment\":{\"type\":\"brand_new_context\",\"note\":\"unknown\"}}}",
+          "dataJson": "{\"what\":\"record\",\"type\":\"attachment:brand_new_context\",\"harnessVersion\":\"2.1.286\",\"raw\":{\"parentUuid\":null,\"isSidechain\":false,\"userType\":\"external\",\"cwd\":\"/home/example/work/shop\",\"sessionId\":\"5f0c2a1e-0000-4000-8000-000000000008\",\"version\":\"2.1.286\",\"gitBranch\":\"main\",\"entrypoint\":\"cli\",\"uuid\":\"5f0c2a1e-0008-4000-8000-000000000064\",\"timestamp\":\"2026-03-02T09:57:02.000Z\",\"type\":\"attachment\",\"attachment\":{\"type\":\"brand_new_context\",\"note\":\"unknown\"}}}",
           "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000064",
           "kind": "unknown",
           "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"

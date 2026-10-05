@@ -4,6 +4,8 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { IAdapterEnvironment } from '@log-book/adapter-api'
 import type { IFixtureSet, ILocateVariant } from '@log-book/adapter-api/conformance'
+import { claudeCodeSourceWriter } from '../src/source-writer/index.js'
+import { SCRIPTS } from './2.1/scripts.js'
 
 const ROOT = fileURLToPath(new URL('2.1', import.meta.url))
 const CONFIG_DIR_VARIABLE = 'CLAUDE_CONFIG_DIR'
@@ -32,6 +34,10 @@ const recordAt = (locator: string, number: number): unknown => JSON.parse(lineAt
 
 const blockAt = (locator: string, number: number, index: number): unknown =>
   (recordAt(locator, number) as { message: { content: unknown[] } }).message.content[index]
+
+// A unit the source writer writes: its session ids start de30da7a and are numbered in writing order.
+const written = (project: string, number: number): string =>
+  `${project}/de30da7a-0000-4000-8000-${String(number).padStart(12, '0')}.jsonl`
 
 const makeDirectories =
   (...paths: string[]) =>
@@ -89,6 +95,9 @@ export const fixtureSet21: IFixtureSet = {
     { locator: session(SHOP, 10), harnessVersion: '2.1.286', unknownRecords: [] },
     { locator: session(SHOP, 11), harnessVersion: '2.1.286', unknownRecords: [] },
     { locator: session(SHOP, 12), harnessVersion: '2.1.286', unknownRecords: [] },
+    { locator: session(SHOP, 13), harnessVersion: '2.1.286', unknownRecords: [] },
+    { locator: written(SHOP, 1), harnessVersion: '2.1.286', unknownRecords: [] },
+    { locator: written(BILLING, 4), harnessVersion: '2.1.300', unknownRecords: [] },
     {
       locator: session(SHOP, 8),
       harnessVersion: '2.1.286',
@@ -104,7 +113,10 @@ export const fixtureSet21: IFixtureSet = {
     },
   ],
   environment: (home) => environment(home, { [CONFIG_DIR_VARIABLE]: join(home, '.claude') }),
-  prepare: async () => Promise.resolve(),
+  // The scripted units, written through the source writer; their golden files are committed and reviewed.
+  prepare: async (home) => {
+    await claudeCodeSourceWriter().writeSessions(home, SCRIPTS)
+  },
   change: async (home, locator) => {
     const path = join(home, PROJECTS, locator)
     await appendFile(
