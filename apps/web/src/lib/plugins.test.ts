@@ -19,7 +19,6 @@ const inputs = (announcements: IToolAnnouncement[], fields: Partial<IPluginInput
   loadedInTurn: new Map(),
   callsOf: () => 0,
   definitionOf: () => null,
-  moduleOf: () => null,
   ...fields,
 })
 
@@ -44,8 +43,6 @@ describe('pluginServers', () => {
           loadedInTurn: new Map([['mcp__opencode__oc_run', 2]]),
           callsOf: (full) => (full === 'mcp__opencode__oc_run' ? 3 : 0),
           definitionOf: (full) => (full.startsWith('mcp__opencode__') ? 400 : null),
-          moduleOf: (full) =>
-            full.startsWith('mcp__opencode__jira') ? 'jira' : full.startsWith('mcp__opencode__') ? 'opencode' : null,
         }
       )
     )
@@ -59,7 +56,6 @@ describe('pluginServers', () => {
         tools: [
           {
             name: 'batch',
-            cookbookModule: null,
             calls: 0,
             nameTokens: 7,
             definitionTokens: null,
@@ -77,7 +73,6 @@ describe('pluginServers', () => {
         tools: [
           {
             name: 'jira_get_issue',
-            cookbookModule: 'jira',
             calls: 0,
             nameTokens: 8,
             definitionTokens: 400,
@@ -87,7 +82,6 @@ describe('pluginServers', () => {
           },
           {
             name: 'oc_run',
-            cookbookModule: 'opencode',
             calls: 3,
             nameTokens: 6,
             definitionTokens: 400,
@@ -120,7 +114,6 @@ describe('pluginServers', () => {
         [
           {
             name: 'authenticate',
-            cookbookModule: null,
             calls: 0,
             nameTokens: 9,
             definitionTokens: null,
@@ -137,7 +130,6 @@ describe('pluginServers', () => {
         [
           {
             name: 'oc_run',
-            cookbookModule: null,
             calls: 0,
             nameTokens: 6,
             definitionTokens: null,

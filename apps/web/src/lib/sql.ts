@@ -1,7 +1,7 @@
 // Labels are read one record at a time by the label table's key: a join to a
 // derived table of all labels takes minutes.
 
-type RecordType = 'tool_call' | 'session' | 'rule'
+type RecordType = 'tool_call' | 'session'
 
 export const modelLabel = (recordType: RecordType, recordId: string, name: string): string =>
   `(SELECT l.value FROM label l WHERE l.record_type = '${recordType}' AND l.record_id = ${recordId}
@@ -86,11 +86,7 @@ export const failedOf = (session: string): string =>
 // and the ids between `<id>#` and `<id>$` are that prompt's, which the label table's key finds without a scan.
 export const REACTIONS = `(
   SELECT m.session_id, m.id AS message_id, r.record_id AS reaction_id, a.labeller, a.version,
-    MAX(CASE WHEN r.name = 'reaction' THEN r.value END) AS reaction,
-    MAX(CASE WHEN r.name = 'target' THEN r.value END) AS target,
-    MAX(CASE WHEN r.name = 'reach' THEN r.value END) AS reach,
-    MAX(CASE WHEN r.name = 'quote' THEN r.value END) AS quote,
-    MAX(CASE WHEN r.name = 'rule' THEN r.value END) AS rule
+    MAX(CASE WHEN r.name = 'reaction' THEN r.value END) AS reaction
   FROM label a
   JOIN message m ON m.id = a.record_id
   JOIN label r ON r.record_type = 'reaction' AND r.record_id > a.record_id || '#' AND r.record_id < a.record_id || '$'

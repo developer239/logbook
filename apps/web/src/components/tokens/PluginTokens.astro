@@ -36,8 +36,6 @@ const HEADS = [{ label: 'Plugin' }, { label: 'Calls', isEnd: true }, { label: ''
                     {plural(group.tools.length, group.source.kind === 'skills' ? 'skill' : 'tool')}
                     {group.definitionTokens > 0 && ` · definitions ${tokensCompact(group.definitionTokens)}`}
                   </span>
-                  {group.unusedTools > 0 && <Tag isFlag>{count(group.unusedTools)} unused</Tag>}
-                  {group.retiredTools > 0 && <Tag isFlag>{count(group.retiredTools)} removed</Tag>}
                 </span>
                 <span class="rows__cell rows__cell--num">{count(group.calls)}</span>
                 {group.source.kind === 'plugin' ? (

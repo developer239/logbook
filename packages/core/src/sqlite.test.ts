@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { openSqlite } from './sqlite.js'
+import { openSqlite, openSqliteSync } from './sqlite.js'
 
 // node:sqlite returns rows as objects without a prototype.
 const row = (fields: Record<string, unknown>): Record<string, unknown> =>
@@ -76,5 +76,21 @@ describe('openSqlite', () => {
 
     // Assert
     await expect(opening).rejects.toThrow(/unable to open database file/u)
+  })
+
+  it('opens synchronously the same way, throwing where the async open rejects', () => {
+    // Arrange
+    const path = join(directory, 'example.db')
+    openSqliteSync(path, { isReadOnly: false }).close()
+
+    // Act
+    const reader = openSqliteSync(path, { isReadOnly: true })
+    const timeout = reader.prepare('PRAGMA busy_timeout').get()
+    reader.close()
+    const opening = (): unknown => openSqliteSync(join(directory, 'missing', 'example.db'), { isReadOnly: false })
+
+    // Assert
+    expect(timeout).toStrictEqual(row({ timeout: 5000 }))
+    expect(opening).toThrow(/unable to open database file/u)
   })
 })

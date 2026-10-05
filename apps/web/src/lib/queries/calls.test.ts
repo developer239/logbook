@@ -1,4 +1,4 @@
-import type { DatabaseSync } from 'node:sqlite'
+import type { ISqliteDb } from '@log-book/core'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { everything, seedRows, START } from '../testing/rows'
 import { insert, seedWarehouse, type ITestWarehouse } from '../testing/warehouse'
@@ -6,7 +6,7 @@ import { MINUTE, SECOND } from '../time'
 import type * as Calls from './calls'
 
 // Twenty quick Reads give Read a usual time; one took five minutes.
-const seed = (db: DatabaseSync): void => {
+const seed = (db: ISqliteDb): void => {
   seedRows(db)
 
   for (let index = 0; index < 20; index += 1) {
@@ -15,6 +15,7 @@ const seed = (db: DatabaseSync): void => {
       session_id: 'ses-me',
       message_id: 'm-me-2',
       name: 'Read',
+      bare_name: 'Read',
       family: 'file',
       input_json: '{}',
       status: 'completed',
@@ -28,6 +29,7 @@ const seed = (db: DatabaseSync): void => {
     session_id: 'ses-me',
     message_id: 'm-me-2',
     name: 'Read',
+    bare_name: 'Read',
     family: 'file',
     input_json: '{}',
     status: 'completed',
@@ -40,12 +42,12 @@ let warehouse: ITestWarehouse
 let calls: typeof Calls
 
 beforeAll(async () => {
-  warehouse = seedWarehouse(seed)
+  warehouse = await seedWarehouse(seed)
   calls = await import('./calls')
 })
 
-afterAll(() => {
-  warehouse.remove()
+afterAll(async () => {
+  await warehouse.remove()
 })
 
 describe('failedCalls', () => {

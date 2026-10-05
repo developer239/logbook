@@ -15,10 +15,11 @@ export interface ISqliteDb {
   close: () => void
 }
 
-// Imported lazily so that importing @log-book/core does not load SQLite for a caller that never opens a database.
-export const openSqlite = async (path: string, options: { readonly isReadOnly: boolean }): Promise<ISqliteDb> => {
-  const sqliteModule = await import('node:sqlite')
-  const db = new sqliteModule.DatabaseSync(path, { readOnly: options.isReadOnly, timeout: BUSY_TIMEOUT_MS })
+// Loaded at the first open, not at import, so that importing @log-book/core does not load SQLite for a caller that
+// never opens a database. Synchronous, for a caller such as the web app whose reads are synchronous.
+export const openSqliteSync = (path: string, options: { readonly isReadOnly: boolean }): ISqliteDb => {
+  const { DatabaseSync } = process.getBuiltinModule('node:sqlite')
+  const db = new DatabaseSync(path, { readOnly: options.isReadOnly, timeout: BUSY_TIMEOUT_MS })
   return {
     prepare: (sql) => {
       const statement = db.prepare(sql)
@@ -34,3 +35,7 @@ export const openSqlite = async (path: string, options: { readonly isReadOnly: b
     close: () => db.close(),
   }
 }
+
+// The same open, its failure a rejection.
+export const openSqlite = async (path: string, options: { readonly isReadOnly: boolean }): Promise<ISqliteDb> =>
+  Promise.resolve().then(() => openSqliteSync(path, options))

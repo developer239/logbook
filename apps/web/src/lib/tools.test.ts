@@ -1,17 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { IOfferedTool } from './queries/tools'
-import {
-  cookbookTool,
-  isCookbookFamily,
-  isPluginFamily,
-  isSkillBody,
-  parseMcpName,
-  skillNameOf,
-  normalName,
-  toolName,
-} from './tools'
-
-const offered = new Map<string, IOfferedTool>([['oc_run', { module: 'oc', name: 'oc_run', definitionChars: 100 }]])
+import { isCookbookFamily, isPluginFamily, isSkillBody, parseMcpName, skillNameOf, normalName, toolName } from './tools'
 
 describe('parseMcpName', () => {
   it('should split an MCP tool name into its server and tool', () => {
@@ -22,15 +10,6 @@ describe('parseMcpName', () => {
   it('should read a tool of the harness itself as no MCP tool', () => {
     expect(parseMcpName('Bash')).toBeNull()
     expect(parseMcpName('mcp__only')).toBeNull()
-  })
-})
-
-describe('cookbookTool', () => {
-  it('should find a cookbook tool by its name through the cookbook server only', () => {
-    expect(cookbookTool(offered, 'claude-code', 'mcp__opencode__oc_run')?.module).toBe('oc')
-    expect(cookbookTool(offered, 'claude-code', 'mcp__claude_ai_Docs__oc_run')).toBeUndefined()
-    expect(cookbookTool(offered, 'claude-code', 'oc_run')).toBeUndefined()
-    expect(cookbookTool(offered, 'opencode', 'OC_RUN')?.module).toBe('oc')
   })
 })
 

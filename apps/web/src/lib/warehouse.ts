@@ -1,58 +1,56 @@
-import { existsSync } from 'node:fs'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
-import { DatabaseSync, type SQLInputValue, type StatementSync } from 'node:sqlite'
+import { LogBookError } from '@log-book/core'
+import {
+  resolveWarehousePath,
+  SCHEMA_VERSION,
+  WAREHOUSE_ERROR_CODES,
+  WarehouseStore,
+  WarehouseVersionError,
+  type IWarehouseReader,
+} from '@log-book/warehouse'
 import { WarehouseError } from './errors'
 
-// The cookbook bumps its schema version whenever a table changes, so a
-// warehouse at another version is refused rather than read wrongly.
-const WAREHOUSE_SCHEMA_VERSION = 10
+type TSqlParam = string | number | null
 
-const warehousePath = (): string =>
-  process.env['TELEMETRY_DB'] ??
-  join(process.env['XDG_DATA_HOME'] ?? join(homedir(), '.local', 'share'), 'cookbook', 'telemetry.db')
+let reader: IWarehouseReader | undefined
 
-let connection: DatabaseSync | undefined
+const versionProblem = (version: number): WarehouseError =>
+  new WarehouseError(`This warehouse is at schema ${String(version)}; this Log Book reads ${String(SCHEMA_VERSION)}.`)
 
-const statements = new Map<string, StatementSync>()
-
-const open = (): DatabaseSync => {
-  const path = warehousePath()
-  if (!existsSync(path)) {
-    throw new WarehouseError(`No warehouse at ${path}. Run the cookbook sync first.`)
+// Opened read-only once per process; a missing file and another version are a page's problem line, and the next
+// page tries again.
+const open = (): IWarehouseReader => {
+  const path = resolveWarehousePath()
+  try {
+    return WarehouseStore.openReadOnlySync(path)
+  } catch (error) {
+    if (error instanceof WarehouseVersionError) {
+      throw versionProblem(error.warehouseVersion)
+    }
+    if (error instanceof LogBookError && error.code === WAREHOUSE_ERROR_CODES.WAREHOUSE_NOT_FOUND) {
+      throw new WarehouseError(`There is no warehouse at ${path} yet.`)
+    }
+    throw error
   }
-
-  return new DatabaseSync(path, { readOnly: true })
 }
 
-const warehouse = (): DatabaseSync => {
-  connection ??= open()
-  return connection
+const warehouse = (): IWarehouseReader => {
+  reader ??= open()
+  return reader
 }
 
-// A cookbook sync can migrate the warehouse while the app runs, so a page
-// checks its schema once before it reads anything (load does).
+// A newer logbook in a terminal can migrate the warehouse while the app runs, so a page checks its schema once
+// before it reads anything (load does).
 export const checkSchema = (): void => {
-  const { user_version: version } = warehouse().prepare('PRAGMA user_version').get() as { user_version: number }
-  if (version !== WAREHOUSE_SCHEMA_VERSION) {
-    throw new WarehouseError(
-      `The warehouse is at schema ${String(version)}; this app reads ${String(WAREHOUSE_SCHEMA_VERSION)}. Update the app or the cookbook so they match.`
-    )
+  const version = warehouse().get<{ user_version: number }>('PRAGMA user_version')?.user_version ?? 0
+  if (version !== SCHEMA_VERSION) {
+    throw versionProblem(version)
   }
 }
 
-// SQLite prepares a statement again itself when the schema changes under it.
-const statement = (sql: string): StatementSync => {
-  const prepared = statements.get(sql) ?? warehouse().prepare(sql)
-  statements.set(sql, prepared)
-  return prepared
-}
+export const all = <TRow>(sql: string, ...params: TSqlParam[]): TRow[] => warehouse().all<TRow>(sql, ...params)
 
-export const all = <TRow>(sql: string, ...params: SQLInputValue[]): TRow[] =>
-  statement(sql).all(...params) as unknown as TRow[]
-
-export const get = <TRow>(sql: string, ...params: SQLInputValue[]): TRow | undefined =>
-  statement(sql).get(...params) as unknown as TRow | undefined
+export const get = <TRow>(sql: string, ...params: TSqlParam[]): TRow | undefined =>
+  warehouse().get<TRow>(sql, ...params)
 
 export const syncedAt = (): number | null =>
   get<{ at: number | null }>('SELECT MAX(imported_at) AS at FROM source_state')?.at ?? null

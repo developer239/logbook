@@ -1,4 +1,4 @@
-import type { DatabaseSync } from 'node:sqlite'
+import type { ISqliteDb } from '@log-book/core'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { everything, seedRows, START } from '../testing/rows'
 import { insert, seedWarehouse, type ITestWarehouse } from '../testing/warehouse'
@@ -8,16 +8,17 @@ import type * as Loops from './loops'
 import type * as Problems from './problems'
 import type * as Strip from './strip'
 import type * as ToolTokens from './tool-tokens'
-import type * as Tools from './tools'
 import type * as Unfinished from './unfinished'
 
-const seed = (db: DatabaseSync): void => {
+const seed = (db: ISqliteDb): void => {
   seedRows(db)
   insert(db, 'tool_call', {
     id: 'c-docs',
     session_id: 'ses-me',
     message_id: 'm-me-5',
     name: 'mcp__claude_ai_Docs__notes_add',
+    bare_name: 'notes_add',
+    server: 'claude_ai_Docs',
     family: 'mcp:claude_ai_Docs',
     input_json: '{}',
     status: 'completed',
@@ -33,21 +34,19 @@ let loops: typeof Loops
 let problems: typeof Problems
 let effort: typeof Effort
 let toolTokens: typeof ToolTokens
-let tools: typeof Tools
 
 beforeAll(async () => {
-  warehouse = seedWarehouse(seed)
+  warehouse = await seedWarehouse(seed)
   strip = await import('./strip')
   unfinished = await import('./unfinished')
   loops = await import('./loops')
   problems = await import('./problems')
   effort = await import('./effort')
   toolTokens = await import('./tool-tokens')
-  tools = await import('./tools')
 })
 
-afterAll(() => {
-  warehouse.remove()
+afterAll(async () => {
+  await warehouse.remove()
 })
 
 describe('stripFor', () => {
@@ -172,7 +171,7 @@ describe('effort', () => {
 })
 
 describe('toolTokens', () => {
-  it('should estimate what a cookbook tool costs: its calls and its definition', () => {
+  it('should estimate what a cookbook tool costs: its calls and the definition a session recorded loading', () => {
     const notes = toolTokens
       .toolTokens(everything())
       .find((row) => row.name === 'notes_add' && row.source.name === 'notes')
@@ -183,29 +182,14 @@ describe('toolTokens', () => {
       calls: 1,
       typicalTokens: 5,
       totalTokens: 5,
-      definitionTokens: 9,
-      isRetired: false,
-    })
-  })
-
-  it('should list a tool the cookbook offers that was never called, with its definition', () => {
-    const list = toolTokens.toolTokens(everything()).find((row) => row.name === 'notes_list')
-
-    expect(list).toEqual({
-      name: 'notes_list',
-      source: { kind: 'plugin', name: 'notes' },
-      calls: 0,
-      typicalTokens: null,
-      totalTokens: 0,
-      definitionTokens: 10,
-      isRetired: false,
+      definitionTokens: 100,
     })
   })
 
   it('should not take another server tool for the cookbook tool it is named like', () => {
     const docs = toolTokens.toolTokens(everything()).find((row) => row.source.name === 'claude_ai_Docs')
 
-    expect(docs).toMatchObject({ name: 'notes_add', calls: 1, definitionTokens: null, isRetired: false })
+    expect(docs).toMatchObject({ name: 'notes_add', calls: 1, definitionTokens: null })
   })
 
   it('should count a skill by the text Claude Code loaded for it', () => {
@@ -218,16 +202,5 @@ describe('toolTokens', () => {
       totalTokens: 15,
       definitionTokens: null,
     })
-  })
-})
-
-describe('offeredTools', () => {
-  it('should read the cookbook tools by lower case name, with the size of each definition', () => {
-    const offered = [...tools.offeredTools()].map(([key, tool]) => [key, { ...tool }])
-
-    expect(offered).toEqual([
-      ['notes_add', { module: 'notes', name: 'notes_add', definitionChars: 36 }],
-      ['notes_list', { module: 'notes', name: 'notes_list', definitionChars: 41 }],
-    ])
   })
 })

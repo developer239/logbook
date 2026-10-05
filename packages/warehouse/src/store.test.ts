@@ -274,6 +274,23 @@ describe('WarehouseStore', () => {
       )
     })
 
+    it('opens synchronously too, refusing a missing warehouse with the same error', async () => {
+      // Arrange
+      const path = join(dataDirectory, 'warehouse.db')
+      ;(await WarehouseStore.open(path)).close()
+
+      // Act
+      const reader = WarehouseStore.openReadOnlySync(path)
+      const version = reader.get('PRAGMA user_version')
+      reader.close()
+
+      // Assert
+      expect(version).toStrictEqual({ user_version: 1 })
+      expect(() => WarehouseStore.openReadOnlySync(join(directory, 'missing', 'warehouse.db'))).toThrow(
+        expect.objectContaining({ code: 'WAREHOUSE_NOT_FOUND' }) as Error
+      )
+    })
+
     it('opens a warehouse at the newest version and reads it', async () => {
       // Arrange
       const path = join(dataDirectory, 'warehouse.db')

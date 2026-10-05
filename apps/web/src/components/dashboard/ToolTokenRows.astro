@@ -34,8 +34,8 @@ const heads = [
     rows.map((row) => (
       <Row>
         <span class="rows__cell tool-token-rows__name">
-          {isSkill(row) || row.calls === 0 ? (
-            <code class:list={['tool-token-rows__tool', row.calls === 0 && 'tool-token-rows__tool--unused']} title={row.name}>
+          {isSkill(row) ? (
+            <code class="tool-token-rows__tool" title={row.name}>
               {row.name}
             </code>
           ) : (
@@ -44,16 +44,12 @@ const heads = [
             </Link>
           )}
           {isSkill(row) && <Tag>skill</Tag>}
-          {row.calls === 0 && <Tag isFlag>unused</Tag>}
-          {row.isRetired && <Tag isFlag>removed</Tag>}
-          {row.calls > 0 && <span class="tool-token-rows__calls">{count(row.calls)}×</span>}
+          <span class="tool-token-rows__calls">{count(row.calls)}×</span>
         </span>
         {hasDefinitions && (
           <span class="rows__cell rows__cell--time">{row.definitionTokens === null ? 'none' : tokensCompact(row.definitionTokens)}</span>
         )}
-        <span class:list={['rows__cell', 'rows__cell--num', row.calls === 0 && 'tool-token-rows__unused']}>
-          {row.typicalTokens === null ? 'not called' : tokensCompact(row.typicalTokens)}
-        </span>
+        <span class="rows__cell rows__cell--num">{tokensCompact(row.typicalTokens)}</span>
         <Bar isTrack class="rows__cell" segments={[{ kind: 'model', width: pct(row.totalTokens / most, 1) }]} />
         <span class="rows__cell rows__cell--time">{tokensCompact(row.totalTokens)}</span>
       </Row>

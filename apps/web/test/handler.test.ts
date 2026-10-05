@@ -5,8 +5,8 @@ import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { createTestWarehouse, type ITestWarehouse } from '@log-book/warehouse/testing'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { openSchema } from '../src/lib/testing/warehouse'
 
 type THandler = (req: IncomingMessage, res: ServerResponse, next?: (error?: unknown) => void) => void | Promise<void>
 
@@ -15,6 +15,7 @@ const STYLESHEET = /<link[^>]+rel="stylesheet"[^>]+href="(?<href>[^"]+)"/gu
 const FONT = /url\((?<url>[^)]+\.woff2)\)/gu
 
 let directory = ''
+let warehouse: ITestWarehouse | undefined
 let origin = ''
 let close: () => Promise<void> = async () => Promise.resolve()
 
@@ -25,9 +26,8 @@ beforeAll(async () => {
   }
   directory = await mkdtemp(join(tmpdir(), 'web-handler-'))
   await cp(DIST, join(directory, 'dist'), { recursive: true })
-  const warehouse = join(directory, 'telemetry.db')
-  openSchema(warehouse).close()
-  vi.stubEnv('TELEMETRY_DB', warehouse)
+  warehouse = await createTestWarehouse()
+  vi.stubEnv('LOGBOOK_DB', warehouse.path)
   const { handler } = (await import(pathToFileURL(join(directory, 'dist', 'server', 'entry.mjs')).href)) as {
     handler: THandler
   }
@@ -51,6 +51,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await close()
+  await warehouse?.remove()
   await rm(directory, { recursive: true, force: true })
 })
 

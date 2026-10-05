@@ -7,12 +7,12 @@ let warehouse: ITestWarehouse
 let steps: typeof Steps
 
 beforeAll(async () => {
-  warehouse = seedWarehouse(seedRows)
+  warehouse = await seedWarehouse(seedRows)
   steps = await import('./steps')
 })
 
-afterAll(() => {
-  warehouse.remove()
+afterAll(async () => {
+  await warehouse.remove()
 })
 
 const ask = (query: string): ReturnType<typeof Steps.steps> =>

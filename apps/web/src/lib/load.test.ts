@@ -1,40 +1,37 @@
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { SCHEMA_VERSION } from '@log-book/warehouse'
+import { createTestWarehouse, insert, type ITestWarehouse } from '@log-book/warehouse/testing'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type * as Errors from './errors'
 import type * as Load from './load'
-import { insert, openSchema } from './testing/warehouse'
 
 // The warehouse is opened once per module, so each case imports load afresh
 // against the warehouse it names.
 const importAt = async (path: string): Promise<typeof Load & typeof Errors> => {
-  vi.stubEnv('TELEMETRY_DB', path)
+  vi.stubEnv('LOGBOOK_DB', path)
   vi.resetModules()
   return { ...(await import('./load')), ...(await import('./errors')) }
 }
 
-let directory = ''
+let current: ITestWarehouse
 let warehouse = ''
 
-beforeAll(() => {
-  directory = mkdtempSync(join(tmpdir(), 'logbook-load-'))
-  warehouse = join(directory, 'telemetry.db')
+beforeAll(async () => {
+  current = await createTestWarehouse()
+  warehouse = current.path
 
-  const db = openSchema(warehouse)
-  insert(db, 'source_state', {
-    source: 'claude-code',
+  insert(current.db, 'source_state', {
+    harness: 'claude-code',
     locator: 'transcripts',
     fingerprint: 'abc',
     parser_version: 1,
     imported_at: 42,
   })
-  db.close()
 })
 
-afterAll(() => {
+afterAll(async () => {
   vi.unstubAllEnvs()
-  rmSync(directory, { recursive: true })
+  await current.remove()
 })
 
 describe('load', () => {
@@ -59,26 +56,28 @@ describe('load', () => {
   })
 
   it('should answer a missing warehouse with 503 and the way to fix it', async () => {
-    const { load } = await importAt(join(directory, 'missing.db'))
+    const missing = join(warehouse, '..', 'missing.db')
+    const { load } = await importAt(missing)
 
     const page = load(() => 1)
 
     expect(page).toMatchObject({ ok: false, status: 503, syncedAt: null })
-    expect(page.ok ? '' : page.problem).toContain('Run the cookbook sync first.')
+    expect(page.ok ? '' : page.problem).toBe(`There is no warehouse at ${missing} yet.`)
   })
 
   it('should answer a warehouse at another schema version with 503 and the versions', async () => {
-    const older = join(directory, 'older.db')
-    const db = openSchema(older)
-    db.exec('PRAGMA user_version = 9')
-    db.close()
+    const newer = await createTestWarehouse()
+    newer.db.exec(`PRAGMA user_version = ${String(SCHEMA_VERSION + 1)}`)
 
-    const { load } = await importAt(older)
+    const { load } = await importAt(newer.path)
 
     const page = load(() => 1)
+    await newer.remove()
 
     expect(page).toMatchObject({ ok: false, status: 503, syncedAt: null })
-    expect(page.ok ? '' : page.problem).toContain('schema 9; this app reads 10')
+    expect(page.ok ? '' : page.problem).toBe(
+      `This warehouse is at schema ${String(SCHEMA_VERSION + 1)}; this Log Book reads ${String(SCHEMA_VERSION)}.`
+    )
   })
 
   it('should throw what is not a problem a page can show', async () => {
