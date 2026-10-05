@@ -211,6 +211,28 @@ const minimalFixture = (root: string): IFixtureSet => ({
   remove: async (home, locator) => {
     await rm(join(sessionsDirectory(home), locator))
   },
+  locateVariants: [
+    {
+      name: 'the variable names a directory',
+      arrange: async (home) => {
+        await mkdir(join(home, 'elsewhere', 'logs'), { recursive: true })
+      },
+      environment: (home) => ({
+        variables: { MINIMAL_SESSIONS_DIR: join(home, 'elsewhere', 'logs') },
+        homeDir: home,
+        cwd: home,
+        platform: 'linux',
+      }),
+      expected: { kind: 'found', root: 'elsewhere/logs' },
+    },
+    {
+      name: 'nothing under the home',
+      arrange: async () => Promise.resolve(),
+      environment: (home) => ({ variables: {}, homeDir: home, cwd: home, platform: 'darwin' }),
+      expected: { kind: 'not-found', lookedAt: '.minimal/sessions' },
+    },
+  ],
+  neverRead: ['.minimal/credentials.json', '.minimal/settings/settings.json'],
 })
 
 const caseNamed = (fixture: IFixtureSet, name: string): (() => Promise<void>) => {
@@ -230,6 +252,23 @@ describe('conformanceCases for a minimal correct adapter', () => {
 
     // Assert
     await expect(run).resolves.toBeUndefined()
+  })
+})
+
+describe('the read-scope case as root', () => {
+  it('reports itself skipped and passes', async () => {
+    // Arrange
+    vi.spyOn(process, 'getuid').mockReturnValue(0)
+    const cases = conformanceCases(minimalAdapter, [minimalFixture(FIXTURE_ROOT)])
+
+    // Act
+    const scope = cases.find((testCase) => testCase.name.startsWith('1.0: reads only what is listed'))
+
+    // Assert
+    expect({ name: scope?.name, run: await scope?.run() }).toStrictEqual({
+      name: '1.0: reads only what is listed (skipped: running as root, which permissions do not stop)',
+      run: undefined,
+    })
   })
 })
 

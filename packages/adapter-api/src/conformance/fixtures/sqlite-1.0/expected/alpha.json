@@ -1,0 +1,81 @@
+{
+  "harnessVersion": null,
+  "sessions": [
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1000,
+          "gitBranch": null,
+          "id": "minimal-database:alpha/m0",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "minimal-database:alpha",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 2000,
+          "gitBranch": null,
+          "id": "minimal-database:alpha/m1",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "minimal-database:alpha",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "minimal-database:alpha/m0",
+          "sessionId": "minimal-database:alpha",
+          "text": "add a discount code field",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "minimal-database:alpha/m1",
+          "sessionId": "minimal-database:alpha",
+          "text": "Added the field.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": null,
+        "endedAt": 2000,
+        "harness": "minimal-database",
+        "id": "minimal-database:alpha",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": null,
+        "sourceId": "alpha",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1000,
+        "title": null
+      },
+      "toolCalls": []
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
-import { isAbsolute, join, sep } from 'node:path'
+import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { dirname, isAbsolute, join, sep } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { isErrnoCode } from '@log-book/core'
 import { WarehouseStore } from '@log-book/warehouse'
@@ -9,9 +9,9 @@ import type { IHarnessAdapter, IPrompt, IRecognisedCommand } from '../contract.j
 import { ADAPTER_ERROR_CODES } from '../helpers.js'
 import { validateImportedUnit } from '../validate.js'
 import { descriptorProblems } from './descriptor.js'
-import type { IConformanceCase, IFixtureSet } from './fixture-set.js'
+import type { IConformanceCase, IFixtureSet, ILocateVariant } from './fixture-set.js'
 import { goldenText, isUpdatingGolden, readGolden, writeGolden } from './golden.js'
-import { expectedDirectory, hashTree, withEmptyHome, withFixtureHome } from './home.js'
+import { expectedDirectory, hashFile, hashTree, withEmptyHome, withFixtureHome, withLiveHome } from './home.js'
 import { adapterContext, importEvery, importHome, locateFound, withReader, type IListedImport } from './session.js'
 
 type TCaseRun = (adapter: IHarnessAdapter, fixture: IFixtureSet, fixtures: readonly IFixtureSet[]) => Promise<void>
@@ -159,17 +159,26 @@ const validOutputCase: TCaseRun = async (adapter, fixture) =>
     )
   })
 
+// Each unit's import serialised for its golden file, compared with that file; rewritten first when updating.
+const assertGolden = async (
+  fixture: IFixtureSet,
+  imports: readonly IListedImport[],
+  home: string,
+  isUpdating: boolean
+): Promise<void> => {
+  const actual = byLocator(imports, ({ imported }) => goldenText(imported, home))
+  if (isUpdating) {
+    await Promise.all(Object.entries(actual).map(async ([locator, text]) => writeGolden(fixture, locator, text)))
+  }
+  const golden = await Promise.all(
+    imports.map(async ({ unit }) => [unit.locator, await readGolden(fixture, unit.locator)])
+  )
+  assert.deepEqual(actual, Object.fromEntries(golden))
+}
+
 const goldenOutputCase: TCaseRun = async (adapter, fixture) =>
   withFixtureHome(fixture, async (home) => {
-    const imports = await importHome(adapter, fixture.environment(home))
-    const actual = byLocator(imports, ({ imported }) => goldenText(imported, home))
-    if (isUpdatingGolden()) {
-      await Promise.all(Object.entries(actual).map(async ([locator, text]) => writeGolden(fixture, locator, text)))
-    }
-    const golden = await Promise.all(
-      imports.map(async ({ unit }) => [unit.locator, await readGolden(fixture, unit.locator)])
-    )
-    assert.deepEqual(actual, Object.fromEntries(golden))
+    await assertGolden(fixture, await importHome(adapter, fixture.environment(home)), home, isUpdatingGolden())
   })
 
 const deterministicCase: TCaseRun = async (adapter, fixture) =>
@@ -262,6 +271,87 @@ const noHarnessIdLeakCase: TCaseRun = async (adapter, fixture) =>
     )
   })
 
+const expectedLocate = (variant: ILocateVariant, home: string): Record<string, unknown> => {
+  const { expected } = variant
+  if (expected.kind === 'found') {
+    return { kind: 'found', root: join(home, expected.root) }
+  }
+  return { kind: 'not-found', lookedAt: expected.lookedAt === null ? null : join(home, expected.lookedAt) }
+}
+
+const locateVariantCase =
+  (variant: ILocateVariant): TCaseRun =>
+  async (adapter) =>
+    withEmptyHome(async (home) => {
+      await variant.arrange(home)
+      const result = await adapter.locate(variant.environment(home))
+      const answered =
+        result.kind === 'found'
+          ? { kind: result.kind, root: result.location.root }
+          : { kind: result.kind, lookedAt: result.lookedAt }
+      assert.deepEqual(answered, expectedLocate(variant, home))
+    })
+
+// Every variant in its own home; a failure names each variant that broke, with its difference.
+const locateVariantsCase: TCaseRun = async (adapter, fixture, fixtures) => {
+  const results = await Promise.allSettled(
+    fixture.locateVariants.map(async (variant) => locateVariantCase(variant)(adapter, fixture, fixtures))
+  )
+  const failures = results.flatMap((result, index) =>
+    result.status === 'rejected' ? [`${fixture.locateVariants[index]?.name ?? ''}: ${String(result.reason)}`] : []
+  )
+  assert.deepEqual(failures, [])
+}
+
+const liveDatabaseCase =
+  (prepareLive: (home: string) => Promise<() => void>): TCaseRun =>
+  async (adapter, fixture) =>
+    withLiveHome(fixture, prepareLive, async (home) => {
+      const location = await locateFound(adapter, fixture.environment(home))
+      assert.equal(location.kind, 'file', 'a live database case needs a location that is the database file')
+      const before = await hashFile(location.root)
+      const imports = await withReader(adapter, location, importEvery)
+      assert.equal(await hashFile(location.root), before, 'the main database file changed')
+      await assertGolden(fixture, imports, home, false)
+    })
+
+// Mode 000 on every path the adapter must never read, created with its directories when absent.
+const lockNeverRead = async (fixture: IFixtureSet, home: string): Promise<void> => {
+  await Promise.all(
+    fixture.neverRead.map(async (path) => {
+      const absolute = join(home, path)
+      await mkdir(dirname(absolute), { recursive: true })
+      await writeFile(absolute, '', { flag: 'a' })
+      await chmod(absolute, 0o000)
+    })
+  )
+}
+
+const readScopeCase: TCaseRun = async (adapter, fixture) =>
+  withFixtureHome(fixture, async (home) => {
+    await lockNeverRead(fixture, home)
+    const env = fixture.environment(home)
+    const location = await locateFound(adapter, env)
+    const imports = await withReader(adapter, location, importEvery)
+    await adapter.prepareCommands(location, env, projectDirsOf(await readCommandExpectations(fixture, home)))
+    await assertGolden(fixture, imports, home, false)
+  })
+
+const skippedCase: TCaseRun = async () => Promise.resolve()
+
+const isRoot = (): boolean => process.getuid?.() === 0
+
+// The cases that only some fixture sets have or that the process cannot always run, numbered 18 to 20.
+const scopeCases = (fixture: IFixtureSet): (readonly [string, TCaseRun])[] => [
+  ['locate variants', locateVariantsCase],
+  ...(fixture.prepareLive === undefined
+    ? []
+    : [['read-only on a live database', liveDatabaseCase(fixture.prepareLive)] as const]),
+  isRoot()
+    ? ['reads only what is listed (skipped: running as root, which permissions do not stop)', skippedCase]
+    : ['reads only what is listed', readScopeCase],
+]
+
 // In the order of the specification's numbers, 1 to 17; number 15 belonged to the removed instruction sources.
 const CASES: readonly (readonly [string, TCaseRun])[] = [
   ['descriptor', descriptorCase],
@@ -288,7 +378,7 @@ export const conformanceCases = (
   fixtures: readonly IFixtureSet[]
 ): readonly IConformanceCase[] =>
   fixtures.flatMap((fixture) =>
-    CASES.map(([name, run]) => ({
+    [...CASES, ...scopeCases(fixture)].map(([name, run]) => ({
       name: `${fixture.harnessVersion}: ${name}`,
       run: async () => run(adapter, fixture, fixtures),
     }))

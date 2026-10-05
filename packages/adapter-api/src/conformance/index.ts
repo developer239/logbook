@@ -1,2 +1,2 @@
 export { conformanceCases } from './cases.js'
-export type { IConformanceCase, IFixtureSet, IFixtureUnit } from './fixture-set.js'
+export type { IConformanceCase, IFixtureSet, IFixtureUnit, ILocateVariant } from './fixture-set.js'
