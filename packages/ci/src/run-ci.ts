@@ -1,5 +1,6 @@
 import { dependencyFindings } from './checks/deps.js'
 import { fixtureFindings } from './checks/fixtures.js'
+import { releaseFindings } from './checks/release.js'
 import { checkTests } from './checks/tests.js'
 
 // Where a command writes: findings and refusals go to stderr, one line each.
@@ -32,6 +33,7 @@ const check =
 const COMMANDS: Readonly<Record<string, CiCommand>> = {
   deps: check(dependencyFindings),
   fixtures: check(fixtureFindings),
+  release: check(releaseFindings),
   tests: async (args, io) => {
     if (args.length > 0) {
       io.stderr(`This command takes no arguments; got ${args.join(' ')}.\n`)

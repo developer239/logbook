@@ -25,7 +25,8 @@
     "ci:build": "pnpm --filter @log-book/ci build",
     "check:deps": "pnpm ci:build && node packages/ci/dist/index.js deps",
     "check:fixtures": "pnpm ci:build && node packages/ci/dist/index.js fixtures",
-    "check:tests": "pnpm ci:build && node packages/ci/dist/index.js tests"
+    "check:tests": "pnpm ci:build && node packages/ci/dist/index.js tests",
+    "check:release": "pnpm ci:build && node packages/ci/dist/index.js release"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",
