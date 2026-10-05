@@ -15,6 +15,7 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "esbuild": "catalog:",
     "yaml": "catalog:"
   }
 }

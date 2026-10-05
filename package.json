@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build:packages": "pnpm -r --filter '!@log-book/docs' build",
-    "build": "pnpm build:packages",
+    "build": "pnpm build:packages && pnpm run stage",
     "typecheck": "pnpm -r typecheck && tsc --noEmit",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
@@ -26,7 +26,8 @@
     "check:deps": "pnpm ci:build && node packages/ci/dist/index.js deps",
     "check:fixtures": "pnpm ci:build && node packages/ci/dist/index.js fixtures",
     "check:tests": "pnpm ci:build && node packages/ci/dist/index.js tests",
-    "check:release": "pnpm ci:build && node packages/ci/dist/index.js release"
+    "check:release": "pnpm ci:build && node packages/ci/dist/index.js release",
+    "stage": "pnpm ci:build && node packages/ci/dist/index.js stage-cli"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",

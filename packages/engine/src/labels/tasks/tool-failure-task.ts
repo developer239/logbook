@@ -1,5 +1,6 @@
 import { PromptLoaderService } from '@log-book/core'
 import { RULES_LABELLER } from '@log-book/warehouse'
+import { promptFile } from '../../prompts.js'
 import type { ILabelRunTask } from '../runner/label-task.js'
 import { codeFields, cutToPart, itemPart, taskInfo } from './item-text.js'
 
@@ -15,7 +16,7 @@ export const toolFailureTask = (): ILabelRunTask => {
     fields: codeFields(info),
     batchSize: info.batchSize,
     system: 'You label failed tool calls for a telemetry analysis. Answer only with the requested lines.',
-    instructions: PromptLoaderService.load(new URL('../../prompts/tool-failure.prompt.txt', import.meta.url)),
+    instructions: PromptLoaderService.load(promptFile('tool-failure.prompt.txt')),
     candidates: (reader) =>
       reader
         .all<{ id: string; name: string; input: string; error: string }>(

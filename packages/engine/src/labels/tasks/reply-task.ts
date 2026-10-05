@@ -1,5 +1,6 @@
 import { PromptLoaderService } from '@log-book/core'
 import type { IWarehouseReader } from '@log-book/warehouse'
+import { promptFile } from '../../prompts.js'
 import type { ILabelRunTask } from '../runner/label-task.js'
 import { humanPrompts, renderSteps, replyBetween, stepsBetween, type IHumanPrompt } from './interaction-texts.js'
 import { codeFields, itemPart, taskInfo } from './item-text.js'
@@ -42,7 +43,7 @@ export const replyTask = (): ILabelRunTask => {
     texts: [{ name: 'replyQuote', description: 'the quote', example: 'The tests pass; I did not run the e2e suite.' }],
     batchSize: info.batchSize,
     system: SYSTEM,
-    instructions: PromptLoaderService.load(new URL('../../prompts/reply.prompt.txt', import.meta.url)),
+    instructions: PromptLoaderService.load(promptFile('reply.prompt.txt')),
     candidates: (reader) => {
       const quiet = new Set(
         reader

@@ -1,5 +1,6 @@
 import { PromptLoaderService } from '@log-book/core'
 import type { IWarehouseReader } from '@log-book/warehouse'
+import { promptFile } from '../../prompts.js'
 import type { ILabelCodeField, ILabelRunTask } from '../runner/label-task.js'
 import { humanPrompts, renderSteps, replyBetween, stepsBetween, type IHumanPrompt } from './interaction-texts.js'
 import { codeFields, itemPart, taskInfo } from './item-text.js'
@@ -76,7 +77,7 @@ export const promptTask = (): ILabelRunTask => {
     },
     batchSize: info.batchSize,
     system: SYSTEM,
-    instructions: PromptLoaderService.load(new URL('../../prompts/prompt-reaction.prompt.txt', import.meta.url)),
+    instructions: PromptLoaderService.load(promptFile('prompt-reaction.prompt.txt')),
     candidates: (reader) =>
       humanPrompts(reader).map((prompt) => ({ recordId: prompt.id, ...renderPrompt(reader, prompt) })),
   }

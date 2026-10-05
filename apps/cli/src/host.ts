@@ -1,8 +1,9 @@
-import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { IAdapterEnvironment } from '@log-book/adapter-api'
 import { adapterEnvironment, createEngine, type ClaudeDetection } from '@log-book/engine'
 import { resolveDataDirectory, resolveWarehousePath, WarehouseStore } from '@log-book/warehouse'
+import type * as WebEntry from '@log-book/web'
+import type * as WebGuard from '@log-book/web/guard'
 import { CLI_ENTRY_VARIABLE, createChildRegistry, type IChildRegistry } from './child-registry.js'
 import { discoverAdapters, discoveryLines, warehouseLine } from './discovery.js'
 import { errorReport, exitCodeOf } from './errors.js'
@@ -11,6 +12,7 @@ import { closeServer, createRequestListener, HOST_ADDRESS, listen, portOf, type 
 import { hostLabellingLine } from './labelling-lines.js'
 import { requiredIntegerOf } from './option-values.js'
 import type { CommandRunner } from './run-cli.js'
+import { WEB_BUILD } from './web-build.js'
 
 const HOST_COLUMN = 13
 const HOST_VERSION_VARIABLE = 'LOGBOOK_HOST_VERSION'
@@ -95,11 +97,14 @@ export interface IHostSources {
   signals: StopSignals
 }
 
-// The web app's build, loaded when the host starts, so no other command pays for it.
+// The web app's build, loaded when the host starts, so no other command pays for it. It is loaded by its location,
+// not inlined into the CLI's bundle: Astro's server output finds its own files from where it sits.
 const loadWebApp = async (): Promise<IWebApp> => {
-  const [{ handler }, guard] = await Promise.all([import('@log-book/web'), import('@log-book/web/guard')])
-  const serverEntry = fileURLToPath(import.meta.resolve('@log-book/web'))
-  return { guard, handler, clientDirectory: join(dirname(serverEntry), '..', 'client') }
+  const [{ handler }, guard] = await Promise.all([
+    import(new URL('server/entry.mjs', WEB_BUILD).href) as Promise<typeof WebEntry>,
+    import(new URL('guard.js', WEB_BUILD).href) as Promise<typeof WebGuard>,
+  ])
+  return { guard, handler, clientDirectory: fileURLToPath(new URL('client', WEB_BUILD)) }
 }
 
 const STOP_SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const

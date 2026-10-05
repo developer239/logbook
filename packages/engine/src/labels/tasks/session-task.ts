@@ -1,4 +1,5 @@
 import { PromptLoaderService } from '@log-book/core'
+import { promptFile } from '../../prompts.js'
 import type { ILabelRunTask } from '../runner/label-task.js'
 import { codeFields, itemPart, taskInfo } from './item-text.js'
 import { flat, headerFields, messageTexts, SESSION_HEADER_SQL, type ISessionHeader } from './session-texts.js'
@@ -35,7 +36,7 @@ export const sessionTask = (): ILabelRunTask => {
     ],
     batchSize: info.batchSize,
     system: 'You label conversations for a telemetry analysis. Answer only with the requested lines.',
-    instructions: PromptLoaderService.load(new URL('../../prompts/session-goal.prompt.txt', import.meta.url)),
+    instructions: PromptLoaderService.load(promptFile('session-goal.prompt.txt')),
     candidates: (reader) =>
       reader
         .all<ISessionRow>(
