@@ -10,6 +10,8 @@ export interface ICliIo {
   home: string
   stdout: (text: string) => void
   stderr: (text: string) => void
+  // Whether stderr is a terminal, where progress lines are redrawn in place.
+  isStderrTty: boolean
   // Aborted by SIGINT and SIGTERM.
   signal: AbortSignal
 }
