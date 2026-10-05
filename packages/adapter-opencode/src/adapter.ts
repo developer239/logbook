@@ -1,5 +1,5 @@
 import type { IHarnessAdapter, IHarnessDescriptor } from '@log-book/adapter-api'
-import { ERROR_CODES, LogBookError } from '@log-book/core'
+import { prepareCommands } from './commands.js'
 import { openDatabase } from './database.js'
 import { DATA_HOME_VARIABLE, DATABASE_VARIABLE, DISABLE_CHANNEL_DATABASE_VARIABLE, locateDatabase } from './locate.js'
 
@@ -15,12 +15,9 @@ const DESCRIPTOR: IHarnessDescriptor = {
   locationVariables: [DATABASE_VARIABLE, DISABLE_CHANNEL_DATABASE_VARIABLE, DATA_HOME_VARIABLE],
 }
 
-const notImplemented = (what: string): Promise<never> =>
-  Promise.reject(new LogBookError(`The OpenCode adapter cannot ${what} yet.`, ERROR_CODES.INTERNAL_ERROR))
-
 export const openCode = (): IHarnessAdapter => ({
   descriptor: DESCRIPTOR,
   locate: locateDatabase,
   openSource: openDatabase,
-  prepareCommands: () => notImplemented('recognise commands'),
+  prepareCommands: (_location, env, projectDirs) => prepareCommands(env, projectDirs),
 })
