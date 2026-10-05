@@ -1,0 +1,269 @@
+{
+  "harnessVersion": "2.1.286",
+  "sessions": [
+    {
+      "events": [
+        {
+          "at": 1772445300000,
+          "dataJson": "{\"what\":\"record\",\"type\":\"brand-new-kind\",\"harnessVersion\":null,\"raw\":{\"type\":\"brand-new-kind\",\"uuid\":\"5f0c2a1e-0008-4000-8000-000000000001\",\"sessionId\":\"5f0c2a1e-0000-4000-8000-000000000008\",\"detail\":\"recorded before any time\"}}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000001",
+          "kind": "unknown",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
+        },
+        {
+          "at": 1772445300000,
+          "dataJson": "{\"what\":\"field\",\"field\":\"entrypoint\",\"value\":\"sdk-ts\"}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/field-entrypoint",
+          "kind": "unknown",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
+        },
+        {
+          "at": 1772445301000,
+          "dataJson": "{\"metadata\":{\"trigger\":\"manual\",\"preTokens\":82000}}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000003",
+          "kind": "compaction",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
+        },
+        {
+          "at": 1772445302000,
+          "dataJson": "{\"error\":{\"status\":529,\"message\":\"Overloaded\"},\"retryAttempt\":1}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000004",
+          "kind": "error",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
+        },
+        {
+          "at": 1772445303000,
+          "dataJson": "{\"added\":[\"create_issue\",\"list_issues\"],\"removed\":[\"close_issue\"],\"surfaced\":[\"create_issue\"],\"pendingServers\":[],\"needsAuthServers\":[\"calendar\"],\"failedServers\":[{\"name\":\"wiki\",\"error\":\"connection refused\"}]}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000005",
+          "kind": "tools-offered",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
+        },
+        {
+          "at": 1772445304000,
+          "dataJson": "{\"tools\":[{\"name\":\"create_issue\",\"chars\":101}]}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000006",
+          "kind": "tools-loaded",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
+        },
+        {
+          "at": 1772445308000,
+          "dataJson": "{\"name\":\"write-release-notes\",\"chars\":139,\"toolCallId\":\"claude-code:5f0c2a1e-0000-4000-8000-000000000008/toolu_example41\"}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000010:skill",
+          "kind": "skill-loaded",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
+        },
+        {
+          "at": 1772445420000,
+          "dataJson": "{\"what\":\"record\",\"type\":\"brand-new-kind\",\"harnessVersion\":\"2.1.286\",\"raw\":{\"parentUuid\":null,\"isSidechain\":false,\"userType\":\"external\",\"cwd\":\"/home/example/work/shop\",\"sessionId\":\"5f0c2a1e-0000-4000-8000-000000000008\",\"version\":\"2.1.286\",\"gitBranch\":\"main\",\"uuid\":\"5f0c2a1e-0008-4000-8000-000000000062\",\"timestamp\":\"2026-03-02T09:57:00.000Z\",\"type\":\"brand-new-kind\",\"detail\":\"a kind this importer does not know\"}}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000062",
+          "kind": "unknown",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
+        },
+        {
+          "at": 1772445421000,
+          "dataJson": "{\"what\":\"record\",\"type\":\"system:brand_new_notice\",\"harnessVersion\":\"2.1.286\",\"raw\":{\"parentUuid\":null,\"isSidechain\":false,\"userType\":\"external\",\"cwd\":\"/home/example/work/shop\",\"sessionId\":\"5f0c2a1e-0000-4000-8000-000000000008\",\"version\":\"2.1.286\",\"gitBranch\":\"main\",\"uuid\":\"5f0c2a1e-0008-4000-8000-000000000063\",\"timestamp\":\"2026-03-02T09:57:01.000Z\",\"type\":\"system\",\"subtype\":\"brand_new_notice\",\"level\":\"info\"}}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000063",
+          "kind": "unknown",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
+        },
+        {
+          "at": 1772445422000,
+          "dataJson": "{\"what\":\"record\",\"type\":\"attachment:brand_new_context\",\"harnessVersion\":\"2.1.286\",\"raw\":{\"parentUuid\":null,\"isSidechain\":false,\"userType\":\"external\",\"cwd\":\"/home/example/work/shop\",\"sessionId\":\"5f0c2a1e-0000-4000-8000-000000000008\",\"version\":\"2.1.286\",\"gitBranch\":\"main\",\"uuid\":\"5f0c2a1e-0008-4000-8000-000000000064\",\"timestamp\":\"2026-03-02T09:57:02.000Z\",\"type\":\"attachment\",\"attachment\":{\"type\":\"brand_new_context\",\"note\":\"unknown\"}}}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000064",
+          "kind": "unknown",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
+        },
+        {
+          "at": 1772445423000,
+          "dataJson": "{\"what\":\"block\",\"type\":\"brand_new_block\",\"harnessVersion\":\"2.1.286\",\"raw\":{\"type\":\"brand_new_block\",\"data\":\"unknown block\"}}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000065:block-1",
+          "kind": "unknown",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
+        },
+        {
+          "at": 1772445423000,
+          "dataJson": "{\"what\":\"record\",\"type\":null,\"harnessVersion\":null,\"raw\":\"{\\\"type\\\":\\\"user\\\",\\\"message\\\":{\\\"role\\\":\\\"user\\\",\\\"content\\\":\\\"a line cut in the middle of the file\"}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/line-66",
+          "kind": "unknown",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
+        },
+        {
+          "at": 1772445425000,
+          "dataJson": "{\"metadata\":null}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/line-67",
+          "kind": "compaction",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008"
+        }
+      ],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772445300000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000002",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772445306000,
+          "createdAt": 1772445306000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/msg_example41",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772445300000,
+          "seq": 1,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "tool",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772445307000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000009",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 2,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "harness",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772445308000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000010",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 3,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772445423000,
+          "createdAt": 1772445423000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/msg_example42",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772445308000,
+          "seq": 4,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000002",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+          "text": "compact the session and load the release notes skill",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "tool_call",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/msg_example41",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+          "text": "Skill {\"skill\":\"write-release-notes\"}",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/toolu_example41"
+        },
+        {
+          "idx": 0,
+          "kind": "tool_result",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000009",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+          "text": "Launching skill: write-release-notes",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/toolu_example41"
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000010",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+          "text": "Base directory for this skill: /home/example/.claude/skills/write-release-notes\n\nWrite release notes from the merged changes, newest first.",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/msg_example42",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+          "text": "Notes written.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": null,
+        "endedAt": 1772445423000,
+        "harness": "claude-code",
+        "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "5f0c2a1e-0000-4000-8000-000000000008",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772445300000,
+        "title": null
+      },
+      "toolCalls": [
+        {
+          "bareName": "Skill",
+          "childSessionId": null,
+          "endedAt": 1772445307000,
+          "family": "skill",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/toolu_example41",
+          "inputJson": "{\"skill\":\"write-release-notes\"}",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/msg_example41",
+          "name": "Skill",
+          "server": null,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+          "startedAt": 1772445306000,
+          "status": "completed"
+        }
+      ]
+    }
+  ]
+}

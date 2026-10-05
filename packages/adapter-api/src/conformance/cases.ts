@@ -41,9 +41,26 @@ const projectDirsOf = (expectations: readonly ICommandExpectation[]): string[] =
 ]
 
 // Every string of a record, except the session's harness and every id, which carry the adapter id by design.
+// An event's data is checked as the document it holds, so its own id fields are skipped too.
+const parsedData = (key: string, value: string): unknown => {
+  if (key !== 'dataJson') {
+    return value
+  }
+  try {
+    return JSON.parse(value) as unknown
+  } catch {
+    return value
+  }
+}
+
 const leakingFields = (value: unknown, adapterId: string, path: string): string[] => {
-  if (typeof value === 'string') {
-    return value.includes(adapterId) ? [path] : []
+  const key = path.split('.').at(-1) ?? ''
+  const data = typeof value === 'string' ? parsedData(key, value) : value
+  if (typeof data === 'string') {
+    return data.includes(adapterId) ? [path] : []
+  }
+  if (data !== value) {
+    return leakingFields(data, adapterId, `${path}.data`)
   }
   if (typeof value !== 'object' || value === null) {
     return []

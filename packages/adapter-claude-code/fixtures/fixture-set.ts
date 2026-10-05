@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { appendFile, mkdir, rm, utimes } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -21,6 +22,16 @@ const environment = (home: string, variables: Record<string, string> = {}, cwd =
 
 const session = (project: string, number: number): string =>
   `${project}/5f0c2a1e-0000-4000-8000-${String(number).padStart(12, '0')}.jsonl`
+
+// The committed lines of a transcript, so a unit declares its unknown records by line number instead of copying them.
+const linesOf = (locator: string): string[] => readFileSync(join(ROOT, 'home', PROJECTS, locator), 'utf8').split('\n')
+
+const lineAt = (locator: string, number: number): string => linesOf(locator)[number - 1] ?? ''
+
+const recordAt = (locator: string, number: number): unknown => JSON.parse(lineAt(locator, number))
+
+const blockAt = (locator: string, number: number, index: number): unknown =>
+  (recordAt(locator, number) as { message: { content: unknown[] } }).message.content[index]
 
 const makeDirectories =
   (...paths: string[]) =>
@@ -68,12 +79,25 @@ export const fixtureSet21: IFixtureSet = {
   locationKind: 'directory',
   units: [
     { locator: session(BILLING, 3), harnessVersion: '2.1.286', unknownRecords: [] },
-    { locator: session(BILLING, 4), harnessVersion: '2.1.286', unknownRecords: [] },
+    { locator: session(BILLING, 4), harnessVersion: '2.1.286', unknownRecords: [recordAt(session(BILLING, 4), 2)] },
     { locator: session(BILLING, 5), harnessVersion: null, unknownRecords: [] },
     { locator: session(SHOP, 1), harnessVersion: '2.1.286', unknownRecords: [] },
     { locator: session(SHOP, 2), harnessVersion: '2.1.286', unknownRecords: [] },
     { locator: session(SHOP, 6), harnessVersion: '2.2.3', unknownRecords: [] },
     { locator: session(SHOP, 7), harnessVersion: '2.1.286', unknownRecords: [] },
+    {
+      locator: session(SHOP, 8),
+      harnessVersion: '2.1.286',
+      unknownRecords: [
+        recordAt(session(SHOP, 8), 1),
+        'sdk-ts',
+        recordAt(session(SHOP, 8), 62),
+        recordAt(session(SHOP, 8), 63),
+        recordAt(session(SHOP, 8), 64),
+        blockAt(session(SHOP, 8), 65, 1),
+        lineAt(session(SHOP, 8), 66),
+      ],
+    },
   ],
   environment: (home) => environment(home, { [CONFIG_DIR_VARIABLE]: join(home, '.claude') }),
   prepare: async () => Promise.resolve(),

@@ -44,7 +44,7 @@ export const timeSpan = (
 export type UnknownRecordDescription =
   | {
       readonly what: 'record' | 'block' | 'part' | 'row'
-      readonly type: string
+      readonly type: string | null
       readonly harnessVersion: string | null
       readonly raw: unknown
     }
