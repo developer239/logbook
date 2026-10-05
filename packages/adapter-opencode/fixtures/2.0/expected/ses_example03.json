@@ -1,0 +1,89 @@
+{
+  "harnessVersion": "2.0.21",
+  "sessions": [
+    {
+      "events": [
+        {
+          "at": 1772532201000,
+          "dataJson": "{\"error\":\"APIError: Overloaded\"}",
+          "id": "opencode:ses_example03/msg_example14",
+          "kind": "error",
+          "sessionId": "opencode:ses_example03"
+        }
+      ],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532200000,
+          "gitBranch": null,
+          "id": "opencode:ses_example03/msg_example13",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "opencode:ses_example03",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "build",
+          "completedAt": 1772532205000,
+          "createdAt": 1772532201000,
+          "gitBranch": null,
+          "id": "opencode:ses_example03/msg_example14",
+          "model": "anthropic/claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772532201000,
+          "seq": 2,
+          "sessionId": "opencode:ses_example03",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example03/msg_example13",
+          "sessionId": "opencode:ses_example03",
+          "text": "review the coupon change",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example03/msg_example14",
+          "sessionId": "opencode:ses_example03",
+          "text": "Starting the review.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": "build",
+        "endedAt": 1772532205000,
+        "harness": "opencode",
+        "id": "opencode:ses_example03",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "ses_example03",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772532200000,
+        "title": "Coupon review"
+      },
+      "toolCalls": []
+    }
+  ]
+}

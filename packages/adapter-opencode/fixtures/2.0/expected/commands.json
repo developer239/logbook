@@ -1,0 +1,42 @@
+[
+  {
+    "prompt": {
+      "actor": "user",
+      "text": "Release the project named in the arguments and report the version number it ships with: billing",
+      "projectDir": "work/billing"
+    },
+    "expected": { "command": "release", "source": "template", "hasFile": true }
+  },
+  {
+    "prompt": {
+      "actor": "user",
+      "text": "Review the open changes of the shop and list what to fix first, most important first: the coupon change",
+      "projectDir": "work/shop"
+    },
+    "expected": { "command": "review", "source": "template", "hasFile": true }
+  },
+  {
+    "prompt": {
+      "actor": "user",
+      "text": "Review the open changes of the shop and list what to fix first, most important first: the coupon change",
+      "projectDir": "work/billing"
+    },
+    "expected": null
+  },
+  {
+    "prompt": {
+      "actor": "harness",
+      "text": "Release the project named in the arguments and report the version number it ships with: shop",
+      "projectDir": "work/shop"
+    },
+    "expected": null
+  },
+  {
+    "prompt": {
+      "actor": "user",
+      "text": "add a discount code field to checkout",
+      "projectDir": "work/shop"
+    },
+    "expected": null
+  }
+]

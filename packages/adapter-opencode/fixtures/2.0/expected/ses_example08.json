@@ -1,0 +1,81 @@
+{
+  "harnessVersion": "2.0.21",
+  "sessions": [
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532600000,
+          "gitBranch": null,
+          "id": "opencode:ses_example08/msg_example21",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "opencode:ses_example08",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532610000,
+          "gitBranch": null,
+          "id": "opencode:ses_example08/msg_example22",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 2,
+          "sessionId": "opencode:ses_example08",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example08/msg_example21",
+          "sessionId": "opencode:ses_example08",
+          "text": "look at the late fee",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example08/msg_example22",
+          "sessionId": "opencode:ses_example08",
+          "text": "\"and the grace period\"",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": "build",
+        "endedAt": 1772532610000,
+        "harness": "opencode",
+        "id": "opencode:ses_example08",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/billing",
+        "sourceId": "ses_example08",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772532600000,
+        "title": "Late fee"
+      },
+      "toolCalls": []
+    }
+  ]
+}

@@ -17,6 +17,10 @@
     },
     "apps/*": {
       "project": ["src/**/*.ts"]
+    },
+    "packages/adapter-opencode": {
+      "entry": ["src/index.ts", "src/source-writer/index.ts"],
+      "project": ["src/**/*.ts", "fixtures/**/*.ts"]
     }
   }
 }

@@ -1,0 +1,213 @@
+{
+  "harnessVersion": "2.0.21",
+  "sessions": [
+    {
+      "events": [
+        {
+          "at": 1772532020000,
+          "dataJson": "{\"agent\":\"plan\"}",
+          "id": "opencode:ses_example01/msg_example05",
+          "kind": "agent-switched",
+          "sessionId": "opencode:ses_example01"
+        },
+        {
+          "at": 1772532021000,
+          "dataJson": "{\"model\":{\"id\":\"gpt-5.5\",\"providerID\":\"openai\"},\"previous\":{\"id\":\"claude-sonnet-5-5\",\"providerID\":\"anthropic\"}}",
+          "id": "opencode:ses_example01/msg_example06",
+          "kind": "model-switched",
+          "sessionId": "opencode:ses_example01"
+        },
+        {
+          "at": 1772532030000,
+          "dataJson": "{\"reason\":\"overflow\",\"status\":\"completed\"}",
+          "id": "opencode:ses_example01/msg_example07",
+          "kind": "compaction",
+          "sessionId": "opencode:ses_example01"
+        },
+        {
+          "at": 1772532040000,
+          "dataJson": "{\"outcome\":\"completed\"}",
+          "id": "opencode:ses_example01/msg_example08",
+          "kind": "idle",
+          "sessionId": "opencode:ses_example01"
+        },
+        {
+          "at": 1772532050000,
+          "dataJson": "{\"what\":\"row\",\"type\":\"brand-new-kind\",\"harnessVersion\":\"2.0.21\",\"raw\":{\"id\":\"msg_example09\",\"type\":\"brand-new-kind\",\"seq\":9,\"time_created\":1772532050000,\"time_updated\":1772532050000,\"data\":\"{\\\"detail\\\":\\\"a type this adapter does not know\\\",\\\"time\\\":{\\\"created\\\":1772532050000}}\"}}",
+          "id": "opencode:ses_example01/msg_example09",
+          "kind": "unknown",
+          "sessionId": "opencode:ses_example01"
+        },
+        {
+          "at": 1772532060000,
+          "dataJson": "{\"what\":\"row\",\"type\":\"user\",\"harnessVersion\":\"2.0.21\",\"raw\":\"{\\\"text\\\":\\\"a row whose data was cut\"}",
+          "id": "opencode:ses_example01/msg_example10",
+          "kind": "unknown",
+          "sessionId": "opencode:ses_example01"
+        }
+      ],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532000000,
+          "gitBranch": null,
+          "id": "opencode:ses_example01/msg_example01",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "opencode:ses_example01",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "harness",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532001000,
+          "gitBranch": null,
+          "id": "opencode:ses_example01/msg_example02",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 2,
+          "sessionId": "opencode:ses_example01",
+          "sourceRole": "system",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "build",
+          "completedAt": 1772532009000,
+          "createdAt": 1772532002000,
+          "gitBranch": null,
+          "id": "opencode:ses_example01/msg_example03",
+          "model": "anthropic/claude-sonnet-5-5",
+          "reportedCost": 0.012,
+          "requestedAt": 1772532002000,
+          "seq": 3,
+          "sessionId": "opencode:ses_example01",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 800,
+          "tokensCacheWrite": 40,
+          "tokensInput": 1200,
+          "tokensOutput": 90,
+          "tokensReasoning": 30
+        },
+        {
+          "actor": "harness",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532010000,
+          "gitBranch": null,
+          "id": "opencode:ses_example01/msg_example04",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 4,
+          "sessionId": "opencode:ses_example01",
+          "sourceRole": "synthetic",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "harness",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532030000,
+          "gitBranch": null,
+          "id": "opencode:ses_example01/msg_example07",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 7,
+          "sessionId": "opencode:ses_example01",
+          "sourceRole": "compaction",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example01/msg_example01",
+          "sessionId": "opencode:ses_example01",
+          "text": "add a discount code field to checkout",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example01/msg_example02",
+          "sessionId": "opencode:ses_example01",
+          "text": "Project instructions loaded.",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "reasoning",
+          "messageId": "opencode:ses_example01/msg_example03",
+          "sessionId": "opencode:ses_example01",
+          "text": "The form lives in src/checkout.",
+          "toolCallId": null
+        },
+        {
+          "idx": 1,
+          "kind": "text",
+          "messageId": "opencode:ses_example01/msg_example03",
+          "sessionId": "opencode:ses_example01",
+          "text": "Added the field to the checkout form.",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example01/msg_example04",
+          "sessionId": "opencode:ses_example01",
+          "text": "The user opened the file src/checkout/discount.ts.",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "compaction",
+          "messageId": "opencode:ses_example01/msg_example07",
+          "sessionId": "opencode:ses_example01",
+          "text": "The discount field was added; validation is next.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": "build",
+        "endedAt": 1772532030000,
+        "harness": "opencode",
+        "id": "opencode:ses_example01",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "ses_example01",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772532000000,
+        "title": "Discount code field"
+      },
+      "toolCalls": []
+    }
+  ]
+}
