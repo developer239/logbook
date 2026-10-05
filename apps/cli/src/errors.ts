@@ -13,12 +13,14 @@ import { lockLine } from './lock-lines.js'
 // The host's port is taken, by another Log Book (on another warehouse, since one on this warehouse is found before
 // binding) or by another program. The host never moves to another port: a bookmarked URL would point at the other.
 export class PortTakenError extends Error {
-  constructor(
-    public readonly port: number,
-    public readonly isLogBook: boolean
-  ) {
+  public readonly port: number
+  public readonly isLogBook: boolean
+
+  constructor(port: number, isLogBook: boolean) {
     super(`Port ${String(port)} on 127.0.0.1 is taken.`)
     this.name = 'PortTakenError'
+    this.port = port
+    this.isLogBook = isLogBook
   }
 }
 
