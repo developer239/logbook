@@ -9,6 +9,8 @@ export const WAREHOUSE_ERROR_CODES = {
   WAREHOUSE_LOCK_UNREADABLE: 'WAREHOUSE_LOCK_UNREADABLE',
   // A re-plan or a batch for a task the labelling run did not start with.
   WAREHOUSE_RUN_TASK_UNKNOWN: 'WAREHOUSE_RUN_TASK_UNKNOWN',
+  // Forgetting a session id the warehouse does not hold.
+  WAREHOUSE_SESSION_UNKNOWN: 'WAREHOUSE_SESSION_UNKNOWN',
 } as const
 
 // A warehouse at a version this build cannot open as asked. The words users read are the CLI's; the error carries

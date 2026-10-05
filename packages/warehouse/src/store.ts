@@ -6,6 +6,7 @@ import { WAREHOUSE_ERROR_CODES, WarehouseVersionError } from './errors.js'
 import { applyMigrations, readUserVersion, SCHEMA_VERSION } from './migrations.js'
 import { resolveDataDirectory } from './paths.js'
 import type {
+  IForgetResult,
   IHarnessDescriptorRecord,
   IHarnessStepRecord,
   IImportedSession,
@@ -448,6 +449,77 @@ export class WarehouseStore implements IWarehouseReader {
         WAREHOUSE_ERROR_CODES.WAREHOUSE_RUN_TASK_UNKNOWN
       )
     }
+  }
+
+  // The sessions whose project directory is this one now; sessions the project gets later import as usual.
+  public readonly sessionsInProject = (projectDir: string): string[] =>
+    this.all<{ id: string }>('SELECT id FROM session WHERE project_dir = ? ORDER BY id', projectDir).map(
+      (row) => row.id
+    )
+
+  // Removes everything held about the sessions and every subagent descendant (a subagent's text is part of its
+  // parent's conversation), and keeps their ids in `forgotten` so a sync does not bring them back. One transaction:
+  // an error anywhere forgets nothing. source_state and labelling run records stay.
+  public readonly forgetSessions = (sessionIds: readonly string[], forgottenAt: number): IForgetResult => {
+    const unknown = sessionIds.filter((id) => this.get('SELECT 1 FROM session WHERE id = ?', id) === undefined)
+    if (unknown.length > 0) {
+      throw new LogBookError(
+        `The warehouse holds no session ${unknown.join(', ')}.`,
+        WAREHOUSE_ERROR_CODES.WAREHOUSE_SESSION_UNKNOWN
+      )
+    }
+    return this.transaction(() => {
+      const ids = this.withSubagentDescendants(sessionIds)
+      const set = JSON.stringify(ids)
+      const insert = this.db.prepare('INSERT INTO forgotten (session_id, forgotten_at) VALUES (?, ?)')
+      for (const id of ids) {
+        insert.run(id, forgottenAt)
+      }
+      // Part first, so its delete trigger keeps part_fts in step.
+      for (const table of ['part', 'message', 'tool_call', 'event', 'turn', 'session_command']) {
+        this.db.prepare(`DELETE FROM ${table} WHERE session_id IN (SELECT value FROM json_each(?))`).run(set)
+      }
+      this.db
+        .prepare(
+          `DELETE FROM link WHERE parent_session_id IN (SELECT value FROM json_each(?))
+             OR child_session_id IN (SELECT value FROM json_each(?))`
+        )
+        .run(set, set)
+      const labelCount = this.deleteSessionLabels(set)
+      this.db.prepare('DELETE FROM session WHERE id IN (SELECT value FROM json_each(?))').run(set)
+      return { sessionIds: ids, labelCount }
+    })
+  }
+
+  // The sessions and their subagent children, their children's children, and so on.
+  private readonly withSubagentDescendants = (sessionIds: readonly string[]): string[] =>
+    (
+      this.db
+        .prepare(
+          `WITH RECURSIVE tree(id) AS (
+             SELECT value FROM json_each(?)
+             UNION
+             SELECT link.child_session_id FROM link JOIN tree ON link.parent_session_id = tree.id
+             WHERE link.kind = 'subagent'
+           )
+           SELECT id FROM tree ORDER BY id`
+        )
+        .all(JSON.stringify(sessionIds)) as { id: string }[]
+    ).map((row) => row.id)
+
+  // The labels of the sessions and of their messages, tool calls and reactions: a record id equal to a session id or
+  // starting with it and `/`. The prefix is compared literally, so `_` and `%` in an id are not wildcards.
+  private readonly deleteSessionLabels = (set: string): number => {
+    const where = `EXISTS (
+      SELECT 1 FROM json_each(?) AS forgotten_id
+      WHERE label.record_id = forgotten_id.value
+        OR substr(label.record_id, 1, length(forgotten_id.value) + 1) = forgotten_id.value || '/'
+    )`
+    const { count } = this.db.prepare(`SELECT count(*) AS count FROM label WHERE ${where}`).get(set) as {
+      count: number
+    }
+    this.db.prepare(`DELETE FROM label WHERE ${where}`).run(set)
+    return count
   }
 
   // The compaction, one call per step so the engine's rewrite process can report the end of each (forget's purge runs

@@ -1,6 +1,7 @@
 export { MIGRATIONS, SCHEMA_VERSION } from './migrations.js'
 export type {
   IEventRecord,
+  IForgetResult,
   IHarnessDescriptorRecord,
   IHarnessStepRecord,
   IImportedSession,
