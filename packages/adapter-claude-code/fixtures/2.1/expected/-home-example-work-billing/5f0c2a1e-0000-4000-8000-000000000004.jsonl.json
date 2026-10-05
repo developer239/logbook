@@ -2,7 +2,15 @@
   "harnessVersion": "2.1.286",
   "sessions": [
     {
-      "events": [],
+      "events": [
+        {
+          "at": 1772443800000,
+          "dataJson": "{\"what\":\"record\",\"type\":\"user\",\"harnessVersion\":\"2.1.286\",\"raw\":{\"parentUuid\":null,\"isSidechain\":false,\"userType\":\"external\",\"cwd\":\"/home/example/work/billing\",\"sessionId\":\"5f0c2a1e-0000-4000-8000-000000000004\",\"version\":\"2.1.286\",\"gitBranch\":\"main\",\"entrypoint\":\"cli\",\"uuid\":\"5f0c2a1e-0004-4000-8000-000000000002\",\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"this line lost its timestamp\"}}}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000004/5f0c2a1e-0004-4000-8000-000000000002",
+          "kind": "unknown",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000004"
+        }
+      ],
       "messages": [
         {
           "actor": "user",

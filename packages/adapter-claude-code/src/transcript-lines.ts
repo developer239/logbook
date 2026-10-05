@@ -40,7 +40,20 @@ export interface ITranscriptLine {
   aiTitle?: unknown
   customTitle?: unknown
   content?: unknown
+  attachment?: unknown
+  compactMetadata?: unknown
+  error?: unknown
+  retryAttempt?: unknown
+  sourceToolUseID?: unknown
   message?: { id?: unknown; model?: unknown; content?: unknown; usage?: IUsage }
+}
+
+// One line of a transcript: its 1-based number, and the line as parsed, or null with the raw text when it did not
+// parse to an object.
+export interface ITranscriptEntry {
+  number: number
+  line: ITranscriptLine | null
+  raw: unknown
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -90,17 +103,27 @@ export const timeOf = (line: ITranscriptLine): number | null => {
   return Number.isNaN(time) ? null : time
 }
 
-// Each line that parses to a JSON object; a line that does not is skipped. The usual one is a last line with no
-// trailing newline that Claude Code is still writing, which the next sync reads once the file's size changes.
-export const parseTranscript = (text: string): ITranscriptLine[] =>
-  text.split('\n').flatMap((raw) => {
+const parseLine = (raw: string): { isParsed: boolean; value: unknown } => {
+  try {
+    return { isParsed: true, value: JSON.parse(raw) as unknown }
+  } catch {
+    return { isParsed: false, value: raw }
+  }
+}
+
+// Every non-empty line in order. A last line with no trailing newline that fails to parse is being written: it is
+// skipped, and the next sync reads it once the file's size changes. Any other line that does not parse to an object
+// keeps its raw text, or the value it parsed to.
+export const parseTranscript = (text: string): ITranscriptEntry[] => {
+  const rows = text.split('\n')
+  return rows.flatMap((raw, index) => {
     if (raw.trim() === '') {
       return []
     }
-    try {
-      const parsed: unknown = JSON.parse(raw)
-      return isRecord(parsed) ? [parsed] : []
-    } catch {
+    const { isParsed, value } = parseLine(raw)
+    if (!isParsed && index === rows.length - 1) {
       return []
     }
+    return [{ number: index + 1, line: isRecord(value) ? value : null, raw: value }]
   })
+}
