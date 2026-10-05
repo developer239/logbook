@@ -1,0 +1,112 @@
+{
+  "harnessVersion": "2.0.21",
+  "sessions": [
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772614827000,
+          "gitBranch": null,
+          "id": "opencode:ses_demo2/msg_demo3",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "opencode:ses_demo2",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "explore",
+          "completedAt": 1772614831000,
+          "createdAt": 1772614828000,
+          "gitBranch": null,
+          "id": "opencode:ses_demo2/msg_demo4",
+          "model": "anthropic/claude-haiku-4-5",
+          "reportedCost": null,
+          "requestedAt": 1772614828000,
+          "seq": 2,
+          "sessionId": "opencode:ses_demo2",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_demo2/msg_demo3",
+          "sessionId": "opencode:ses_demo2",
+          "text": "find the coupon tests",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_demo2/msg_demo4",
+          "sessionId": "opencode:ses_demo2",
+          "text": "Looking in the test folder.",
+          "toolCallId": null
+        },
+        {
+          "idx": 1,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo2/msg_demo4",
+          "sessionId": "opencode:ses_demo2",
+          "text": "read {\"filePath\":\"/home/example/work/shop/test/checkout/discount.test.ts\"}",
+          "toolCallId": "opencode:ses_demo2/prt_demo13"
+        },
+        {
+          "idx": 2,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo2/msg_demo4",
+          "sessionId": "opencode:ses_demo2",
+          "text": "describe(\"discount\")",
+          "toolCallId": "opencode:ses_demo2/prt_demo13"
+        }
+      ],
+      "session": {
+        "agent": "explore",
+        "endedAt": 1772614831000,
+        "harness": "opencode",
+        "id": "opencode:ses_demo2",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "ses_demo2",
+        "spawnedBySessionId": "opencode:ses_demo1",
+        "spawnedByToolCallId": null,
+        "startedAt": 1772614827000,
+        "title": "Find the coupon tests"
+      },
+      "toolCalls": [
+        {
+          "bareName": "read",
+          "childSessionId": null,
+          "endedAt": 1772614831000,
+          "family": "read",
+          "id": "opencode:ses_demo2/prt_demo13",
+          "inputJson": "{\"filePath\":\"/home/example/work/shop/test/checkout/discount.test.ts\"}",
+          "messageId": "opencode:ses_demo2/msg_demo4",
+          "name": "read",
+          "server": null,
+          "sessionId": "opencode:ses_demo2",
+          "startedAt": 1772614830000,
+          "status": "completed"
+        }
+      ]
+    }
+  ]
+}

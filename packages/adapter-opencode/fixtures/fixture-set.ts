@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 import type { IAdapterEnvironment } from '@log-book/adapter-api'
 import type { IFixtureSet, ILocateVariant } from '@log-book/adapter-api/conformance'
 import { openSqlite } from '@log-book/core'
+import { openCodeSourceWriter } from '../src/source-writer/index.js'
+import { SCRIPTS } from './2.0/scripts.js'
 
 const ROOT = fileURLToPath(new URL('2.0', import.meta.url))
 const DATA_DIR = '.local/share/opencode'
@@ -163,14 +165,18 @@ export const fixtureSet20: IFixtureSet = {
     { locator: session(11), harnessVersion: '2.0.21', unknownRecords: [] },
     { locator: session(12), harnessVersion: '2.0.21', unknownRecords: [] },
     { locator: session(13), harnessVersion: '1.18.34', unknownRecords: [] },
+    { locator: session(14), harnessVersion: '2.0.21', unknownRecords: [] },
+    // Written by the source writer from scripts.ts, in writing order.
+    { locator: 'ses_demo1', harnessVersion: '2.0.21', unknownRecords: [] },
+    { locator: 'ses_demo2', harnessVersion: '2.0.21', unknownRecords: [] },
+    { locator: 'ses_demo3', harnessVersion: '2.0.15', unknownRecords: [] },
   ],
   environment: (home) => environment(home, { OPENCODE_DB: join(home, DATABASE) }),
-  // Journal mode DELETE, so a read-only open adds no file.
+  // The source writer creates the database in journal mode DELETE, so a read-only open adds no file, and writes the
+  // scripted sessions; the hand-written rows follow. Writer ids (`demo`) never collide with hand-written ones.
   prepare: async (home) => {
-    const db = await writeDatabase(home)
-    db.exec(SCHEMA)
-    db.exec(ROWS.join('\n'))
-    db.close()
+    await openCodeSourceWriter().writeSessions(home, SCRIPTS)
+    await withDatabase(home, ROWS.join('\n'))
   },
   // As OpenCode leaves it while running: write-ahead log on, no automatic checkpoint, the last rows only in the
   // `-wal`, and the writer still open.

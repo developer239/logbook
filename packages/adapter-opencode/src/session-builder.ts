@@ -120,7 +120,7 @@ const childSessionOf = (state: IToolState): string | null => {
 
 // OpenCode 2.0's fixed messages, checked in its source: a person declining a call, and `opencode run` refusing a
 // permission nobody can answer. A deny rule's message starts with its own prefix.
-const DECLINED = 'The user declined this tool call'
+export const DECLINED = 'The user declined this tool call'
 const RUN_REFUSAL =
   'This non-interactive run cannot ask the user for permission, so the request was rejected. Continue without this action.'
 const DENY_RULE_PREFIX = 'Permission denied: '

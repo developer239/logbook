@@ -1,0 +1,783 @@
+{
+  "harnessVersion": "2.0.21",
+  "sessions": [
+    {
+      "events": [
+        {
+          "at": 1772614825000,
+          "dataJson": "{\"name\":\"write-release-notes\",\"chars\":44,\"toolCallId\":\"opencode:ses_demo1/prt_demo11\"}",
+          "id": "opencode:ses_demo1/prt_demo11:skill",
+          "kind": "skill-loaded",
+          "sessionId": "opencode:ses_demo1"
+        },
+        {
+          "at": 1772614841000,
+          "dataJson": "{\"model\":{\"providerID\":\"openai\",\"id\":\"gpt-5.5\"},\"previous\":{\"providerID\":\"anthropic\",\"id\":\"claude-sonnet-5-5\"}}",
+          "id": "opencode:ses_demo1/msg_demo5",
+          "kind": "model-switched",
+          "sessionId": "opencode:ses_demo1"
+        },
+        {
+          "at": 1772614847000,
+          "dataJson": "{\"toolCallId\":\"opencode:ses_demo1/prt_demo14\"}",
+          "id": "opencode:ses_demo1/prt_demo14:rejected",
+          "kind": "tool-rejected",
+          "sessionId": "opencode:ses_demo1"
+        },
+        {
+          "at": 1772614842000,
+          "dataJson": "{\"error\":\"aborted: Step interrupted\"}",
+          "id": "opencode:ses_demo1/msg_demo6",
+          "kind": "error",
+          "sessionId": "opencode:ses_demo1"
+        },
+        {
+          "at": 1772614847000,
+          "dataJson": "{\"messageId\":\"opencode:ses_demo1/msg_demo6\"}",
+          "id": "opencode:ses_demo1/msg_demo6:interrupted",
+          "kind": "interrupted",
+          "sessionId": "opencode:ses_demo1"
+        },
+        {
+          "at": 1772614847000,
+          "dataJson": "{\"outcome\":\"interrupted\"}",
+          "id": "opencode:ses_demo1/msg_demo7",
+          "kind": "idle",
+          "sessionId": "opencode:ses_demo1"
+        },
+        {
+          "at": 1772614853000,
+          "dataJson": "{\"agent\":\"plan\"}",
+          "id": "opencode:ses_demo1/msg_demo10",
+          "kind": "agent-switched",
+          "sessionId": "opencode:ses_demo1"
+        },
+        {
+          "at": 1772614854000,
+          "dataJson": "{\"reason\":null,\"status\":null}",
+          "id": "opencode:ses_demo1/msg_demo11",
+          "kind": "compaction",
+          "sessionId": "opencode:ses_demo1"
+        },
+        {
+          "at": 1772614855000,
+          "dataJson": "{\"error\":\"API Error: Connection dropped.\"}",
+          "id": "opencode:ses_demo1/msg_demo12",
+          "kind": "error",
+          "sessionId": "opencode:ses_demo1"
+        },
+        {
+          "at": 1772614861000,
+          "dataJson": "{\"error\":\"aborted: Step interrupted\"}",
+          "id": "opencode:ses_demo1/msg_demo14",
+          "kind": "error",
+          "sessionId": "opencode:ses_demo1"
+        },
+        {
+          "at": 1772614870000,
+          "dataJson": "{\"messageId\":\"opencode:ses_demo1/msg_demo14\"}",
+          "id": "opencode:ses_demo1/msg_demo14:interrupted",
+          "kind": "interrupted",
+          "sessionId": "opencode:ses_demo1"
+        },
+        {
+          "at": 1772614870000,
+          "dataJson": "{\"outcome\":\"interrupted\"}",
+          "id": "opencode:ses_demo1/msg_demo15",
+          "kind": "idle",
+          "sessionId": "opencode:ses_demo1"
+        },
+        {
+          "at": 1772614871000,
+          "dataJson": "{\"outcome\":\"completed\"}",
+          "id": "opencode:ses_demo1/msg_demo16",
+          "kind": "idle",
+          "sessionId": "opencode:ses_demo1"
+        }
+      ],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772614800000,
+          "gitBranch": null,
+          "id": "opencode:ses_demo1/msg_demo1",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "opencode:ses_demo1",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "build",
+          "completedAt": 1772614840000,
+          "createdAt": 1772614801000,
+          "gitBranch": null,
+          "id": "opencode:ses_demo1/msg_demo2",
+          "model": "anthropic/claude-sonnet-5-5",
+          "reportedCost": 0.0125,
+          "requestedAt": 1772614801000,
+          "seq": 2,
+          "sessionId": "opencode:ses_demo1",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 40,
+          "tokensInput": 1200,
+          "tokensOutput": 80,
+          "tokensReasoning": 30
+        },
+        {
+          "actor": "assistant",
+          "agent": "build",
+          "completedAt": 1772614847000,
+          "createdAt": 1772614842000,
+          "gitBranch": null,
+          "id": "opencode:ses_demo1/msg_demo6",
+          "model": "openai/gpt-5.5",
+          "reportedCost": null,
+          "requestedAt": 1772614842000,
+          "seq": 4,
+          "sessionId": "opencode:ses_demo1",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772614850000,
+          "gitBranch": null,
+          "id": "opencode:ses_demo1/msg_demo8",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 6,
+          "sessionId": "opencode:ses_demo1",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "build",
+          "completedAt": 1772614852000,
+          "createdAt": 1772614851000,
+          "gitBranch": null,
+          "id": "opencode:ses_demo1/msg_demo9",
+          "model": "openai/gpt-5.5",
+          "reportedCost": null,
+          "requestedAt": 1772614851000,
+          "seq": 7,
+          "sessionId": "opencode:ses_demo1",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "harness",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772614854000,
+          "gitBranch": null,
+          "id": "opencode:ses_demo1/msg_demo11",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 9,
+          "sessionId": "opencode:ses_demo1",
+          "sourceRole": "compaction",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772614855000,
+          "gitBranch": null,
+          "id": "opencode:ses_demo1/msg_demo12",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": 1772614855000,
+          "seq": 10,
+          "sessionId": "opencode:ses_demo1",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772614860000,
+          "gitBranch": null,
+          "id": "opencode:ses_demo1/msg_demo13",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 11,
+          "sessionId": "opencode:ses_demo1",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "plan",
+          "completedAt": 1772614870000,
+          "createdAt": 1772614861000,
+          "gitBranch": null,
+          "id": "opencode:ses_demo1/msg_demo14",
+          "model": "openai/gpt-5.5",
+          "reportedCost": null,
+          "requestedAt": 1772614861000,
+          "seq": 12,
+          "sessionId": "opencode:ses_demo1",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_demo1/msg_demo1",
+          "sessionId": "opencode:ses_demo1",
+          "text": "here is the broken coupon box, fix the validation",
+          "toolCallId": null
+        },
+        {
+          "idx": 1,
+          "kind": "text",
+          "messageId": "opencode:ses_demo1/msg_demo1",
+          "sessionId": "opencode:ses_demo1",
+          "text": "(image)",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "reasoning",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "The validation lives in src/checkout/discount.ts.",
+          "toolCallId": null
+        },
+        {
+          "idx": 1,
+          "kind": "text",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "Reading the form and its tests.",
+          "toolCallId": null
+        },
+        {
+          "idx": 2,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "shell {\"command\":\"pnpm test\"}",
+          "toolCallId": "opencode:ses_demo1/prt_demo1"
+        },
+        {
+          "idx": 3,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "24 passed",
+          "toolCallId": "opencode:ses_demo1/prt_demo1"
+        },
+        {
+          "idx": 4,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "read {\"filePath\":\"/home/example/work/shop/src/checkout/discount.ts\"}",
+          "toolCallId": "opencode:ses_demo1/prt_demo2"
+        },
+        {
+          "idx": 5,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "done",
+          "toolCallId": "opencode:ses_demo1/prt_demo2"
+        },
+        {
+          "idx": 6,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "edit {\"filePath\":\"/home/example/work/shop/src/checkout/discount.ts\",\"oldString\":\"0.1\",\"newString\":\"rate\"}",
+          "toolCallId": "opencode:ses_demo1/prt_demo3"
+        },
+        {
+          "idx": 7,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "done",
+          "toolCallId": "opencode:ses_demo1/prt_demo3"
+        },
+        {
+          "idx": 8,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "write {\"filePath\":\"/home/example/work/shop/src/checkout/rate.ts\",\"content\":\"export const rate = 0.1\"}",
+          "toolCallId": "opencode:ses_demo1/prt_demo4"
+        },
+        {
+          "idx": 9,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "done",
+          "toolCallId": "opencode:ses_demo1/prt_demo4"
+        },
+        {
+          "idx": 10,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "grep {\"pattern\":\"discount\",\"path\":\"/home/example/work/shop/src\"}",
+          "toolCallId": "opencode:ses_demo1/prt_demo5"
+        },
+        {
+          "idx": 11,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "src/checkout/discount.ts",
+          "toolCallId": "opencode:ses_demo1/prt_demo5"
+        },
+        {
+          "idx": 12,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "glob {\"pattern\":\"**/*.test.ts\"}",
+          "toolCallId": "opencode:ses_demo1/prt_demo6"
+        },
+        {
+          "idx": 13,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "test/checkout/discount.test.ts",
+          "toolCallId": "opencode:ses_demo1/prt_demo6"
+        },
+        {
+          "idx": 14,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "webfetch {\"url\":\"https://example.com/coupons\"}",
+          "toolCallId": "opencode:ses_demo1/prt_demo7"
+        },
+        {
+          "idx": 15,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "Coupons take a code.",
+          "toolCallId": "opencode:ses_demo1/prt_demo7"
+        },
+        {
+          "idx": 16,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "websearch {\"query\":\"coupon code validation\"}",
+          "toolCallId": "opencode:ses_demo1/prt_demo8"
+        },
+        {
+          "idx": 17,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "Three results.",
+          "toolCallId": "opencode:ses_demo1/prt_demo8"
+        },
+        {
+          "idx": 18,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "question {\"questions\":[{\"question\":\"Percent or fixed amount?\"}]}",
+          "toolCallId": "opencode:ses_demo1/prt_demo9"
+        },
+        {
+          "idx": 19,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "Percent.",
+          "toolCallId": "opencode:ses_demo1/prt_demo9"
+        },
+        {
+          "idx": 20,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "tracker_create_issue {\"title\":\"Coupon rounding\"}",
+          "toolCallId": "opencode:ses_demo1/prt_demo10"
+        },
+        {
+          "idx": 21,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "The tracker is offline.",
+          "toolCallId": "opencode:ses_demo1/prt_demo10"
+        },
+        {
+          "idx": 22,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "skill {\"name\":\"write-release-notes\"}",
+          "toolCallId": "opencode:ses_demo1/prt_demo11"
+        },
+        {
+          "idx": 23,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "Write release notes from the merged changes.",
+          "toolCallId": "opencode:ses_demo1/prt_demo11"
+        },
+        {
+          "idx": 24,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "subagent {\"prompt\":\"find the coupon tests\",\"agent\":\"explore\"}",
+          "toolCallId": "opencode:ses_demo1/prt_demo12"
+        },
+        {
+          "idx": 25,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "sessionId": "opencode:ses_demo1",
+          "text": "In test/checkout.",
+          "toolCallId": "opencode:ses_demo1/prt_demo12"
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_demo1/msg_demo6",
+          "sessionId": "opencode:ses_demo1",
+          "text": "Pushing the branch.",
+          "toolCallId": null
+        },
+        {
+          "idx": 1,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo6",
+          "sessionId": "opencode:ses_demo1",
+          "text": "shell {\"command\":\"git push\"}",
+          "toolCallId": "opencode:ses_demo1/prt_demo14"
+        },
+        {
+          "idx": 2,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_demo1/msg_demo6",
+          "sessionId": "opencode:ses_demo1",
+          "text": "aborted: The user declined this tool call",
+          "toolCallId": "opencode:ses_demo1/prt_demo14"
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_demo1/msg_demo8",
+          "sessionId": "opencode:ses_demo1",
+          "text": "do not push until I ask",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_demo1/msg_demo9",
+          "sessionId": "opencode:ses_demo1",
+          "text": "Understood. Planning the rest instead.",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "compaction",
+          "messageId": "opencode:ses_demo1/msg_demo11",
+          "sessionId": "opencode:ses_demo1",
+          "text": "The coupon validation was fixed; pushing waits.",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_demo1/msg_demo13",
+          "sessionId": "opencode:ses_demo1",
+          "text": "Review the open changes of the shop and list what to fix first, most important first: the coupon change",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_demo1/msg_demo14",
+          "sessionId": "opencode:ses_demo1",
+          "text": "Starting the review.",
+          "toolCallId": null
+        },
+        {
+          "idx": 1,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_demo1/msg_demo14",
+          "sessionId": "opencode:ses_demo1",
+          "text": "shell {\"command\":\"pnpm test\"}",
+          "toolCallId": "opencode:ses_demo1/prt_demo15"
+        }
+      ],
+      "session": {
+        "agent": "build",
+        "endedAt": 1772614870000,
+        "harness": "opencode",
+        "id": "opencode:ses_demo1",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "ses_demo1",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772614800000,
+        "title": "Coupon validation"
+      },
+      "toolCalls": [
+        {
+          "bareName": "shell",
+          "childSessionId": null,
+          "endedAt": 1772614805000,
+          "family": "shell",
+          "id": "opencode:ses_demo1/prt_demo1",
+          "inputJson": "{\"command\":\"pnpm test\"}",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "name": "shell",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614804000,
+          "status": "completed"
+        },
+        {
+          "bareName": "read",
+          "childSessionId": null,
+          "endedAt": 1772614807000,
+          "family": "read",
+          "id": "opencode:ses_demo1/prt_demo2",
+          "inputJson": "{\"filePath\":\"/home/example/work/shop/src/checkout/discount.ts\"}",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "name": "read",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614806000,
+          "status": "completed"
+        },
+        {
+          "bareName": "edit",
+          "childSessionId": null,
+          "endedAt": 1772614809000,
+          "family": "edit",
+          "id": "opencode:ses_demo1/prt_demo3",
+          "inputJson": "{\"filePath\":\"/home/example/work/shop/src/checkout/discount.ts\",\"oldString\":\"0.1\",\"newString\":\"rate\"}",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "name": "edit",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614808000,
+          "status": "completed"
+        },
+        {
+          "bareName": "write",
+          "childSessionId": null,
+          "endedAt": 1772614811000,
+          "family": "edit",
+          "id": "opencode:ses_demo1/prt_demo4",
+          "inputJson": "{\"filePath\":\"/home/example/work/shop/src/checkout/rate.ts\",\"content\":\"export const rate = 0.1\"}",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "name": "write",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614810000,
+          "status": "completed"
+        },
+        {
+          "bareName": "grep",
+          "childSessionId": null,
+          "endedAt": 1772614813000,
+          "family": "search",
+          "id": "opencode:ses_demo1/prt_demo5",
+          "inputJson": "{\"pattern\":\"discount\",\"path\":\"/home/example/work/shop/src\"}",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "name": "grep",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614812000,
+          "status": "completed"
+        },
+        {
+          "bareName": "glob",
+          "childSessionId": null,
+          "endedAt": 1772614815000,
+          "family": "search",
+          "id": "opencode:ses_demo1/prt_demo6",
+          "inputJson": "{\"pattern\":\"**/*.test.ts\"}",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "name": "glob",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614814000,
+          "status": "completed"
+        },
+        {
+          "bareName": "webfetch",
+          "childSessionId": null,
+          "endedAt": 1772614817000,
+          "family": "web",
+          "id": "opencode:ses_demo1/prt_demo7",
+          "inputJson": "{\"url\":\"https://example.com/coupons\"}",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "name": "webfetch",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614816000,
+          "status": "completed"
+        },
+        {
+          "bareName": "websearch",
+          "childSessionId": null,
+          "endedAt": 1772614819000,
+          "family": "web",
+          "id": "opencode:ses_demo1/prt_demo8",
+          "inputJson": "{\"query\":\"coupon code validation\"}",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "name": "websearch",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614818000,
+          "status": "completed"
+        },
+        {
+          "bareName": "question",
+          "childSessionId": null,
+          "endedAt": 1772614821000,
+          "family": "question",
+          "id": "opencode:ses_demo1/prt_demo9",
+          "inputJson": "{\"questions\":[{\"question\":\"Percent or fixed amount?\"}]}",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "name": "question",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614820000,
+          "status": "completed"
+        },
+        {
+          "bareName": "tracker_create_issue",
+          "childSessionId": null,
+          "endedAt": 1772614823000,
+          "family": "other",
+          "id": "opencode:ses_demo1/prt_demo10",
+          "inputJson": "{\"title\":\"Coupon rounding\"}",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "name": "tracker_create_issue",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614822000,
+          "status": "error"
+        },
+        {
+          "bareName": "skill",
+          "childSessionId": null,
+          "endedAt": 1772614825000,
+          "family": "skill",
+          "id": "opencode:ses_demo1/prt_demo11",
+          "inputJson": "{\"name\":\"write-release-notes\"}",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "name": "skill",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614824000,
+          "status": "completed"
+        },
+        {
+          "bareName": "subagent",
+          "childSessionId": null,
+          "endedAt": 1772614840000,
+          "family": "subagent",
+          "id": "opencode:ses_demo1/prt_demo12",
+          "inputJson": "{\"prompt\":\"find the coupon tests\",\"agent\":\"explore\"}",
+          "messageId": "opencode:ses_demo1/msg_demo2",
+          "name": "subagent",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614826000,
+          "status": "completed"
+        },
+        {
+          "bareName": "shell",
+          "childSessionId": null,
+          "endedAt": 1772614847000,
+          "family": "shell",
+          "id": "opencode:ses_demo1/prt_demo14",
+          "inputJson": "{\"command\":\"git push\"}",
+          "messageId": "opencode:ses_demo1/msg_demo6",
+          "name": "shell",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614844000,
+          "status": "error"
+        },
+        {
+          "bareName": "shell",
+          "childSessionId": null,
+          "endedAt": null,
+          "family": "shell",
+          "id": "opencode:ses_demo1/prt_demo15",
+          "inputJson": "{\"command\":\"pnpm test\"}",
+          "messageId": "opencode:ses_demo1/msg_demo14",
+          "name": "shell",
+          "server": null,
+          "sessionId": "opencode:ses_demo1",
+          "startedAt": 1772614863000,
+          "status": "pending"
+        }
+      ]
+    }
+  ]
+}
