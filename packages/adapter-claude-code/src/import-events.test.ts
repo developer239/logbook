@@ -30,6 +30,27 @@ const event = (id: string, kind: IEventRecord['kind'], seconds: number, data: un
   dataJson: JSON.stringify(data),
 })
 
+const refusal = "The user doesn't want to proceed with this tool use. The tool use was rejected."
+
+const call = (seconds: number): TLine =>
+  line('a1', seconds, {
+    type: 'assistant',
+    message: {
+      id: 'msg_1',
+      model: 'claude-sonnet-5-5',
+      content: [{ type: 'tool_use', id: 'toolu_1', name: 'Bash', input: { command: 'git push' } }],
+    },
+  })
+
+const result = (seconds: number, content: string): TLine =>
+  line('r1', seconds, {
+    type: 'user',
+    message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content, is_error: true }] },
+  })
+
+const marker = (uuid: string, seconds: number, text: string): TLine =>
+  line(uuid, seconds, { type: 'user', message: { role: 'user', content: [{ type: 'text', text }] } })
+
 describe('importTranscript events and unknown records', () => {
   let directory = ''
 
@@ -290,6 +311,66 @@ describe('importTranscript events and unknown records', () => {
     }).toStrictEqual({
       events: [event('field-entrypoint', 'unknown', 1, { what: 'field', field: 'entrypoint', value: 'sdk-ts' })],
       isScripted: false,
+    })
+  })
+
+  describe('interruptions and refused tool calls', () => {
+    it.each([
+      ['[Request interrupted by user]', '[Request interrupted by user]'],
+      ['[Request interrupted by user for tool use]', '[Request interrupted by user for tool use]'],
+      ['a marker with leading whitespace', '  \n[Request interrupted by user]'],
+    ])('gives %s one interrupted event pointing at its message', async (_form, text) => {
+      // Act
+      const found = await eventsOf([marker('m1', 2, text)])
+
+      // Assert
+      expect(found).toStrictEqual({
+        events: [event('m1:interrupted', 'interrupted', 2, { messageId: `${SESSION}/m1` })],
+        problems: [],
+      })
+    })
+
+    it("gives a refused call's result one tool-rejected event with the call's id and end time", async () => {
+      // Act
+      const unit = await importLines([call(1), result(4, refusal)])
+
+      // Assert
+      const [session] = unit.sessions
+      expect({
+        events: session?.events,
+        call: session?.toolCalls.map((record) => [record.status, record.endedAt]),
+        problems: validateImportedUnit(claudeCode().descriptor, unit),
+      }).toStrictEqual({
+        events: [event('toolu_1:rejected', 'tool-rejected', 4, { toolCallId: `${SESSION}/toolu_1` })],
+        call: [['error', at(4)]],
+        problems: [],
+      })
+    })
+
+    it('gives a refusal followed by its marker both events', async () => {
+      // Act
+      const found = await eventsOf([
+        call(1),
+        result(4, refusal),
+        marker('m1', 5, '[Request interrupted by user for tool use]'),
+      ])
+
+      // Assert
+      expect(found).toStrictEqual({
+        events: [
+          event('toolu_1:rejected', 'tool-rejected', 4, { toolCallId: `${SESSION}/toolu_1` }),
+          event('m1:interrupted', 'interrupted', 5, { messageId: `${SESSION}/m1` }),
+        ],
+        problems: [],
+      })
+    })
+
+    it('gives a failed call with other error text no event', async () => {
+      // Act
+      const found = await eventsOf([call(1), result(4, 'Exit code 1: permission denied')])
+
+      // Assert
+      expect(found).toStrictEqual({ events: [], problems: [] })
     })
   })
 })
