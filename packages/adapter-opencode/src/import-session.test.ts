@@ -46,6 +46,18 @@ const skillCall = (id: string, input: Record<string, unknown>, status: string): 
   time: { created: 1000, completed: 1500 },
 })
 
+// A bash call that failed with the given error.
+const refusedCall = (id: string, type: string, message: string): Record<string, unknown> => ({
+  type: 'tool',
+  id,
+  name: 'bash',
+  state: { status: 'error', input: { command: 'git push' }, error: { type, message } },
+  time: { created: 1100, completed: 1500 },
+})
+
+const eventsOf = (session: IImportedSession): unknown[][] =>
+  session.events.map((event) => [event.id, event.kind, event.at, JSON.parse(event.dataJson) as unknown])
+
 const context = {
   signal: new AbortController().signal,
   onProgress: () => undefined,
@@ -491,5 +503,149 @@ describe('importUnit for OpenCode', () => {
         { what: 'part', type: 'step-marker', harnessVersion: '2.0.21', raw: { type: 'step-marker', step: 2 } },
       ],
     ])
+  })
+
+  it('records one interrupted event for an aborted 2.0 request, keeping its error and idle events', async () => {
+    // Arrange
+    const rows: IRow[] = [
+      {
+        id: 'msg_01',
+        type: 'assistant',
+        seq: 1,
+        data: {
+          time: { created: 1000, completed: 1800 },
+          content: [{ type: 'text', text: 'Starting.' }],
+          error: { type: 'aborted', message: 'Step interrupted' },
+        },
+      },
+      { id: 'msg_02', type: 'idle', seq: 2, data: { outcome: 'interrupted', time: { created: 1900 } } },
+    ]
+
+    // Act
+    const session = onlySession(
+      await importSession(
+        `${sessionRow('ses_example01')}${rows.map((row) => messageRow('ses_example01', row)).join('')}`
+      )
+    )
+
+    // Assert
+    expect(eventsOf(session)).toStrictEqual([
+      [`${SESSION}/msg_01`, 'error', 1000, { error: 'aborted: Step interrupted' }],
+      [`${SESSION}/msg_01:interrupted`, 'interrupted', 1800, { messageId: `${SESSION}/msg_01` }],
+      [`${SESSION}/msg_02`, 'idle', 1900, { outcome: 'interrupted' }],
+    ])
+  })
+
+  it('records interrupted for an aborted message migrated from 1.x', async () => {
+    // Arrange
+    const row: IRow = {
+      id: 'msg_01',
+      type: 'assistant',
+      seq: 1,
+      data: { time: { created: 1000 }, error: { type: 'aborted', message: 'The operation was aborted.' } },
+    }
+
+    // Act
+    const session = onlySession(
+      await importSession(
+        `${sessionRow('ses_example01').replace("'2.0.21'", "'1.18.34'")}${messageRow('ses_example01', row)}`
+      )
+    )
+
+    // Assert
+    expect(eventsOf(session).map(([id, kind, at]) => [id, kind, at])).toStrictEqual([
+      [`${SESSION}/msg_01`, 'error', 1000],
+      [`${SESSION}/msg_01:interrupted`, 'interrupted', 1000],
+    ])
+  })
+
+  it('records tool-rejected and interrupted for a declined call, and tool-rejected only for one rejected with a reason', async () => {
+    // Arrange
+    const rows: IRow[] = [
+      {
+        id: 'msg_01',
+        type: 'assistant',
+        seq: 1,
+        data: {
+          time: { created: 1000, completed: 1600 },
+          content: [refusedCall('prt_01', 'aborted', 'The user declined this tool call')],
+          error: { type: 'aborted', message: 'Step interrupted' },
+        },
+      },
+      {
+        id: 'msg_02',
+        type: 'assistant',
+        seq: 2,
+        data: {
+          time: { created: 2000 },
+          content: [refusedCall('prt_02', 'permission.rejected', 'run the tests first')],
+        },
+      },
+    ]
+
+    // Act
+    const session = onlySession(
+      await importSession(
+        `${sessionRow('ses_example01')}${rows.map((row) => messageRow('ses_example01', row)).join('')}`
+      )
+    )
+
+    // Assert
+    expect(eventsOf(session).map(([id, kind, at, data]) => [id, kind, at, data])).toStrictEqual([
+      [`${SESSION}/prt_01:rejected`, 'tool-rejected', 1500, { toolCallId: `${SESSION}/prt_01` }],
+      [`${SESSION}/msg_01`, 'error', 1000, { error: 'aborted: Step interrupted' }],
+      [`${SESSION}/msg_01:interrupted`, 'interrupted', 1600, { messageId: `${SESSION}/msg_01` }],
+      [`${SESSION}/prt_02:rejected`, 'tool-rejected', 1500, { toolCallId: `${SESSION}/prt_02` }],
+    ])
+  })
+
+  it.each([
+    ['a deny rule', 'permission.rejected', 'Permission denied: bash is not allowed here'],
+    [
+      'opencode run',
+      'permission.rejected',
+      'This non-interactive run cannot ask the user for permission, so the request was rejected. Continue without this action.',
+    ],
+    ['a tool that was running when OpenCode ended', 'tool.interrupted', 'Tool interrupted'],
+    ['an interrupted tool', 'aborted', 'Tool execution interrupted'],
+  ])('records no refusal or interruption for %s', async (_case, type, message) => {
+    // Arrange
+    const row: IRow = {
+      id: 'msg_01',
+      type: 'assistant',
+      seq: 1,
+      data: { time: { created: 1000 }, content: [refusedCall('prt_01', type, message)] },
+    }
+
+    // Act
+    const session = onlySession(
+      await importSession(`${sessionRow('ses_example01')}${messageRow('ses_example01', row)}`)
+    )
+
+    // Assert
+    expect({ events: session.events, status: session.toolCalls.map((call) => call.status) }).toStrictEqual({
+      events: [],
+      status: ['error'],
+    })
+  })
+
+  it('records no refusal in a session recorded by 1.x', async () => {
+    // Arrange
+    const row: IRow = {
+      id: 'msg_01',
+      type: 'assistant',
+      seq: 1,
+      data: { time: { created: 1000 }, content: [refusedCall('prt_01', 'permission.rejected', 'not now')] },
+    }
+
+    // Act
+    const session = onlySession(
+      await importSession(
+        `${sessionRow('ses_example01').replace("'2.0.21'", "'1.18.34'")}${messageRow('ses_example01', row)}`
+      )
+    )
+
+    // Assert
+    expect(session.events).toStrictEqual([])
   })
 })

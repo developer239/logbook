@@ -118,6 +118,33 @@ const childSessionOf = (state: IToolState): string | null => {
   return child?.startsWith(CHILD_SESSION_PREFIX) === true ? sessionIdOf(ADAPTER_ID, child) : null
 }
 
+// OpenCode 2.0's fixed messages, checked in its source: a person declining a call, and `opencode run` refusing a
+// permission nobody can answer. A deny rule's message starts with its own prefix.
+const DECLINED = 'The user declined this tool call'
+const RUN_REFUSAL =
+  'This non-interactive run cannot ask the user for permission, so the request was rejected. Continue without this action.'
+const DENY_RULE_PREFIX = 'Permission denied: '
+
+const errorTypeOf = (error: unknown): string | null => (isRecord(error) ? stringOf(error.type) : null)
+
+const errorMessageOf = (error: unknown): string | null => (isRecord(error) ? stringOf(error.message) : null)
+
+// A refusal a person made: declining the call, or rejecting it with a reason. A deny rule and `opencode run` refuse
+// for nobody; a plugin denying with a message of its own counts as a refusal, a known gap.
+const isPersonRefusal = (error: unknown): boolean => {
+  const type = errorTypeOf(error)
+  const message = errorMessageOf(error)
+  if (type === 'aborted') {
+    return message === DECLINED
+  }
+  return (
+    type === 'permission.rejected' &&
+    message !== null &&
+    message !== RUN_REFUSAL &&
+    !message.startsWith(DENY_RULE_PREFIX)
+  )
+}
+
 const resultText = (status: ToolCallStatus, state: IToolState): string =>
   status === 'error' && state.error !== undefined ? errorText(state.error) : contentText(state.content)
 
@@ -233,6 +260,10 @@ export class SessionBuilder {
     if (data.error !== undefined && data.error !== null) {
       this.addEvent(row, 'error', at, { error: errorText(data.error) })
     }
+    // A stopped request, in 1.17 and 1.18 (migrated to this type) and 2.0; its `idle` row stays an idle event.
+    if (errorTypeOf(data.error) === 'aborted') {
+      this.addMarker(`${row.id}:interrupted`, 'interrupted', { messageId: message.id }, message.completedAt ?? at)
+    }
   }
 
   // Text and reasoning parts, tool calls, and any other part type as an unknown event.
@@ -284,14 +315,45 @@ export class SessionBuilder {
     }
     this.toolCalls.push(call)
     this.addPart(message, 'tool_call', `${name} ${inputJson}`, id)
-    if (status === 'pending') {
-      return
+    if (status !== 'pending') {
+      this.addOutcome(message, callId, call, state)
     }
-    const result = resultText(status, state)
-    this.addPart(message, 'tool_result', result, id)
-    if (call.family === 'skill' && status === 'completed') {
-      this.addSkillLoaded(callId, call, state, result, call.endedAt ?? message.createdAt)
+  }
+
+  // A finished call's result part, and what it says: a skill it loaded, a refusal a person made.
+  private readonly addOutcome = (
+    message: IMessageRecord,
+    callId: string,
+    call: IToolCallRecord,
+    state: IToolState
+  ): void => {
+    const at = call.endedAt ?? message.createdAt
+    const result = resultText(call.status, state)
+    this.addPart(message, 'tool_result', result, call.id)
+    if (call.family === 'skill' && call.status === 'completed') {
+      this.addSkillLoaded(callId, call, state, result, at)
     }
+    // No surveyed 1.x record holds a refusal, so only a session OpenCode 2 recorded can have one.
+    if (call.status === 'error' && !this.isRecordedBy1x() && isPersonRefusal(state.error)) {
+      this.addMarker(`${callId}:rejected`, 'tool-rejected', { toolCallId: call.id }, at)
+    }
+  }
+
+  private readonly isRecordedBy1x = (): boolean => this.harnessVersion?.startsWith('1.') === true
+
+  private readonly addMarker = (
+    sourceId: string,
+    kind: 'interrupted' | 'tool-rejected',
+    data: Record<string, string>,
+    at: number
+  ): void => {
+    this.events.push({
+      id: childIdOf(this.sessionId, sourceId),
+      sessionId: this.sessionId,
+      kind,
+      at,
+      dataJson: JSON.stringify(data),
+    })
   }
 
   // A completed skill call loaded the skill named by its input.
