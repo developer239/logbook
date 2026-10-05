@@ -71,6 +71,9 @@ importers:
       '@log-book/adapter-opencode':
         specifier: workspace:*
         version: link:../../packages/adapter-opencode
+      '@log-book/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@log-book/engine':
         specifier: workspace:*
         version: link:../../packages/engine
