@@ -10,10 +10,21 @@ import {
 } from '@log-book/adapter-api/source-writer'
 import { claudeCodeSourceWriter } from '@log-book/adapter-claude-code/source-writer'
 import { openCodeSourceWriter } from '@log-book/adapter-opencode/source-writer'
-import { PROMPT_ACTS, SHELL_FAILURES, SHELL_PURPOSES, TOOL_FAILURE_CAUSES } from '@log-book/engine'
+import {
+  PROMPT_ACTS,
+  REACTION_ABOUT,
+  REACTION_REACH,
+  REACTION_TARGETS,
+  REACTIONS,
+  REPLY_CODES,
+  SHELL_FAILURES,
+  SHELL_PURPOSES,
+  TOOL_FAILURE_CAUSES,
+} from '@log-book/engine'
 import { describe, expect, it } from 'vitest'
 import { PLAN_CORPUS } from '../corpus/index.js'
 import { MODELS } from '../corpus/models.js'
+import { DAY_MS, dayStart } from './calendar.js'
 import { planDataset } from './planner.js'
 import { scriptPlan } from './scripts.js'
 import type { IPlan, IPlanInputs, IWriterDeclaration, IWriterScripts } from './types.js'
@@ -142,6 +153,59 @@ const stopOf = (step: ScriptStep): 'interrupt' | 'refuse' | null => {
     return 'interrupt'
   }
   return step.kind === 'call' && step.status === 'rejected' ? 'refuse' : null
+}
+
+const WEEK_MS = 7 * DAY_MS
+const MAX_QUOTE_WORDS = 15
+const SLOT = /\{[a-z]+\}/u
+const QUOTE_MARKS = /\[\[|\]\]/gu
+
+// A template as a pattern of the text it renders: each slot stands for any text.
+const patternOf = (template: string): RegExp =>
+  new RegExp(
+    `^${template
+      .replaceAll(QUOTE_MARKS, '')
+      .split(SLOT)
+      .map((part) => part.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&'))
+      .join('.+')}$`,
+    'u'
+  )
+
+interface IPromptTemplateTags {
+  act: string
+  reactions: string
+  pattern: RegExp
+}
+
+const reactionTags = (
+  reactions: readonly { reaction: string; about: string; target: string; reach: string }[]
+): string => JSON.stringify(reactions.map(({ reaction, about, target, reach }) => [reaction, about, target, reach]))
+
+// Every prompt template of the corpus with its tags.
+const PROMPT_TEMPLATES: readonly IPromptTemplateTags[] = [
+  ...Object.values(PLAN_CORPUS.prompts.byAct)
+    .flat()
+    .map(({ act, prompt }) => ({ act, reactions: '[]', pattern: patternOf(prompt) })),
+  ...PLAN_CORPUS.prompts.opening.map(({ act, openingPrompt }) => ({
+    act,
+    reactions: '[]',
+    pattern: patternOf(openingPrompt),
+  })),
+  ...Object.values(PLAN_CORPUS.prompts.reactions)
+    .flat()
+    .map(({ act, reactions, prompt }) => ({ act, reactions: reactionTags(reactions), pattern: patternOf(prompt) })),
+  ...Object.values(PLAN_CORPUS.shapes.subagents).map(({ act, prompt }) => ({
+    act,
+    reactions: '[]',
+    pattern: patternOf(prompt),
+  })),
+]
+
+// The steps of the turn before a prompt: after the prompt or command before it.
+const previousTurn = (own: readonly ScriptStep[], prompt: ScriptStep): ScriptStep[] => {
+  const before = own.slice(0, own.indexOf(prompt))
+  const opener = before.findLastIndex((step) => step.kind === 'prompt' || step.kind === 'command')
+  return before.slice(opener + 1)
 }
 
 const isLabelled = (plan: IPlan, session: string): boolean =>
@@ -448,6 +512,169 @@ describe('the small plan coverage matrix, in its scripts', () => {
 
     // Assert
     expect(unmatched).toStrictEqual([])
+  })
+
+  it('row 15, its reaction part: all 6 kinds, every about, target and reach, steps, and three kinds in two weeks', () => {
+    // Arrange
+    const promptAt = new Map(
+      steps.flatMap(({ step }) => (step.kind === 'prompt' ? [[step.key, step.at] as const] : []))
+    )
+    const start = dayStart(plan.anchor, 0, plan.days)
+
+    // Act
+    const planned = written.flatMap((scripts) =>
+      Object.entries(scripts.reactions).flatMap(([key, reactions]) =>
+        reactions.map((reaction) => ({ key, ...reaction }))
+      )
+    )
+    const weeksOf = (kind: string): number =>
+      new Set(
+        planned
+          .filter((reaction) => reaction.reaction === kind)
+          .map((reaction) => Math.floor(((promptAt.get(reaction.key) ?? start) - start) / WEEK_MS))
+      ).size
+
+    // Assert
+    expect({
+      kinds: REACTIONS.filter((kind) => planned.some((reaction) => reaction.reaction === kind)),
+      about: REACTION_ABOUT.filter((about) => planned.some((reaction) => reaction.about === about)),
+      targets: REACTION_TARGETS.filter((target) => planned.some((reaction) => reaction.target === target)),
+      reach: REACTION_REACH.filter((reach) => planned.some((reaction) => reaction.reach === reach)),
+      hasSteps: planned.some((reaction) => reaction.steps.length > 0),
+      isInTwoWeeks: ['correction', 'pushback', 'praise'].map((kind) => weeksOf(kind) >= 2),
+    }).toStrictEqual({
+      kinds: [...REACTIONS],
+      about: [...REACTION_ABOUT],
+      targets: [...REACTION_TARGETS],
+      reach: [...REACTION_REACH],
+      hasSteps: true,
+      isInTwoWeeks: [true, true, true],
+    })
+  })
+
+  it('row 16: every reply code, quotes, and permission, caves and pushback each from two models', () => {
+    // Arrange
+    const models = new Map(replies.map(({ step }) => [step.key, step.model]))
+
+    // Act
+    const planned = written.flatMap((scripts) =>
+      Object.entries(scripts.replies).map(([key, reply]) => ({ key, ...reply }))
+    )
+    const modelsOf = (code: string): number =>
+      new Set(
+        planned
+          .filter((reply) => reply.codes.some((candidate) => candidate === code))
+          .map((reply) => models.get(reply.key))
+      ).size
+
+    // Assert
+    expect({
+      codes: REPLY_CODES.filter((code) => planned.some((reply) => reply.codes.includes(code))),
+      isQuoted: planned.some((reply) => reply.quote !== null),
+      isFromTwoModels: ['permission', 'caves', 'pushback'].map((code) => modelsOf(code) >= 2),
+    }).toStrictEqual({ codes: [...REPLY_CODES], isQuoted: true, isFromTwoModels: [true, true, true] })
+  })
+
+  it("takes every prompt's text from a template tagged with its planned act and reactions", () => {
+    // Act
+    const unmatched = steps.filter(({ writer, step }) => {
+      if (step.kind !== 'prompt') {
+        return false
+      }
+      const act = written[writer]?.acts[step.key]
+      const reactions = reactionTags(written[writer]?.reactions[step.key] ?? [])
+      return !PROMPT_TEMPLATES.some(
+        (template) => template.act === act && template.reactions === reactions && template.pattern.test(step.text)
+      )
+    })
+
+    // Assert
+    expect(unmatched.map(({ step }) => step.key)).toStrictEqual([])
+  })
+
+  it("takes every coded reply's text from a template with its planned codes, and plans codes only on the last text before the next prompt in an interactive session", () => {
+    // Arrange
+    const { closing } = PLAN_CORPUS.replies
+
+    // Act
+    const unmatched = replies.filter(({ writer, step }) => {
+      const reply = written[writer]?.replies[step.key]
+      if (reply === undefined) {
+        return false
+      }
+      return !Object.values(closing).some(
+        (templates) =>
+          JSON.stringify(templates.codes) === JSON.stringify(reply.codes) &&
+          templates.texts.some((text) => patternOf(text).test(step.text ?? ''))
+      )
+    })
+    const misplaced = steps.filter(({ writer, session, step }) => {
+      if (step.kind !== 'reply' || written[writer]?.replies[step.key] === undefined) {
+        return false
+      }
+      const own = stepsIn(steps, session)
+      const after = own.slice(own.indexOf(step) + 1)
+      const next = after.findIndex((candidate) => candidate.kind === 'prompt' || candidate.kind === 'command')
+      const between = next === -1 ? after : after.slice(0, next)
+      const origin = plan.sessions.find((planned) => planned.key === session)?.origin
+      return (
+        origin !== 'interactive' || between.some((candidate) => candidate.kind === 'reply' && candidate.text !== null)
+      )
+    })
+
+    // Assert
+    expect({ unmatched: unmatched.length, misplaced: misplaced.length }).toStrictEqual({ unmatched: 0, misplaced: 0 })
+  })
+
+  it('plans every quote as words of its reply, at most 15 of them', () => {
+    // Act
+    const bad = replies.filter(({ writer, step }) => {
+      const quote = written[writer]?.replies[step.key]?.quote ?? null
+      return quote !== null && (step.text?.includes(quote) !== true || quote.split(/\s+/u).length > MAX_QUOTE_WORDS)
+    })
+
+    // Assert
+    expect(bad.map(({ step }) => step.key)).toStrictEqual([])
+  })
+
+  it("numbers each prompt's reactions from 1, points their steps at calls of the turn before, and plans them only in interactive sessions", () => {
+    // Act
+    const bad = steps.filter(({ writer, session, step }) => {
+      const reactions = step.kind === 'prompt' ? written[writer]?.reactions[step.key] : undefined
+      if (reactions === undefined) {
+        return false
+      }
+      const calls = new Set(
+        previousTurn(stepsIn(steps, session), step).flatMap((candidate) =>
+          candidate.kind === 'call' ? [candidate.key] : []
+        )
+      )
+      return (
+        plan.sessions.find((planned) => planned.key === session)?.origin !== 'interactive' ||
+        reactions.some((reaction, index) => reaction.number !== index + 1) ||
+        reactions.some((reaction) => reaction.steps.some((key) => !calls.has(key)))
+      )
+    })
+
+    // Assert
+    expect(bad.map(({ step }) => step.key)).toStrictEqual([])
+  })
+
+  it('opens the prompt after every interruption and refused call with pushback or a correction about process', () => {
+    // Act
+    const after = steps.flatMap((entry) => {
+      const next = stopOf(entry.step) === null ? undefined : nextStep(steps, entry)
+      return next?.kind === 'prompt' ? [written[entry.writer]?.reactions[next.key]?.[0] ?? null] : []
+    })
+
+    // Assert
+    expect({
+      count: after.length > 0,
+      bad: after.filter(
+        (reaction) =>
+          reaction === null || !['pushback', 'correction'].includes(reaction.reaction) || reaction.target !== 'process'
+      ),
+    }).toStrictEqual({ count: true, bad: [] })
   })
 
   it('row 15, its act part: every act on at least one prompt, and an act for every prompt', () => {

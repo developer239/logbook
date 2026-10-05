@@ -7,12 +7,16 @@ import type {
   ScriptStep,
 } from '@log-book/adapter-api/source-writer'
 import type { PromptAct } from '@log-book/engine'
+import type { IReactionTag } from '../corpus/prompts.js'
+import type { ClosingKind } from '../corpus/replies.js'
 import type { ISubagentTask, ITurnShape, TurnEvent, UseName } from '../corpus/shapes.js'
 import type { IToolEntry } from '../corpus/tools.js'
 import { createStream, type IRandomStream } from '../random.js'
 import type {
   ICallLabels,
   IPlan,
+  IPlannedReaction,
+  IPlannedReply,
   IPlanCorpus,
   IPlannedSession,
   IPlannedTurn,
@@ -36,11 +40,18 @@ interface IUse {
   write: (startAt: number) => ScriptStep[]
 }
 
-// What a turn opens with and how its last reply reads.
+// A turn's last reply, and the reply codes planned for it in an interactive session.
+interface IClosing {
+  text: string
+  reply: IPlannedReply | null
+}
+
+// What a turn opens with, the developer's reactions its prompt carries, and how its last reply reads.
 interface ITurnPlan {
   shape: ITurnShape
   prompt: string
-  closing: string
+  reactions: readonly IReactionTag[]
+  closing: IClosing
 }
 
 const SECOND_MS = 1000
@@ -62,6 +73,8 @@ const EVENT_CAPABILITIES: Readonly<Record<TurnEvent, string | null>> = {
 }
 const OPENING_EVENTS: readonly TurnEvent[] = ['compaction', 'agent-switch', 'model-switch']
 const SLOT = /\{(?<name>[a-z]+)\}/gu
+const QUOTE = /\[\[(?<quote>.+?)\]\]/u
+const QUOTE_MARKS = /\[\[|\]\]/gu
 
 // A template with each `{slot}` filled; a slot without a value is a corpus error.
 const fill = (template: string, slots: Readonly<Record<string, string>>): string =>
@@ -98,13 +111,17 @@ class WriterScripter {
   public readonly seed: number
   public readonly acts: Record<string, PromptAct> = {}
   public readonly calls: Record<string, ICallLabels> = {}
+  public readonly reactions: Record<string, IPlannedReaction[]> = {}
+  public readonly replies: Record<string, IPlannedReply> = {}
+  // The first top-level interactive session of the plan, in either writer.
+  public readonly firstSession: string | null
   private readonly plan: IPlan
   private readonly declaration: IWriterDeclaration
   private readonly writer: number
   private readonly models = new Map<string, string>()
   private readonly built = new Map<string, ISessionScript>()
 
-  constructor(plan: IPlan, inputs: IScriptInputs, writer: number) {
+  constructor(plan: IPlan, inputs: IScriptInputs, writer: number, firstSession: string | null) {
     const declaration = inputs.writers[writer]
     if (declaration === undefined || declaration.models.length === 0) {
       throw new Error(`Writer ${String(writer)} declares no model`)
@@ -114,6 +131,7 @@ class WriterScripter {
     this.seed = plan.seed
     this.declaration = declaration
     this.writer = writer
+    this.firstSession = firstSession
     // Round the writer's models in plan order, so every model replies whatever the seed.
     this.ownSessions().forEach((session, index) => {
       this.models.set(session.key, declaration.models[index % declaration.models.length] ?? '')
@@ -126,6 +144,8 @@ class WriterScripter {
       .filter((session) => session.parentKey === null)
       .map((session) => this.scriptOf(session, null, null)),
     acts: this.acts,
+    reactions: this.reactions,
+    replies: this.replies,
     calls: this.calls,
   })
 
@@ -182,6 +202,10 @@ class SessionScripter {
   private count = 0
   private isTurnStart = false
   private model: string
+  // The calls of the turn being written and of the one before it, and whether that one was stopped.
+  private turnCalls: string[] = []
+  private previousCalls: string[] = []
+  private wasStopped = false
 
   constructor(
     writer: WriterScripter,
@@ -225,12 +249,24 @@ class SessionScripter {
   }
 
   private readonly turnPlan = (index: number): ITurnPlan => {
-    const { shapes, prompts, replies } = this.writer.corpus
+    const { shapes, prompts } = this.writer.corpus
     if (this.task !== null && index === 0) {
       const shape = { act: this.task.act, uses: this.task.uses, closing: 'done' } as const
-      return { shape, prompt: fill(this.task.prompt, this.slots), closing: fill(this.task.result, this.slots) }
+      const closing = { text: fill(this.task.result, this.slots), reply: null }
+      return { shape, prompt: fill(this.task.prompt, this.slots), reactions: [], closing }
     }
     const shape = shapes.shapes[this.session.shape].turns[index] ?? shapes.followUp
+    const isInteractive = this.task === null && this.session.origin === 'interactive'
+    const reaction = isInteractive && index > 0 ? this.reactionOf(index, shape) : undefined
+    if (reaction !== undefined) {
+      const template = this.stream.pick(prompts.reactions[reaction].filter((candidate) => candidate.act === shape.act))
+      return {
+        shape,
+        prompt: fill(template.prompt, this.slots),
+        reactions: template.reactions,
+        closing: this.closingOf(shape.closing, isInteractive),
+      }
+    }
     const prompt =
       this.session.origin === 'scripted' && index === 0
         ? this.stream.pick(prompts.opening).openingPrompt
@@ -238,7 +274,34 @@ class SessionScripter {
     return {
       shape,
       prompt: fill(prompt, this.slots),
-      closing: fill(this.stream.pick(replies.closing[shape.closing]), this.slots),
+      reactions: [],
+      closing: this.closingOf(shape.closing, isInteractive),
+    }
+  }
+
+  // The second turn of the plan's first session takes the first-week reactions; a turn after a stop, its shape's
+  // reactions for that.
+  private readonly reactionOf = (index: number, shape: ITurnShape): ITurnShape['reaction'] => {
+    if (index === 1 && this.writer.firstSession === this.session.key) {
+      return 'first-week'
+    }
+    if (!this.wasStopped) {
+      return shape.reaction
+    }
+    if (shape.afterStop === undefined) {
+      throw new Error(`The shape ${this.session.shape} has no reaction for the turn after a stop`)
+    }
+    return shape.afterStop
+  }
+
+  // The text without its quote marks, and in an interactive session its codes and the words its quote copies.
+  private readonly closingOf = (kind: ClosingKind, isInteractive: boolean): IClosing => {
+    const templates = this.writer.corpus.replies.closing[kind]
+    const marked = fill(this.stream.pick(templates.texts), this.slots)
+    const quote = QUOTE.exec(marked)?.groups?.quote ?? null
+    return {
+      text: marked.replaceAll(QUOTE_MARKS, ''),
+      reply: isInteractive ? { codes: [...templates.codes], quote } : null,
     }
   }
 
@@ -246,6 +309,8 @@ class SessionScripter {
   // developer stopping the agent at its last use.
   private readonly turn = (turn: IPlannedTurn, plan: ITurnPlan): void => {
     const { shape } = plan
+    this.previousCalls = this.turnCalls
+    this.turnCalls = []
     const from = this.openTurn(turn.start, plan)
     const stop = shape.stop === undefined || !this.writer.has(STOP_CAPABILITIES[shape.stop]) ? null : shape.stop
     const names = shape.stop === undefined ? shape.uses : shape.uses.slice(0, -1)
@@ -259,6 +324,7 @@ class SessionScripter {
     if (stopped !== null && stop === 'interrupt') {
       this.steps.push({ kind: 'interrupt', key: this.key('i'), at: turn.end })
     }
+    this.wasStopped = stopped !== null
     this.event(shape, 'idle', turn.end)
   }
 
@@ -289,12 +355,25 @@ class SessionScripter {
       const key = this.key('p')
       this.steps.push({ kind: 'prompt', key, at, text: plan.prompt, images: 0 })
       this.writer.acts[key] = shape.act
+      this.addReactions(key, plan.reactions)
     } else {
       this.steps.push(command)
     }
     this.event(shape, 'failed-request', at)
     this.isTurnStart = true
     return at
+  }
+
+  // Numbered from 1; a reaction with steps points at the last call of the turn before.
+  private readonly addReactions = (key: string, tags: readonly IReactionTag[]): void => {
+    if (tags.length === 0) {
+      return
+    }
+    this.writer.reactions[key] = tags.map(({ hasSteps, ...tag }, index) => ({
+      number: index + 1,
+      ...tag,
+      steps: hasSteps ? this.previousCalls.slice(-1) : [],
+    }))
   }
 
   // An event the turn's shape names, where the writer records it.
@@ -358,7 +437,7 @@ class SessionScripter {
 
   // Splits the turn at each use with its own time; each stretch shares the time its uses leave among its replies.
   // Without a closing reply, the last use ends the turn.
-  private readonly layOut = (from: number, end: number, uses: readonly IUse[], closing: string | null): void => {
+  private readonly layOut = (from: number, end: number, uses: readonly IUse[], closing: IClosing | null): void => {
     let cursor = from
     let timed: IUse[] = []
     for (const use of uses) {
@@ -378,7 +457,7 @@ class SessionScripter {
     }
   }
 
-  private readonly stretch = (from: number, end: number, uses: readonly IUse[], closing: string | null): void => {
+  private readonly stretch = (from: number, end: number, uses: readonly IUse[], closing: IClosing | null): void => {
     const busy = uses.reduce((sum, use) => sum + use.durationMs, 0)
     const replyMs = Math.floor((end - from - busy) / (uses.length + 1))
     if (replyMs < MIN_REPLY_MS) {
@@ -394,14 +473,19 @@ class SessionScripter {
     this.reply(at, end, closing)
   }
 
-  private readonly reply = (at: number, endAt: number, text: string | null): void => {
+  private readonly reply = (at: number, endAt: number, closing: IClosing | null): void => {
     const { reasoning } = this.writer.corpus.replies
     const thinking = this.isTurnStart ? fill(this.stream.pick(reasoning), this.slots) : null
     this.isTurnStart = false
     const { model } = this
     const tokens = tokensOf(this.stream, thinking !== null)
     const cost = this.writer.has('reported-cost') ? this.costOf(model, tokens) : null
-    this.steps.push({ kind: 'reply', key: this.key('r'), at, endAt, model, text, reasoning: thinking, tokens, cost })
+    const key = this.key('r')
+    const text = closing?.text ?? null
+    this.steps.push({ kind: 'reply', key, at, endAt, model, text, reasoning: thinking, tokens, cost })
+    if (closing !== null && closing.reply !== null) {
+      this.writer.replies[key] = closing.reply
+    }
   }
 
   private readonly costOf = (model: string, tokens: IScriptTokens): number => {
@@ -479,6 +563,7 @@ class SessionScripter {
   // A stopped call keeps no result: a running one has no end yet, a refused one ends when it was refused.
   private readonly callStep = (entry: IToolEntry, startAt: number, stop: TStop | null): ScriptStep => {
     const key = this.key('c')
+    this.turnCalls.push(key)
     const status = stop === null ? entry.status : STOP_STATUSES[stop]
     this.writer.calls[key] = { shell: entry.shell, failure: status === 'error' ? entry.failure : null }
     return {
@@ -556,5 +641,7 @@ class SessionScripter {
 
 // Each writer's command files and session scripts from the plan, in the writers' order. Pure, like the planner: each
 // session draws from its own stream, so equal inputs give equal scripts.
-export const scriptPlan = (plan: IPlan, inputs: IScriptInputs): IWriterScripts[] =>
-  inputs.writers.map((_writer, index) => new WriterScripter(plan, inputs, index).scripts())
+export const scriptPlan = (plan: IPlan, inputs: IScriptInputs): IWriterScripts[] => {
+  const first = plan.sessions.find((session) => session.parentKey === null && session.origin === 'interactive')
+  return inputs.writers.map((_writer, index) => new WriterScripter(plan, inputs, index, first?.key ?? null).scripts())
+}
