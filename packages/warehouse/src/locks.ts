@@ -41,7 +41,7 @@ interface ILockContent<TOperation extends string> {
 }
 
 // kill(pid, 0) sends nothing: it succeeds for a live process, and EPERM means one that exists under another user.
-const isProcessAlive = (pid: number): boolean => {
+export const isProcessAlive = (pid: number): boolean => {
   try {
     process.kill(pid, 0)
     return true
