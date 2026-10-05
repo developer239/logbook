@@ -1,4 +1,10 @@
-import { childIdOf, IMAGE_PART_TEXT, unknownEvent, type UnknownRecordDescription } from '@log-book/adapter-api'
+import {
+  childIdOf,
+  IMAGE_PART_TEXT,
+  sessionIdOf,
+  unknownEvent,
+  type UnknownRecordDescription,
+} from '@log-book/adapter-api'
 import type {
   IEventRecord,
   IMessageRecord,
@@ -7,7 +13,9 @@ import type {
   MessageActor,
   PartKind,
   SessionEventKind,
+  ToolCallStatus,
 } from '@log-book/warehouse'
+import { toolNameOf } from './families.js'
 
 export const ADAPTER_ID = 'opencode'
 
@@ -76,6 +84,43 @@ const tokenFields = (tokens: IMessageData['tokens']): Partial<IMessageRecord> =>
   tokensCacheWrite: numberOf(tokens?.cache?.write),
 })
 
+interface IToolState {
+  status?: unknown
+  input?: unknown
+  content?: unknown
+  error?: unknown
+  metadata?: { exit?: unknown; sessionId?: unknown }
+}
+
+const CHILD_SESSION_PREFIX = 'ses_'
+
+// `error` for a failed call, or a completed shell call that exited non-zero, as Claude Code records it; `completed`;
+// otherwise still `pending`.
+const toolStatus = (state: IToolState): ToolCallStatus => {
+  const exit = numberOf(state.metadata?.exit)
+  if (state.status === 'error' || (state.status === 'completed' && exit !== null && exit !== 0)) {
+    return 'error'
+  }
+  return state.status === 'completed' ? 'completed' : 'pending'
+}
+
+// The text items of a call's content, joined with newlines.
+const contentText = (content: unknown): string =>
+  typeof content === 'string'
+    ? content
+    : recordsOf(content)
+        .flatMap((item) => (item.type === 'text' && typeof item.text === 'string' ? [item.text] : []))
+        .join('\n')
+
+// The session a 1.x `task` call started, when it names one.
+const childSessionOf = (state: IToolState): string | null => {
+  const child = stringOf(state.metadata?.sessionId)
+  return child?.startsWith(CHILD_SESSION_PREFIX) === true ? sessionIdOf(ADAPTER_ID, child) : null
+}
+
+const resultText = (status: ToolCallStatus, state: IToolState): string =>
+  status === 'error' && state.error !== undefined ? errorText(state.error) : contentText(state.content)
+
 const parseData = (text: string): IMessageData | null => {
   try {
     const value: unknown = JSON.parse(text)
@@ -121,7 +166,7 @@ export class SessionBuilder {
   public readonly add = (row: IMessageRow): void => {
     const data = parseData(row.data)
     if (data === null) {
-      this.addUnknown(row, row.time_created, {
+      this.addUnknown(row.id, row.time_created, {
         what: 'row',
         type: row.type,
         harnessVersion: this.harnessVersion,
@@ -132,7 +177,7 @@ export class SessionBuilder {
     const at = numberOf(data.time?.created) ?? row.time_created
     const handler = this.handlers[row.type]
     if (handler === undefined) {
-      this.addUnknown(row, at, { what: 'row', type: row.type, harnessVersion: this.harnessVersion, raw: row })
+      this.addUnknown(row.id, at, { what: 'row', type: row.type, harnessVersion: this.harnessVersion, raw: row })
       return
     }
     handler(row, at, data)
@@ -182,20 +227,93 @@ export class SessionBuilder {
       reportedCost: numberOf(data.cost),
       ...tokenFields(data.tokens),
     })
-    for (const part of recordsOf(data.content)) {
-      this.addContentPart(message, part)
+    for (const [index, part] of recordsOf(data.content).entries()) {
+      this.addContentPart(row, message, part, index)
     }
     if (data.error !== undefined && data.error !== null) {
       this.addEvent(row, 'error', at, { error: errorText(data.error) })
     }
   }
 
-  private readonly addContentPart = (message: IMessageRecord, part: Record<string, unknown>): void => {
+  // Text and reasoning parts, tool calls, and any other part type as an unknown event.
+  private readonly addContentPart = (
+    row: IMessageRow,
+    message: IMessageRecord,
+    part: Record<string, unknown>,
+    index: number
+  ): void => {
     if (part.type === 'text') {
       this.addPart(message, 'text', stringOf(part.text))
     } else if (part.type === 'reasoning') {
       this.addPart(message, 'reasoning', stringOf(part.text))
+    } else if (part.type === 'tool' && typeof part.id === 'string' && typeof part.name === 'string') {
+      this.addToolCall(message, part.id, part.name, part)
+    } else {
+      this.addUnknown(`${row.id}:part-${String(index)}`, message.createdAt, {
+        what: 'part',
+        type: stringOf(part.type),
+        harnessVersion: this.harnessVersion,
+        raw: part,
+      })
     }
+  }
+
+  // Before `ran` the model was still writing the input, so a call is timed from it, else from its creation.
+  private readonly addToolCall = (
+    message: IMessageRecord,
+    callId: string,
+    name: string,
+    part: Record<string, unknown>
+  ): void => {
+    const state: IToolState = isRecord(part.state) ? part.state : {}
+    const time = isRecord(part.time) ? part.time : {}
+    const id = childIdOf(this.sessionId, callId)
+    const inputJson = JSON.stringify(state.input ?? {})
+    const status = toolStatus(state)
+    const call: IToolCallRecord = {
+      id,
+      sessionId: this.sessionId,
+      messageId: message.id,
+      name,
+      ...toolNameOf(name),
+      inputJson,
+      status,
+      childSessionId: childSessionOf(state),
+      startedAt: numberOf(time.ran) ?? numberOf(time.created),
+      endedAt: numberOf(time.completed),
+    }
+    this.toolCalls.push(call)
+    this.addPart(message, 'tool_call', `${name} ${inputJson}`, id)
+    if (status === 'pending') {
+      return
+    }
+    const result = resultText(status, state)
+    this.addPart(message, 'tool_result', result, id)
+    if (call.family === 'skill' && status === 'completed') {
+      this.addSkillLoaded(callId, call, state, result, call.endedAt ?? message.createdAt)
+    }
+  }
+
+  // A completed skill call loaded the skill named by its input.
+  private readonly addSkillLoaded = (
+    callId: string,
+    call: IToolCallRecord,
+    state: IToolState,
+    result: string,
+    at: number
+  ): void => {
+    const input = isRecord(state.input) ? state.input : {}
+    this.events.push({
+      id: childIdOf(this.sessionId, `${callId}:skill`),
+      sessionId: this.sessionId,
+      kind: 'skill-loaded',
+      at,
+      dataJson: JSON.stringify({
+        name: stringOf(input.name) ?? stringOf(input.id),
+        chars: result.length,
+        toolCallId: call.id,
+      }),
+    })
   }
 
   private readonly newMessage = (row: IMessageRow, actor: MessageActor, at: number): IMessageRecord => {
@@ -222,13 +340,18 @@ export class SessionBuilder {
     return record
   }
 
-  // An empty or missing text adds no part.
-  private readonly addPart = (message: IMessageRecord, kind: PartKind, text: string | null): void => {
-    if (text === null || text === '') {
+  // An empty or missing text adds no part, except a call's result, which is the call's even when empty.
+  private readonly addPart = (
+    message: IMessageRecord,
+    kind: PartKind,
+    text: string | null,
+    toolCallId: string | null = null
+  ): void => {
+    if (text === null || (text === '' && kind !== 'tool_result')) {
       return
     }
     const idx = this.parts.filter((part) => part.messageId === message.id).length
-    this.parts.push({ messageId: message.id, sessionId: this.sessionId, idx, kind, text, toolCallId: null })
+    this.parts.push({ messageId: message.id, sessionId: this.sessionId, idx, kind, text, toolCallId })
   }
 
   private readonly addEvent = (row: IMessageRow, kind: SessionEventKind, at: number, data: unknown): void => {
@@ -241,7 +364,7 @@ export class SessionBuilder {
     })
   }
 
-  private readonly addUnknown = (row: IMessageRow, at: number, description: UnknownRecordDescription): void => {
-    this.events.push(unknownEvent(this.sessionId, row.id, at, description))
+  private readonly addUnknown = (sourceId: string, at: number, description: UnknownRecordDescription): void => {
+    this.events.push(unknownEvent(this.sessionId, sourceId, at, description))
   }
 }

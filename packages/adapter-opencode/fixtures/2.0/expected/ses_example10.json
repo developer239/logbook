@@ -1,0 +1,828 @@
+{
+  "harnessVersion": "2.0.21",
+  "sessions": [
+    {
+      "events": [
+        {
+          "at": 1772532822900,
+          "dataJson": "{\"name\":\"write-release-notes\",\"chars\":44,\"toolCallId\":\"opencode:ses_example10/prt_example21\"}",
+          "id": "opencode:ses_example10/prt_example21:skill",
+          "kind": "skill-loaded",
+          "sessionId": "opencode:ses_example10"
+        },
+        {
+          "at": 1772532801000,
+          "dataJson": "{\"what\":\"part\",\"type\":\"step-marker\",\"harnessVersion\":\"2.0.21\",\"raw\":{\"type\":\"step-marker\",\"step\":1}}",
+          "id": "opencode:ses_example10/msg_example26:part-23",
+          "kind": "unknown",
+          "sessionId": "opencode:ses_example10"
+        }
+      ],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532800000,
+          "gitBranch": null,
+          "id": "opencode:ses_example10/msg_example25",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "opencode:ses_example10",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "build",
+          "completedAt": 1772532860000,
+          "createdAt": 1772532801000,
+          "gitBranch": null,
+          "id": "opencode:ses_example10/msg_example26",
+          "model": "anthropic/claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772532801000,
+          "seq": 2,
+          "sessionId": "opencode:ses_example10",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "build",
+          "completedAt": 1772532890000,
+          "createdAt": 1772532870000,
+          "gitBranch": null,
+          "id": "opencode:ses_example10/msg_example27",
+          "model": "anthropic/claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772532870000,
+          "seq": 3,
+          "sessionId": "opencode:ses_example10",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example10/msg_example25",
+          "sessionId": "opencode:ses_example10",
+          "text": "tidy the checkout module",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "Looking around first.",
+          "toolCallId": null
+        },
+        {
+          "idx": 1,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "bash {\"command\":\"pnpm test\"}",
+          "toolCallId": "opencode:ses_example10/prt_example01"
+        },
+        {
+          "idx": 2,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "24 passed",
+          "toolCallId": "opencode:ses_example10/prt_example01"
+        },
+        {
+          "idx": 3,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "shell {}",
+          "toolCallId": "opencode:ses_example10/prt_example02"
+        },
+        {
+          "idx": 4,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "",
+          "toolCallId": "opencode:ses_example10/prt_example02"
+        },
+        {
+          "idx": 5,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "read {\"filePath\":\"/home/example/work/shop/src/checkout.ts\"}",
+          "toolCallId": "opencode:ses_example10/prt_example03"
+        },
+        {
+          "idx": 6,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "export const checkout = 1",
+          "toolCallId": "opencode:ses_example10/prt_example03"
+        },
+        {
+          "idx": 7,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "edit {\"filePath\":\"/home/example/work/shop/src/checkout.ts\",\"oldString\":\"1\",\"newString\":\"2\"}",
+          "toolCallId": "opencode:ses_example10/prt_example04"
+        },
+        {
+          "idx": 8,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "done",
+          "toolCallId": "opencode:ses_example10/prt_example04"
+        },
+        {
+          "idx": 9,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "write {\"filePath\":\"/home/example/work/shop/src/rate.ts\",\"content\":\"export const rate = 2\"}",
+          "toolCallId": "opencode:ses_example10/prt_example05"
+        },
+        {
+          "idx": 10,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "done",
+          "toolCallId": "opencode:ses_example10/prt_example05"
+        },
+        {
+          "idx": 11,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "patch {\"patchText\":\"*** Begin Patch\"}",
+          "toolCallId": "opencode:ses_example10/prt_example06"
+        },
+        {
+          "idx": 12,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "done",
+          "toolCallId": "opencode:ses_example10/prt_example06"
+        },
+        {
+          "idx": 13,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "apply_patch {\"patchText\":\"*** Begin Patch\"}",
+          "toolCallId": "opencode:ses_example10/prt_example07"
+        },
+        {
+          "idx": 14,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "done",
+          "toolCallId": "opencode:ses_example10/prt_example07"
+        },
+        {
+          "idx": 15,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "grep {\"pattern\":\"rate\"}",
+          "toolCallId": "opencode:ses_example10/prt_example08"
+        },
+        {
+          "idx": 16,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "src/rate.ts",
+          "toolCallId": "opencode:ses_example10/prt_example08"
+        },
+        {
+          "idx": 17,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "glob {\"pattern\":\"**/*.ts\"}",
+          "toolCallId": "opencode:ses_example10/prt_example09"
+        },
+        {
+          "idx": 18,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "src/rate.ts",
+          "toolCallId": "opencode:ses_example10/prt_example09"
+        },
+        {
+          "idx": 19,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "list {\"path\":\"/home/example/work/shop/src\"}",
+          "toolCallId": "opencode:ses_example10/prt_example10"
+        },
+        {
+          "idx": 20,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "checkout.ts\nrate.ts",
+          "toolCallId": "opencode:ses_example10/prt_example10"
+        },
+        {
+          "idx": 21,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "webfetch {\"url\":\"https://example.com/rates\"}",
+          "toolCallId": "opencode:ses_example10/prt_example11"
+        },
+        {
+          "idx": 22,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "Rates page.",
+          "toolCallId": "opencode:ses_example10/prt_example11"
+        },
+        {
+          "idx": 23,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "websearch {\"query\":\"rounding rules\"}",
+          "toolCallId": "opencode:ses_example10/prt_example12"
+        },
+        {
+          "idx": 24,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "Three results.",
+          "toolCallId": "opencode:ses_example10/prt_example12"
+        },
+        {
+          "idx": 25,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "todowrite {\"todos\":[{\"content\":\"round rates\",\"status\":\"pending\"}]}",
+          "toolCallId": "opencode:ses_example10/prt_example13"
+        },
+        {
+          "idx": 26,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "done",
+          "toolCallId": "opencode:ses_example10/prt_example13"
+        },
+        {
+          "idx": 27,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "todoread {}",
+          "toolCallId": "opencode:ses_example10/prt_example14"
+        },
+        {
+          "idx": 28,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "round rates",
+          "toolCallId": "opencode:ses_example10/prt_example14"
+        },
+        {
+          "idx": 29,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "question {\"questions\":[{\"question\":\"Round half up?\"}]}",
+          "toolCallId": "opencode:ses_example10/prt_example15"
+        },
+        {
+          "idx": 30,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "Yes.",
+          "toolCallId": "opencode:ses_example10/prt_example15"
+        },
+        {
+          "idx": 31,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "subagent {\"prompt\":\"check the rounding tests\",\"agent\":\"general\"}",
+          "toolCallId": "opencode:ses_example10/prt_example16"
+        },
+        {
+          "idx": 32,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "They pass.",
+          "toolCallId": "opencode:ses_example10/prt_example16"
+        },
+        {
+          "idx": 33,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "tracker_create_issue {\"title\":\"Rounding\"}",
+          "toolCallId": "opencode:ses_example10/prt_example17"
+        },
+        {
+          "idx": 34,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "Created issue 7.",
+          "toolCallId": "opencode:ses_example10/prt_example17"
+        },
+        {
+          "idx": 35,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "execute {\"code\":\"await read({ filePath: \\\"src/rate.ts\\\" })\"}",
+          "toolCallId": "opencode:ses_example10/prt_example18"
+        },
+        {
+          "idx": 36,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "export const rate = 2",
+          "toolCallId": "opencode:ses_example10/prt_example18"
+        },
+        {
+          "idx": 37,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "bash {\"command\":\"pnpm lint\"}",
+          "toolCallId": "opencode:ses_example10/prt_example19"
+        },
+        {
+          "idx": 38,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "2 errors",
+          "toolCallId": "opencode:ses_example10/prt_example19"
+        },
+        {
+          "idx": 39,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "read {\"filePath\":\"/home/example/work/shop/missing.ts\"}",
+          "toolCallId": "opencode:ses_example10/prt_example20"
+        },
+        {
+          "idx": 40,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "ToolError: File not found",
+          "toolCallId": "opencode:ses_example10/prt_example20"
+        },
+        {
+          "idx": 41,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "skill {\"name\":\"write-release-notes\"}",
+          "toolCallId": "opencode:ses_example10/prt_example21"
+        },
+        {
+          "idx": 42,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "Write release notes from the merged changes.",
+          "toolCallId": "opencode:ses_example10/prt_example21"
+        },
+        {
+          "idx": 43,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "skill {\"name\":\"missing-skill\"}",
+          "toolCallId": "opencode:ses_example10/prt_example22"
+        },
+        {
+          "idx": 44,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "Skill not found",
+          "toolCallId": "opencode:ses_example10/prt_example22"
+        },
+        {
+          "idx": 45,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "sessionId": "opencode:ses_example10",
+          "text": "bash {\"command\":\"pnpm build\"}",
+          "toolCallId": "opencode:ses_example10/prt_example23"
+        },
+        {
+          "idx": 0,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example10/msg_example27",
+          "sessionId": "opencode:ses_example10",
+          "text": "task {\"prompt\":\"review the rate change\",\"subagent_type\":\"general\"}",
+          "toolCallId": "opencode:ses_example10/prt_example24"
+        },
+        {
+          "idx": 1,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example10/msg_example27",
+          "sessionId": "opencode:ses_example10",
+          "text": "Looks right.",
+          "toolCallId": "opencode:ses_example10/prt_example24"
+        }
+      ],
+      "session": {
+        "agent": "build",
+        "endedAt": 1772532890000,
+        "harness": "opencode",
+        "id": "opencode:ses_example10",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "ses_example10",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772532800000,
+        "title": "Checkout tools"
+      },
+      "toolCalls": [
+        {
+          "bareName": "bash",
+          "childSessionId": null,
+          "endedAt": 1772532802900,
+          "family": "shell",
+          "id": "opencode:ses_example10/prt_example01",
+          "inputJson": "{\"command\":\"pnpm test\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "bash",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532802200,
+          "status": "completed"
+        },
+        {
+          "bareName": "shell",
+          "childSessionId": null,
+          "endedAt": 1772532803900,
+          "family": "shell",
+          "id": "opencode:ses_example10/prt_example02",
+          "inputJson": "{}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "shell",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532803200,
+          "status": "completed"
+        },
+        {
+          "bareName": "read",
+          "childSessionId": null,
+          "endedAt": 1772532804900,
+          "family": "read",
+          "id": "opencode:ses_example10/prt_example03",
+          "inputJson": "{\"filePath\":\"/home/example/work/shop/src/checkout.ts\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "read",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532804200,
+          "status": "completed"
+        },
+        {
+          "bareName": "edit",
+          "childSessionId": null,
+          "endedAt": 1772532805900,
+          "family": "edit",
+          "id": "opencode:ses_example10/prt_example04",
+          "inputJson": "{\"filePath\":\"/home/example/work/shop/src/checkout.ts\",\"oldString\":\"1\",\"newString\":\"2\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "edit",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532805200,
+          "status": "completed"
+        },
+        {
+          "bareName": "write",
+          "childSessionId": null,
+          "endedAt": 1772532806900,
+          "family": "edit",
+          "id": "opencode:ses_example10/prt_example05",
+          "inputJson": "{\"filePath\":\"/home/example/work/shop/src/rate.ts\",\"content\":\"export const rate = 2\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "write",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532806200,
+          "status": "completed"
+        },
+        {
+          "bareName": "patch",
+          "childSessionId": null,
+          "endedAt": 1772532807900,
+          "family": "edit",
+          "id": "opencode:ses_example10/prt_example06",
+          "inputJson": "{\"patchText\":\"*** Begin Patch\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "patch",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532807200,
+          "status": "completed"
+        },
+        {
+          "bareName": "apply_patch",
+          "childSessionId": null,
+          "endedAt": 1772532808900,
+          "family": "edit",
+          "id": "opencode:ses_example10/prt_example07",
+          "inputJson": "{\"patchText\":\"*** Begin Patch\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "apply_patch",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532808200,
+          "status": "completed"
+        },
+        {
+          "bareName": "grep",
+          "childSessionId": null,
+          "endedAt": 1772532809900,
+          "family": "search",
+          "id": "opencode:ses_example10/prt_example08",
+          "inputJson": "{\"pattern\":\"rate\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "grep",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532809200,
+          "status": "completed"
+        },
+        {
+          "bareName": "glob",
+          "childSessionId": null,
+          "endedAt": 1772532810900,
+          "family": "search",
+          "id": "opencode:ses_example10/prt_example09",
+          "inputJson": "{\"pattern\":\"**/*.ts\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "glob",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532810200,
+          "status": "completed"
+        },
+        {
+          "bareName": "list",
+          "childSessionId": null,
+          "endedAt": 1772532811900,
+          "family": "search",
+          "id": "opencode:ses_example10/prt_example10",
+          "inputJson": "{\"path\":\"/home/example/work/shop/src\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "list",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532811200,
+          "status": "completed"
+        },
+        {
+          "bareName": "webfetch",
+          "childSessionId": null,
+          "endedAt": 1772532812900,
+          "family": "web",
+          "id": "opencode:ses_example10/prt_example11",
+          "inputJson": "{\"url\":\"https://example.com/rates\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "webfetch",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532812200,
+          "status": "completed"
+        },
+        {
+          "bareName": "websearch",
+          "childSessionId": null,
+          "endedAt": 1772532813900,
+          "family": "web",
+          "id": "opencode:ses_example10/prt_example12",
+          "inputJson": "{\"query\":\"rounding rules\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "websearch",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532813200,
+          "status": "completed"
+        },
+        {
+          "bareName": "todowrite",
+          "childSessionId": null,
+          "endedAt": 1772532814900,
+          "family": "todo",
+          "id": "opencode:ses_example10/prt_example13",
+          "inputJson": "{\"todos\":[{\"content\":\"round rates\",\"status\":\"pending\"}]}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "todowrite",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532814200,
+          "status": "completed"
+        },
+        {
+          "bareName": "todoread",
+          "childSessionId": null,
+          "endedAt": 1772532815900,
+          "family": "todo",
+          "id": "opencode:ses_example10/prt_example14",
+          "inputJson": "{}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "todoread",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532815200,
+          "status": "completed"
+        },
+        {
+          "bareName": "question",
+          "childSessionId": null,
+          "endedAt": 1772532816900,
+          "family": "question",
+          "id": "opencode:ses_example10/prt_example15",
+          "inputJson": "{\"questions\":[{\"question\":\"Round half up?\"}]}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "question",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532816200,
+          "status": "completed"
+        },
+        {
+          "bareName": "subagent",
+          "childSessionId": null,
+          "endedAt": 1772532817900,
+          "family": "subagent",
+          "id": "opencode:ses_example10/prt_example16",
+          "inputJson": "{\"prompt\":\"check the rounding tests\",\"agent\":\"general\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "subagent",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532817200,
+          "status": "completed"
+        },
+        {
+          "bareName": "tracker_create_issue",
+          "childSessionId": null,
+          "endedAt": 1772532818900,
+          "family": "other",
+          "id": "opencode:ses_example10/prt_example17",
+          "inputJson": "{\"title\":\"Rounding\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "tracker_create_issue",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532818200,
+          "status": "completed"
+        },
+        {
+          "bareName": "execute",
+          "childSessionId": null,
+          "endedAt": 1772532819900,
+          "family": "other",
+          "id": "opencode:ses_example10/prt_example18",
+          "inputJson": "{\"code\":\"await read({ filePath: \\\"src/rate.ts\\\" })\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "execute",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532819200,
+          "status": "completed"
+        },
+        {
+          "bareName": "bash",
+          "childSessionId": null,
+          "endedAt": 1772532820900,
+          "family": "shell",
+          "id": "opencode:ses_example10/prt_example19",
+          "inputJson": "{\"command\":\"pnpm lint\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "bash",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532820200,
+          "status": "error"
+        },
+        {
+          "bareName": "read",
+          "childSessionId": null,
+          "endedAt": 1772532821900,
+          "family": "read",
+          "id": "opencode:ses_example10/prt_example20",
+          "inputJson": "{\"filePath\":\"/home/example/work/shop/missing.ts\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "read",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532821200,
+          "status": "error"
+        },
+        {
+          "bareName": "skill",
+          "childSessionId": null,
+          "endedAt": 1772532822900,
+          "family": "skill",
+          "id": "opencode:ses_example10/prt_example21",
+          "inputJson": "{\"name\":\"write-release-notes\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "skill",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532822200,
+          "status": "completed"
+        },
+        {
+          "bareName": "skill",
+          "childSessionId": null,
+          "endedAt": 1772532823900,
+          "family": "skill",
+          "id": "opencode:ses_example10/prt_example22",
+          "inputJson": "{\"name\":\"missing-skill\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "skill",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532823200,
+          "status": "error"
+        },
+        {
+          "bareName": "bash",
+          "childSessionId": null,
+          "endedAt": null,
+          "family": "shell",
+          "id": "opencode:ses_example10/prt_example23",
+          "inputJson": "{\"command\":\"pnpm build\"}",
+          "messageId": "opencode:ses_example10/msg_example26",
+          "name": "bash",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532824000,
+          "status": "pending"
+        },
+        {
+          "bareName": "task",
+          "childSessionId": "opencode:ses_example11",
+          "endedAt": 1772532870900,
+          "family": "subagent",
+          "id": "opencode:ses_example10/prt_example24",
+          "inputJson": "{\"prompt\":\"review the rate change\",\"subagent_type\":\"general\"}",
+          "messageId": "opencode:ses_example10/msg_example27",
+          "name": "task",
+          "server": null,
+          "sessionId": "opencode:ses_example10",
+          "startedAt": 1772532870200,
+          "status": "completed"
+        }
+      ]
+    }
+  ]
+}

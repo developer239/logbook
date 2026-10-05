@@ -1,0 +1,81 @@
+{
+  "harnessVersion": "2.0.21",
+  "sessions": [
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532871000,
+          "gitBranch": null,
+          "id": "opencode:ses_example11/msg_example28",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "opencode:ses_example11",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "general",
+          "completedAt": 1772532879000,
+          "createdAt": 1772532872000,
+          "gitBranch": null,
+          "id": "opencode:ses_example11/msg_example29",
+          "model": "anthropic/claude-haiku-4-5",
+          "reportedCost": null,
+          "requestedAt": 1772532872000,
+          "seq": 2,
+          "sessionId": "opencode:ses_example11",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example11/msg_example28",
+          "sessionId": "opencode:ses_example11",
+          "text": "review the rate change",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example11/msg_example29",
+          "sessionId": "opencode:ses_example11",
+          "text": "Looks right.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": "general",
+        "endedAt": 1772532879000,
+        "harness": "opencode",
+        "id": "opencode:ses_example11",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "ses_example11",
+        "spawnedBySessionId": "opencode:ses_example10",
+        "spawnedByToolCallId": null,
+        "startedAt": 1772532871000,
+        "title": "Rate review"
+      },
+      "toolCalls": []
+    }
+  ]
+}
