@@ -20,17 +20,20 @@ const ENVELOPE_NAMES: readonly FakeClaudeEnvelope[] = [
 
 // What the batch carrying the marker in one of its records gets. Rules address batches by content, never by arrival
 // order, because a run has several batches in flight.
-export type FakeClaudeRule = { marker: string } & (
-  | { kind: 'omit-tag' }
-  | { kind: 'delay'; ms: number }
-  | { kind: 'hold'; file: string }
-  | { kind: 'never' }
-  | { kind: 'envelope'; envelope: FakeClaudeEnvelope }
-  | { kind: 'exit'; code: number }
-)
+export type FakeClaudeRule = { marker: string } &
+  // Only in a batch of at least `minItems` items when given, so the same record answers in a smaller batch.
+  (
+    | { kind: 'omit-tag'; minItems?: number }
+    | { kind: 'delay'; ms: number }
+    | { kind: 'hold'; file: string }
+    | { kind: 'never' }
+    | { kind: 'envelope'; envelope: FakeClaudeEnvelope }
+    | { kind: 'exit'; code: number }
+  )
 
 export interface IFakeClaudeScenario {
-  // The answer line for each tag of a batch whose --system-prompt contains `systemPrompt`.
+  // The answer line for each tag of a batch whose --system-prompt contains `systemPrompt`; further lines of the answer
+  // write `{tag}` for the tag, such as an entry line `\n{tag} + 0 1`.
   answers?: { systemPrompt: string; answer: string }[]
   rules?: FakeClaudeRule[]
   // Another version for --version, such as `2.0.10`.
@@ -115,7 +118,7 @@ const answer = (stdin, omitted) => {
     process.exit(2)
   }
   const tags = [...stdin.matchAll(/^### (#\d+)$/gm)].map((found) => found[1]).filter((tag) => tag !== omitted)
-  print({ ...config.envelopes.success, result: tags.map((tag) => tag + ' ' + match.answer).join('\n') })
+  print({ ...config.envelopes.success, result: tags.map((tag) => tag + ' ' + match.answer.replaceAll('{tag}', tag)).join('\n') })
 }
 
 // The tag of the section of stdin that holds the marker.
@@ -139,9 +142,11 @@ const respond = (stdin) => {
     return
   }
   switch (rule.kind) {
-    case 'omit-tag':
-      answer(stdin, tagHolding(stdin, rule.marker))
+    case 'omit-tag': {
+      const items = stdin.split('\n').filter((line) => /^### #\d+$/.test(line)).length
+      answer(stdin, items >= (rule.minItems ?? 0) ? tagHolding(stdin, rule.marker) : null)
       return
+    }
     case 'delay':
       setTimeout(() => answer(stdin, null), rule.ms)
       return
