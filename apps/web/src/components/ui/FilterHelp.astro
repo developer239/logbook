@@ -1,0 +1,20 @@
+---
+import { CLOSED, FILTER_FIELDS } from '../../lib/filter'
+import './FilterHelp.css'
+
+const fields = FILTER_FIELDS.map((field) => ({ name: field, values: CLOSED[field] ?? null }))
+const last = fields.length - 1
+---
+
+<p class="filter-help">
+  Fields:{' '}
+  {
+    fields.map((field, index) => (
+      <>
+        {index > 0 && (index === last ? ' and ' : ', ')}
+        <code class="filter-help__field">{field.name}</code>
+        {field.values !== null && ` (${field.values.join(', ')})`}
+      </>
+    ))
+  }. Values with a space take quotes; commas give alternatives. Other words are looked for in what was said.
+</p>

@@ -1,0 +1,39 @@
+---
+import type { ComponentProps } from 'astro/types'
+import TopBar from '../components/TopBar.astro'
+import PageProblem from '../components/ui/PageProblem.astro'
+import '../styles/tokens.css'
+import '../styles/base.css'
+import './Layout.css'
+
+type Props = Pick<ComponentProps<typeof TopBar>, 'current' | 'range' | 'syncedAt' | 'conversation'> & {
+  title: string
+  problem?: string | null
+  back?: string
+}
+
+const {
+  title,
+  current,
+  range,
+  syncedAt,
+  conversation,
+  problem = null,
+  back = `${Astro.url.pathname}${Astro.url.search}`,
+} = Astro.props
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · Logbook</title>
+  </head>
+  <body>
+    <TopBar current={current} range={range} syncedAt={syncedAt} conversation={conversation} back={back} />
+    <main class="layout">
+      {problem === null ? <slot /> : <PageProblem problem={problem} />}
+    </main>
+  </body>
+</html>

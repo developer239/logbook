@@ -19,7 +19,18 @@ interface IProjectSpec {
   isSerial?: boolean
   // Runs before the project's own setup that builds the demo through the built CLI.
   isBuiltCliNeeded?: boolean
+  // Keeps a stubbed environment variable for the rest of the file: a test helper that stubs it once in beforeAll
+  // would otherwise lose it after the first test.
+  isEnvStubKept?: boolean
+  // Variables of this project's test processes on top of the root's.
+  env?: Readonly<Record<string, string>>
 }
+
+// Three and a half hours behind UTC in winter, so a test assuming UTC or whole-hour offsets fails everywhere.
+const ROOT_ENV = { TZ: 'America/St_Johns' }
+// The web app falls back to the user's own warehouse when TELEMETRY_DB is unset; a test that lost its stub must fail
+// on a missing file, never read that one.
+const NO_USER_WAREHOUSE = { TELEMETRY_DB: '/nonexistent/log-book-tests/telemetry.db' }
 
 const BUILT_CLI_CHECK = './test/cli-build-check.ts'
 
@@ -39,7 +50,8 @@ const PROJECTS: IProjectSpec[] = [
     name: 'web',
     include: ['apps/web/src/**/*.test.ts', 'apps/web/test/**/*.test.ts'],
     timeout: ENGINE_TIMEOUT_MS,
-    isBuiltCliNeeded: true,
+    isEnvStubKept: true,
+    env: NO_USER_WAREHOUSE,
   },
   {
     name: 'cli',
@@ -81,19 +93,20 @@ export default defineConfig({
     ...(process.env.GITHUB_ACTIONS === 'true'
       ? { reporters: ['default', 'github-actions', new BudgetSummaryReporter(process.env)] }
       : {}),
-    // Three and a half hours behind UTC in winter, so a test assuming UTC or whole-hour offsets fails everywhere.
-    env: { TZ: 'America/St_Johns' },
+    env: ROOT_ENV,
     sequence: { shuffle: process.env.CI === 'true' ? { files: true, tests: true } : false },
-    projects: PROJECTS.map(({ name, include, exclude = [], timeout, isSerial = false, isBuiltCliNeeded = false }) => ({
+    projects: PROJECTS.map((project) => ({
       extends: true,
       test: {
-        name,
-        include,
-        exclude: [...EXCLUDED, ...exclude, ...(name === 'e2e' ? [] : [E2E_TEST_FILES])],
-        testTimeout: timeout,
-        hookTimeout: timeout,
-        fileParallelism: !isSerial,
-        globalSetup: isBuiltCliNeeded ? [BUILT_CLI_CHECK] : [],
+        name: project.name,
+        include: project.include,
+        exclude: [...EXCLUDED, ...(project.exclude ?? []), ...(project.name === 'e2e' ? [] : [E2E_TEST_FILES])],
+        testTimeout: project.timeout,
+        hookTimeout: project.timeout,
+        fileParallelism: project.isSerial !== true,
+        globalSetup: project.isBuiltCliNeeded === true ? [BUILT_CLI_CHECK] : [],
+        unstubEnvs: project.isEnvStubKept !== true,
+        env: { ...ROOT_ENV, ...project.env },
       },
     })),
   },

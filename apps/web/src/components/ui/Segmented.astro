@@ -1,0 +1,14 @@
+---
+import type { HTMLAttributes } from 'astro/types'
+import './Segmented.css'
+
+interface Props extends HTMLAttributes<'div'> {
+  isCompact?: boolean | undefined
+}
+
+const { isCompact = false, class: className, ...rest } = Astro.props
+---
+
+<div class:list={['segmented', isCompact && 'segmented--compact', className]} {...rest}>
+  <slot />
+</div>

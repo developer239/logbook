@@ -1,0 +1,20 @@
+.sparkline {
+  width: 4.75rem;
+  height: 1.125rem;
+}
+
+.sparkline__line {
+  stroke: var(--text-3);
+}
+
+.sparkline__dot {
+  fill: var(--text-3);
+}
+
+.sparkline--problem .sparkline__line {
+  stroke: var(--problem);
+}
+
+.sparkline--problem .sparkline__dot {
+  fill: var(--problem);
+}

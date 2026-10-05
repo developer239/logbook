@@ -1,0 +1,37 @@
+---
+import { duration, pct } from '../../lib/format'
+import Bar from '../ui/Bar.astro'
+import Swatch from '../ui/Swatch.astro'
+import './TimeSplit.css'
+
+interface Props {
+  modelMs: number
+  toolMs: number
+  idleMs: number
+  durationMs: number
+}
+
+const { modelMs, toolMs, idleMs, durationMs } = Astro.props
+
+const split = [
+  ['Model', 'model', modelMs],
+  ['Tools', 'tool', toolMs],
+  ['Waiting', 'waiting', idleMs],
+] as const
+const share = (ms: number): string => pct(ms / Math.max(durationMs, 1))
+---
+
+<div class="time-split">
+  <div class="time-split__legend">
+    {
+      split.map(([label, kind, ms]) => (
+        <span>
+          <Swatch kind={kind} />
+          {label}
+          <b class="time-split__value">{duration(ms)}</b>
+        </span>
+      ))
+    }
+  </div>
+  <Bar segments={split.filter(([, , ms]) => ms > 0).map(([, kind, ms]) => ({ kind, width: share(ms) }))} />
+</div>

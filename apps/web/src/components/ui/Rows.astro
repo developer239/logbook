@@ -1,0 +1,29 @@
+---
+import type { HTMLAttributes } from 'astro/types'
+import './Rows.css'
+
+interface IRowHead {
+  label: string
+  isEnd?: boolean | undefined
+}
+
+interface Props extends HTMLAttributes<'ul'> {
+  heads?: readonly IRowHead[] | undefined
+  isGrid?: boolean | undefined
+}
+
+const { heads, isGrid = false, class: className, ...rest } = Astro.props
+---
+
+<ul class:list={['rows', isGrid && 'rows--grid', className]} {...rest}>
+  {
+    heads !== undefined && (
+      <li class="rows__head" aria-hidden="true">
+        {heads.map((head) => (
+          <span class:list={['rows__cell', head.isEnd === true && 'rows__cell--end']}>{head.label}</span>
+        ))}
+      </li>
+    )
+  }
+  <slot />
+</ul>

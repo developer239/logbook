@@ -1,0 +1,18 @@
+.time-split {
+  padding: var(--space-3) var(--pane-gutter) 0.875rem;
+}
+
+.time-split__legend {
+  display: flex;
+  gap: 1.375rem;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+.time-split__value {
+  display: block;
+  font-size: var(--text-lg);
+  font-weight: 500;
+  color: var(--text-1);
+}

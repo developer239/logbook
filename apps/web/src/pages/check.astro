@@ -1,0 +1,39 @@
+---
+import Agreement from '../components/check/Agreement.astro'
+import CheckList from '../components/check/CheckList.astro'
+import PageHead from '../components/ui/PageHead.astro'
+import Stack from '../components/ui/Stack.astro'
+import Layout from '../layouts/Layout.astro'
+import { load } from '../lib/load'
+import { spotCheck } from '../lib/queries/check'
+import { parseRange } from '../lib/range'
+
+const page = load(() => {
+  const range = parseRange(Astro.url.searchParams)
+
+  return { range, check: spotCheck(range) }
+})
+
+if (!page.ok) {
+  Astro.response.status = page.status
+}
+---
+
+<Layout title="Check" current="check" range={page.ok ? page.data.range : null} syncedAt={page.syncedAt} problem={page.ok ? null : page.problem}>
+  {
+    page.ok && (
+      <>
+        <PageHead title="Check" range={page.data.range} />
+        <Stack>
+          <Agreement agreement={page.data.check.agreement} />
+          <CheckList
+            items={page.data.check.items}
+            unjudged={page.data.check.unjudged}
+            range={page.data.range}
+            back={`${Astro.url.pathname}${Astro.url.search}`}
+          />
+        </Stack>
+      </>
+    )
+  }
+</Layout>

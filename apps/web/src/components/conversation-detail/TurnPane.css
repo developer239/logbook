@@ -1,0 +1,18 @@
+.turn-pane {
+  --pane-gutter: var(--space-4);
+}
+
+@media (min-width: 48rem) {
+  .turn-pane {
+    --pane-gutter: 1.125rem;
+  }
+}
+
+@media (min-width: 75rem) {
+  .turn-pane {
+    position: sticky;
+    top: calc(var(--map-h) + var(--space-4));
+    max-height: calc(100vh - var(--map-h) - var(--space-6));
+    overflow: auto;
+  }
+}

@@ -1,0 +1,29 @@
+.conversation-head__crumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) 0.625rem;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-ui);
+  color: var(--text-2);
+}
+
+.conversation-head__sep {
+  color: var(--text-3);
+}
+
+.conversation-head__crumb > .conversation-head__id {
+  height: auto;
+  min-height: 1.5rem;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.conversation-head__title {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-title);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}

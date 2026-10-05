@@ -1,0 +1,90 @@
+---
+import { filterOf } from '../../lib/filter'
+import { count, pct } from '../../lib/format'
+import { goalName, NOT_WORK, UNLABELLED } from '../../lib/labels'
+import { conversationsHref } from '../../lib/links'
+import { goalTotal, type goalMix } from '../../lib/queries/effort'
+import type { IRange } from '../../lib/range'
+import Bar from '../ui/Bar.astro'
+import Card from '../ui/Card.astro'
+import Link from '../ui/Link.astro'
+import Row from '../ui/Row.astro'
+import Rows from '../ui/Rows.astro'
+import Swatch from '../ui/Swatch.astro'
+import './GoalMix.css'
+
+type Props = ReturnType<typeof goalMix> & { range: IRange }
+
+const { range, goals, notWork, unlabelled } = Astro.props
+const most = Math.max(1, notWork, unlabelled, ...goals.map(goalTotal))
+const notWorkHref = conversationsHref(filterOf('goal', [...NOT_WORK]), range)
+const share = (value: number): string => pct(value / most, 1)
+---
+
+<Card title="Conversations by goal">
+  {
+    goals.length === 0 && notWork === 0 && unlabelled === 0 ? (
+      <p class="card__empty">No conversations in this range.</p>
+    ) : (
+      <>
+        <div class="goal-mix__key">
+          <span>
+            <Swatch kind="me" />
+            mine
+          </span>
+          <span>
+            <Swatch kind="agents" />
+            agents'
+          </span>
+          <span>
+            <Swatch kind="scripts" />
+            scripts'
+          </span>
+        </div>
+        <Rows isGrid class="goal-mix__rows">
+          {goals.map((goal) => {
+            const href = conversationsHref(filterOf('goal', [goal.goal]), range)
+            const parts = [
+              { kind: 'me', value: goal.by.me },
+              { kind: 'agents', value: goal.by.agent },
+              { kind: 'scripts', value: goal.by.script },
+            ] as const
+
+            return (
+              <Row>
+                <Link href={href}>
+                  {goalName(goal.goal)}
+                </Link>
+                <Bar
+                  class="rows__cell"
+                  segments={parts.filter((part) => part.value > 0).map((part) => ({ kind: part.kind, width: share(part.value) }))}
+                />
+                <Link class="rows__cell rows__cell--num" href={href}>
+                  {count(goalTotal(goal))}
+                </Link>
+              </Row>
+            )
+          })}
+          {notWork > 0 && (
+            <Row class="goal-mix__rest">
+              <Link href={notWorkHref}>
+                No task, self-tests
+              </Link>
+              <Bar class="rows__cell" segments={[{ kind: 'rest', width: share(notWork) }]} />
+              <Link class="rows__cell rows__cell--num" href={notWorkHref}>
+                {count(notWork)}
+              </Link>
+            </Row>
+          )}
+          {unlabelled > 0 && (
+            <Row class="goal-mix__rest">
+              <span>{UNLABELLED}</span>
+              <Bar class="rows__cell" segments={[{ kind: 'rest', width: share(unlabelled) }]} />
+              <span class="rows__cell rows__cell--num">{count(unlabelled)}</span>
+            </Row>
+          )}
+        </Rows>
+      </>
+    )
+  }
+</Card>

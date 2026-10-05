@@ -1,0 +1,64 @@
+---
+import { count, duration, pct, plural, time, turnLabel } from '../../lib/format'
+import { reactionStatus } from '../../lib/labels'
+import { anchor } from '../../lib/links'
+import type { IThreadTurn } from '../../lib/queries/thread'
+import { mapPlaces } from '../../lib/session-map'
+import Label from '../ui/Label.astro'
+import Segmented from '../ui/Segmented.astro'
+import './SessionMap.css'
+
+interface Props {
+  turns: IThreadTurn[]
+}
+
+const { turns } = Astro.props
+
+const tip = (turn: IThreadTurn): string => {
+  const reactions = turn.prompt?.reactions ?? []
+
+  return `${turnLabel(turn.number)} · ${time(turn.startedAt)} · ${duration(turn.durationMs)} · ${plural(turn.steps, 'step')}${turn.failed > 0 ? `, ${count(turn.failed)} failed` : ''}${reactions.length > 0 ? ` · ${reactions.join(', ')}` : ''}`
+}
+---
+
+{/* The page script draws the stretch on screen and the selected turn. */}
+<div class="session-map" data-map data-mode="time">
+  <Label class="session-map__label">Session map</Label>
+  <Segmented class="session-map__modes" isCompact data-modes hidden>
+    <button class="segmented__option" type="button" data-mode="time" aria-pressed="true">by time</button>
+    <button class="segmented__option" type="button" data-mode="turn" aria-pressed="false">by turn</button>
+  </Segmented>
+  <div class="session-map__track" data-track>
+    {
+      mapPlaces(turns).map(({ turn, byTime, byTurn }) => {
+        const [reaction] = turn.prompt?.reactions ?? []
+
+        return (
+          <a
+            class:list={['session-map__mark', turn.failed > 0 && 'session-map__mark--failed']}
+            href={`#${anchor('turn', turn.id)}`}
+            aria-label={tip(turn)}
+            data-mark
+            data-time-start={byTime.start}
+            data-time-end={byTime.end}
+            data-turn-start={byTurn.start}
+            data-turn-end={byTurn.end}
+            style={`--t0:${pct(byTime.start, 3)};--t1:${pct(byTime.end, 3)};--n0:${pct(byTurn.start, 3)};--n1:${pct(byTurn.end, 3)}`}
+          >
+            <span class="session-map__tick" />
+            {turn.failed > 0 && <span class="session-map__failure" />}
+            {reaction !== undefined && (
+              <span class:list={['session-map__reaction', `session-map__reaction--${reactionStatus(reaction)}`]} />
+            )}
+            {turn.compactions.length > 0 && <span class="session-map__compaction" />}
+            {turn.spawned.length > 0 && <span class="session-map__spawned" />}
+          </a>
+        )
+      })
+    }
+    <span class="session-map__window" data-window hidden></span>
+    <span class="session-map__selection" data-selection hidden></span>
+    <span class="session-map__tip" data-tip hidden></span>
+  </div>
+  <span class="session-map__keys" data-keys hidden>j k turn · J K failed turn · n N failed step · esc close step</span>
+</div>

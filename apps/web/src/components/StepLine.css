@@ -1,0 +1,37 @@
+.step-line {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.step-line__text {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.step-line__title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--text-ui);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.step-line__input {
+  margin-left: 0.375rem;
+  color: var(--text-2);
+  font-size: var(--text-sm);
+  font-weight: 400;
+}
+
+.step-line__sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}

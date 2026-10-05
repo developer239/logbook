@@ -1,0 +1,111 @@
+/* Media queries cannot read custom properties, so the two breakpoints are
+   written out wherever they are used, in rem: md is 48rem (768px) and lg is
+   75rem (1200px). */
+:root {
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --fast: 0.14s;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --text-label: 0.65625rem;
+  --text-xs: 0.6875rem;
+  --text-sm: 0.75rem;
+  --text-ui: 0.8125rem;
+  --text-body: 0.875rem;
+  --text-lg: 1rem;
+  --text-title: 1.4375rem;
+  --text-stat: 1.875rem;
+  --map-h: 3rem;
+  color-scheme: dark;
+  --canvas: oklch(0.165 0.006 255);
+  --surface-1: oklch(0.205 0.007 255);
+  --surface-2: oklch(0.246 0.008 255);
+  --surface-3: oklch(0.298 0.009 255);
+  --surface-hi: oklch(0.34 0.01 255);
+  --text-1: oklch(0.965 0.004 255);
+  --text-2: oklch(0.745 0.006 255);
+  --text-3: oklch(0.585 0.006 255);
+  --text-4: oklch(0.47 0.006 255);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --shadow-3: 0 28px 70px -22px rgba(0, 0, 0, 0.7), 0 4px 16px -8px rgba(0, 0, 0, 0.5);
+  --accent: oklch(0.745 0.155 252);
+  --on-accent: oklch(0.16 0.02 255);
+  --problem: oklch(0.695 0.185 26);
+  --slow: oklch(0.805 0.1426 86);
+  --good: oklch(0.745 0.14725 150);
+  --selected: oklch(0.86 0.13 100);
+  --me: var(--text-1);
+  --agent: var(--text-3);
+  --step-model: var(--accent);
+  --step-tool: var(--text-2);
+  --step-agent: oklch(0.745 0.155 300);
+  --waiting: var(--text-3);
+  --carried: oklch(0.765 0.1271 196);
+  --definitions: color-mix(in oklab, var(--step-agent) 45%, var(--surface-1));
+  --surface-reply: color-mix(in oklab, var(--accent) 7%, var(--surface-1));
+  --problem-wash: color-mix(in oklab, var(--problem) 10%, var(--surface-1));
+  --well: color-mix(in oklab, var(--text-1) 7%, transparent);
+  /* Each kind is a background value, so a kind the transcript cannot show can be hatched. */
+  --hatch: repeating-linear-gradient(135deg, var(--waiting) 0 1.5px, transparent 1.5px 4px);
+  --kind-model: var(--step-model);
+  --kind-tool: var(--step-tool);
+  --kind-agent: var(--step-agent);
+  --kind-waiting: var(--hatch);
+  --kind-me: var(--me);
+  --kind-agents: var(--agent);
+  --kind-scripts: var(--hatch);
+  --kind-start: var(--text-4);
+  --kind-prompts: var(--me);
+  --kind-replies: var(--step-model);
+  --kind-built: var(--step-tool);
+  --kind-plugins: var(--step-agent);
+  --kind-skills: var(--slow);
+  --kind-definitions: var(--definitions);
+  --kind-carried: var(--carried);
+  --kind-unaccounted: var(--hatch);
+  --kind-problem: var(--problem);
+  --kind-rest: var(--text-4);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --canvas: oklch(0.972 0.003 255);
+    --surface-1: oklch(0.995 0.002 255);
+    --surface-2: oklch(0.952 0.004 255);
+    --surface-3: oklch(0.912 0.006 255);
+    --surface-hi: oklch(0.875 0.008 255);
+    --text-1: oklch(0.22 0.01 255);
+    --text-2: oklch(0.42 0.01 255);
+    --text-3: oklch(0.54 0.01 255);
+    --text-4: oklch(0.64 0.008 255);
+    --shadow-1: 0 1px 2px rgba(15, 20, 30, 0.08);
+    --shadow-3: 0 28px 70px -22px rgba(15, 20, 30, 0.25), 0 4px 16px -8px rgba(15, 20, 30, 0.15);
+    --accent: oklch(0.55 0.17 252);
+    --on-accent: oklch(0.99 0.004 255);
+    --problem: oklch(0.56 0.19 26);
+    --slow: oklch(0.62 0.14 70);
+    --good: oklch(0.57 0.15 150);
+    --selected: oklch(0.66 0.14 95);
+    --step-agent: oklch(0.55 0.17 300);
+    --carried: oklch(0.57 0.11 196);
+  }
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/GeistMono-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+}

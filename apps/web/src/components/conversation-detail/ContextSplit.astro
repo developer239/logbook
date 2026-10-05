@@ -1,0 +1,84 @@
+---
+import type { ContextKind, IContextSnapshot } from '../../lib/context'
+import { tokensCompact } from '../../lib/format'
+import { contextView } from '../../lib/views/context-split'
+import Bar from '../ui/Bar.astro'
+import Disclosure from '../ui/Disclosure.astro'
+import type { BarKind } from '../ui/kinds'
+import Swatch from '../ui/Swatch.astro'
+import './ContextSplit.css'
+
+interface Props {
+  first: IContextSnapshot
+  last: IContextSnapshot
+  isSame: boolean
+}
+
+const { first, last, isSame } = Astro.props
+
+const NAMES: Record<ContextKind, string> = {
+  start: 'System, tools, instructions',
+  prompts: 'Prompts and notes',
+  replies: 'Replies and calls',
+  builtIn: 'Built-in tool results',
+  plugins: 'Plugin tool results',
+  skills: 'Skills',
+  definitions: 'Tool definitions loaded',
+  carried: 'Carried over',
+  unaccounted: 'Unaccounted',
+}
+const barKind = (kind: ContextKind): BarKind => (kind === 'builtIn' ? 'built' : kind)
+const { summary, bars } = contextView(first, last, isSame)
+---
+
+<Disclosure class="context-split" rememberKey="context" summaryClass="context-split__summary">
+  <Fragment slot="summary">
+    <span class="context-split__name">Context</span>
+    <Bar class="context-split__summary-bar" segments={summary.map((segment) => ({ kind: barKind(segment.kind), width: segment.width }))} />
+    <b class="context-split__figure context-split__summary-total">
+      {isSame ? tokensCompact(last.total) : `${tokensCompact(first.total)} → ${tokensCompact(last.total)}`}
+    </b>
+  </Fragment>
+  {
+    bars.map((bar) => (
+      <div class="context-split__row">
+        <span>{bar.label}</span>
+        <Bar
+          segments={bar.segments.map((segment) => ({
+            kind: barKind(segment.kind),
+            width: segment.width,
+            title: `${NAMES[segment.kind]}: ${tokensCompact(segment.tokens)}`,
+          }))}
+        />
+        <b class="context-split__figure context-split__row-total">{tokensCompact(bar.total)}</b>
+      </div>
+    ))
+  }
+  <div class="context-split__key">
+    {
+      summary.map((segment) => (
+        <span>
+          <Swatch kind={barKind(segment.kind)} />
+          {NAMES[segment.kind]} <b class="context-split__figure">{tokensCompact(segment.tokens)}</b>
+        </span>
+      ))
+    }
+  </div>
+  <p class="context-split__note">
+    Measured per request; split by what the transcript shows arrived, each part estimated from its text. Unaccounted is
+    what the harness adds that its transcript leaves out (Claude Code's reminders and attachments) and estimation error.
+  </p>
+  {
+    last.largest.length > 0 && (
+      <ul class="context-split__largest">
+        {last.largest.map((item) => (
+          <li class="context-split__item">
+            <Swatch kind={barKind(item.kind)} />
+            <span class="context-split__item-name">{item.label}</span>
+            <span class="context-split__item-size">{tokensCompact(item.tokens)}</span>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</Disclosure>

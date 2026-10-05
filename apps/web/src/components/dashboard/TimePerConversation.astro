@@ -1,0 +1,28 @@
+---
+import { count } from '../../lib/format'
+import type { timePerConversation } from '../../lib/queries/effort'
+import { conversationTimeRows } from '../../lib/views/time-per-conversation'
+import TimeRows from '../TimeRows.astro'
+import Card from '../ui/Card.astro'
+
+type Props = ReturnType<typeof timePerConversation>
+
+const { rows, conversations } = Astro.props
+---
+
+<Card title="Time per conversation">
+  <Fragment slot="meta">{count(conversations)} I started</Fragment>
+  {
+    rows.length === 0 ? (
+      <p class="card__empty">No conversations of mine in this range.</p>
+    ) : (
+      <>
+        <p class="card__lede">
+          Dot: typical time the agent worked. Tick: typical time from the first message to the last. Between them is the time
+          it waited on me or sat idle.
+        </p>
+        <TimeRows {...conversationTimeRows(rows)} />
+      </>
+    )
+  }
+</Card>

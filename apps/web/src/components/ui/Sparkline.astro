@@ -1,0 +1,18 @@
+---
+import { sparkline } from '../../lib/views/sparkline'
+import './Sparkline.css'
+
+interface Props {
+  values: readonly number[]
+  isProblem?: boolean | undefined
+  class?: string | undefined
+}
+
+const { values, isProblem = false, class: className } = Astro.props
+const line = sparkline(values)
+---
+
+<svg class:list={['sparkline', isProblem && 'sparkline--problem', className]} viewBox="0 0 76 18" aria-hidden="true">
+  <polyline class="sparkline__line" points={line.points} fill="none" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
+  {line.last !== null && <circle class="sparkline__dot" cx={line.last[0]} cy={line.last[1]} r="2" />}
+</svg>

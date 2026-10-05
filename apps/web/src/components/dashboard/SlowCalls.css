@@ -1,0 +1,30 @@
+.slow-calls__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slow-calls__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.125rem 0.625rem;
+  padding: 0.5625rem 0;
+}
+
+.slow-calls__name {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.slow-calls__tally {
+  font-size: var(--text-ui);
+  color: var(--slow);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.slow-calls__usual {
+  grid-column: 1 / -1;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}

@@ -1,0 +1,15 @@
+.disclosure__summary {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.disclosure__chevron {
+  --icon-size: 0.75rem;
+  color: var(--text-3);
+  transition: transform var(--fast);
+}
+
+.disclosure[open] > .disclosure__summary .disclosure__chevron {
+  transform: rotate(90deg);
+}

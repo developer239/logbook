@@ -1,0 +1,19 @@
+.didnt-finish__rows {
+  --rows-columns: 6.875rem minmax(0, 1fr) minmax(0, 16.25rem) 7.5rem;
+}
+
+.didnt-finish__note {
+  min-width: 0;
+}
+
+.didnt-finish__title {
+  color: var(--text-2);
+}
+
+@media (min-width: 75rem) {
+  .didnt-finish__note {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

@@ -1,0 +1,45 @@
+---
+import { plural } from '../../lib/format'
+import { paneHref } from '../../lib/links'
+import type { IThreadTurn } from '../../lib/queries/thread'
+import type { shownTurn } from '../../lib/queries/turn'
+import type { IRange } from '../../lib/range'
+import Card from '../ui/Card.astro'
+import Thread from './Thread.astro'
+import TurnPane from './TurnPane.astro'
+import './ConversationPanes.css'
+
+interface Props {
+  id: string
+  turns: IThreadTurn[]
+  agent: string
+  messages: number
+  promptBy: string
+  shown: ReturnType<typeof shownTurn> | null
+  range: IRange
+}
+
+const { id, turns, agent, messages, promptBy, shown, range } = Astro.props
+---
+
+<div class="conversation-panes" data-panes={paneHref(id)}>
+  <Card title="Thread" level={2}>
+    <Fragment slot="meta">{plural(turns.length, 'turn')} · {plural(messages, 'message')}</Fragment>
+    <div class="conversation-panes__thread" slot="flush" data-thread>
+      {
+        turns.length === 0 ? (
+          <p class="card__empty">Nothing was recorded in this conversation.</p>
+        ) : (
+          <Thread
+            turns={turns}
+            agent={agent}
+            promptBy={promptBy}
+            selected={shown?.turn.id ?? null}
+            path={shown?.path ?? new Set()}
+          />
+        )
+      }
+    </div>
+  </Card>
+  {shown !== null && <TurnPane turn={shown.turn} isNested={shown.turn.sessionId !== id} selected={shown.selected} range={range} />}
+</div>

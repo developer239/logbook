@@ -23,5 +23,15 @@
     "file": "packages/ci/src/tracked-files.ts",
     "calls": "runs git ls-files to list the repository's tracked files for the CI checks",
     "case": "local"
+  },
+  {
+    "file": "apps/web/src/lib/cookbook.ts",
+    "calls": "starts the cookbook CLI as a child of the web server to sync and label; replaced by the logbook CLI client",
+    "case": "local"
+  },
+  {
+    "file": "apps/web/src/scripts/follow.ts",
+    "calls": "the browser fetches the Turn pane (/pane/<id>) from the page's own origin",
+    "case": "local"
   }
 ]

@@ -1,0 +1,124 @@
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rows__head {
+  display: none;
+}
+
+.rows__link,
+.rows__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.125rem var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.rows__link:hover {
+  margin: 0 -0.75rem;
+  padding: var(--space-2) 0.75rem;
+  background: var(--surface-2);
+}
+
+.rows__cell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rows__cell--main {
+  order: -1;
+  flex: 1 0 100%;
+}
+
+.rows__cell--muted {
+  color: var(--text-2);
+  font-size: var(--text-ui);
+}
+
+.rows__cell--problem {
+  color: var(--problem);
+}
+
+.rows__cell--num {
+  overflow: visible;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.rows__cell--time {
+  overflow: visible;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+@media (min-width: 75rem) {
+  .rows__head {
+    display: grid;
+    grid-template-columns: var(--rows-columns);
+    gap: 0.875rem;
+    align-items: center;
+    height: 1.625rem;
+    color: var(--text-4);
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+
+  .rows__link,
+  .rows__line {
+    display: grid;
+    grid-template-columns: var(--rows-columns);
+    gap: 0.875rem;
+    align-items: center;
+    min-height: var(--rows-height, 2.625rem);
+    padding: 0;
+  }
+
+  .rows__link:hover {
+    padding: 0 0.75rem;
+  }
+
+  .rows__cell--main {
+    order: 0;
+  }
+
+  .rows__cell--time,
+  .rows__cell--end {
+    text-align: right;
+  }
+}
+
+.rows--grid .rows__head,
+.rows--grid .rows__line {
+  display: grid;
+  grid-template-columns: var(--rows-columns);
+  gap: var(--rows-gap, 0.875rem);
+  align-items: center;
+}
+
+.rows--grid .rows__head {
+  height: var(--rows-head-height, 1.625rem);
+  color: var(--text-4);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.rows--grid .rows__head .rows__cell {
+  overflow: visible;
+}
+
+.rows--grid .rows__line {
+  min-height: var(--rows-height, 2.625rem);
+  padding: 0;
+}
+
+.rows--grid .rows__cell--num,
+.rows--grid .rows__cell--time,
+.rows--grid .rows__cell--end {
+  text-align: right;
+}

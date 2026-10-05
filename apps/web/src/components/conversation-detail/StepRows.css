@@ -1,0 +1,124 @@
+.step-rows__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: center;
+  min-height: 2.875rem;
+  padding: 0.3125rem var(--pane-gutter);
+  color: inherit;
+}
+
+.step-rows__name {
+  position: relative;
+}
+
+.step-rows__cause {
+  color: var(--problem);
+}
+
+.step-rows__took {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.step-rows__timeline {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 1.125rem;
+  background: linear-gradient(90deg, var(--surface-3) 0.0625rem, transparent 0.0625rem) 0 0 / var(--tick) 100%;
+}
+
+.step-rows__span {
+  position: absolute;
+  top: 0.375rem;
+  height: 0.375rem;
+  min-width: 0.1875rem;
+  background: var(--kind-tool);
+}
+
+.step-rows__row--model .step-rows__span {
+  background: var(--kind-model);
+}
+
+.step-rows__row--agent .step-rows__span {
+  top: 0.3125rem;
+  height: 0.5rem;
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--kind-agent);
+}
+
+.step-rows__row--fail .step-rows__span {
+  background: var(--problem);
+}
+
+.step-rows__row--untimed .step-rows__span {
+  top: 0.5rem;
+  width: 1rem;
+  height: 0;
+  border-top: 2px dotted var(--text-3);
+  background: none;
+}
+
+.step-rows__row--fail {
+  background: var(--problem-wash);
+}
+
+a.step-rows__row:hover {
+  background: var(--surface-2);
+}
+
+.step-rows__row--fail .step-rows__took {
+  color: var(--problem);
+}
+
+.step-rows__row--untimed .step-rows__took {
+  color: var(--text-2);
+}
+
+.step-rows__row--nested .step-rows__name {
+  padding-left: 1.875rem;
+  margin-left: calc(var(--depth) * 1.875rem);
+}
+
+.step-rows__row--nested .step-rows__name::before {
+  content: '';
+  position: absolute;
+  left: 0.6875rem;
+  top: -1.875rem;
+  width: 0.875rem;
+  height: 2.625rem;
+  border-left: 1px solid var(--text-3);
+  border-bottom: 1px solid var(--text-3);
+}
+
+.step-rows__kids > .step-rows__kids-head {
+  gap: var(--space-2);
+  padding: 0.375rem var(--pane-gutter) 0.375rem calc(var(--pane-gutter) + 0.625rem);
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+.step-rows__kids-head b {
+  color: var(--step-agent);
+  font-weight: 500;
+}
+
+.step-rows__kids-link {
+  padding: 0 var(--pane-gutter) 0.375rem calc(var(--pane-gutter) + 1.875rem);
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+@media (min-width: 48rem) {
+  .step-rows__row {
+    grid-template-columns: minmax(0, 1fr) 4rem 11.25rem;
+    gap: var(--space-3);
+  }
+
+  .step-rows__timeline {
+    grid-column: auto;
+  }
+}

@@ -1,0 +1,16 @@
+---
+import type { StepKind } from '../../lib/step-kind'
+import Icon from './Icon.astro'
+import './Tile.css'
+
+interface Props {
+  kind: StepKind
+  class?: string | undefined
+}
+
+const { kind, class: className } = Astro.props
+---
+
+<span class:list={['tile', `tile--${kind}`, className]}>
+  <Icon name={kind} />
+</span>

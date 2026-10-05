@@ -1,0 +1,23 @@
+.conversation-panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  align-items: start;
+}
+
+.conversation-panes__thread {
+  padding: var(--space-1) var(--space-4) var(--space-4);
+}
+
+@media (min-width: 48rem) {
+  .conversation-panes__thread {
+    padding: var(--space-1) 1.25rem 1.25rem;
+  }
+}
+
+@media (min-width: 75rem) {
+  .conversation-panes {
+    grid-template-columns: minmax(0, 1fr) 40rem;
+  }
+}

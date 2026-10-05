@@ -1,0 +1,39 @@
+---
+import Layout from '../layouts/Layout.astro'
+import { CookbookError } from '../lib/errors'
+import { pageOf, readForm } from '../lib/forms'
+import { syncedAtOrNull } from '../lib/load'
+import { sync } from '../lib/sync'
+
+if (Astro.request.method !== 'POST') {
+  return new Response(null, { status: 405, headers: { Allow: 'POST' } })
+}
+
+const page = pageOf((await readForm(Astro.request))?.get('back'), Astro.url)
+let problem: string | null = null
+
+if (page === null) {
+  problem = 'A sync returns to a page of this app; the form sent none.'
+  Astro.response.status = 400
+} else {
+  try {
+    await sync()
+    return Astro.redirect(page, 303)
+  } catch (error) {
+    if (!(error instanceof CookbookError)) {
+      throw error
+    }
+    problem = error.message
+    Astro.response.status = error.status
+  }
+}
+---
+
+<Layout
+  title="Sync"
+  current={null}
+  range={null}
+  syncedAt={syncedAtOrNull()}
+  problem={problem}
+  back={page ?? '/'}
+/>

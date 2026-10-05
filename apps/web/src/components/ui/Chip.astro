@@ -1,0 +1,15 @@
+---
+import type { HTMLAttributes } from 'astro/types'
+import './Chip.css'
+
+interface Props extends HTMLAttributes<'a'> {
+  isMono?: boolean | undefined
+}
+
+const { isMono = false, class: className, href, ...rest } = Astro.props
+const Tag = href === undefined ? 'span' : 'a'
+---
+
+<Tag class:list={['chip', isMono && 'chip--mono', href !== undefined && 'chip--link', className]} href={href} {...rest}>
+  <slot />
+</Tag>

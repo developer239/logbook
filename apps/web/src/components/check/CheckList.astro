@@ -1,0 +1,64 @@
+---
+import { brief, count } from '../../lib/format'
+import { reactionStatus, VERDICTS } from '../../lib/labels'
+import { conversationHref } from '../../lib/links'
+import type { ICheckItem } from '../../lib/queries/check'
+import type { IRange } from '../../lib/range'
+import Button from '../ui/Button.astro'
+import Card from '../ui/Card.astro'
+import Link from '../ui/Link.astro'
+import Status from '../ui/Status.astro'
+import './CheckList.css'
+
+interface Props {
+  items: ICheckItem[]
+  unjudged: number
+  range: IRange
+  back: string
+}
+
+const { items, unjudged, range, back } = Astro.props
+const VERDICT_NAMES: Readonly<Record<(typeof VERDICTS)[number], string>> = { right: 'Right', wrong: 'Wrong' }
+---
+
+<Card title="Is the reaction right?">
+  <Fragment slot="meta">{count(items.length)} of {count(unjudged)} not judged</Fragment>
+  {
+    items.length === 0 ? (
+      <p class="card__empty">No reaction in this range waits for a verdict.</p>
+    ) : (
+      <ol class="check-list">
+        {items.map((item) => (
+          <li class="check-list__item">
+            <div class="check-list__head">
+              <Status tone={reactionStatus(item.reaction)} form="pill">
+                {item.reaction}
+              </Status>
+              <span class="check-list__about">{[item.target, item.reach].filter((part) => part !== null).join(' · ')}</span>
+              <Link class="check-list__open" href={conversationHref(item.sessionId, { turn: item.messageId }, range)}>
+                Open
+              </Link>
+            </div>
+            {item.quote !== null && <p class="check-list__quote">{item.quote}</p>}
+            {item.rule !== null && <p class="check-list__rule">{item.rule}</p>}
+            <dl class="check-list__context">
+              <dt class="check-list__who">Agent before</dt>
+              <dd class="check-list__said">{item.reply === null ? 'The conversation starts here.' : brief(item.reply, 400)}</dd>
+              <dt class="check-list__who">You</dt>
+              <dd class="check-list__said">{brief(item.prompt, 600)}</dd>
+            </dl>
+            <form class="check-list__verdict" method="post" action="/verdict">
+              <input type="hidden" name="reaction" value={item.reactionId} />
+              <input type="hidden" name="back" value={back} />
+              {VERDICTS.map((verdict) => (
+                <Button variant="soft" type="submit" name="verdict" value={verdict}>
+                  {VERDICT_NAMES[verdict]}
+                </Button>
+              ))}
+            </form>
+          </li>
+        ))}
+      </ol>
+    )
+  }
+</Card>

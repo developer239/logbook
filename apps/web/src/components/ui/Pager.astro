@@ -1,0 +1,29 @@
+---
+import { count } from '../../lib/format'
+import { pageHref } from '../../lib/links'
+import { pageSpan } from '../../lib/views/pager'
+import Link from './Link.astro'
+import './Pager.css'
+
+interface Props {
+  // Counted from 0.
+  page: number
+  size: number
+  total: number
+}
+
+const { page, size, total } = Astro.props
+const span = pageSpan(page, size, total)
+---
+
+{
+  span !== null && (
+    <div class="pager">
+      <span class="pager__shown">
+        {count(span.first)} to {count(span.last)} of {count(total)}
+      </span>
+      {span.hasNewer && <Link href={pageHref(Astro.url, page - 1)}>Newer</Link>}
+      {span.hasOlder && <Link href={pageHref(Astro.url, page + 1)}>Older</Link>}
+    </div>
+  )
+}

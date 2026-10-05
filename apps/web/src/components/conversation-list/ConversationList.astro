@@ -1,0 +1,54 @@
+---
+import { count, duration, plural, when } from '../../lib/format'
+import { goalName, harnessName, outcomeStatus, UNLABELLED_INLINE, UNTITLED } from '../../lib/labels'
+import { conversationHref } from '../../lib/links'
+import type { conversations } from '../../lib/queries/conversations'
+import type { IRange } from '../../lib/range'
+import Card from '../ui/Card.astro'
+import Pager from '../ui/Pager.astro'
+import Row from '../ui/Row.astro'
+import Rows from '../ui/Rows.astro'
+import Status from '../ui/Status.astro'
+import './ConversationList.css'
+
+interface Props {
+  list: ReturnType<typeof conversations>
+  range: IRange
+  page: number
+}
+
+const { list, range, page } = Astro.props
+---
+
+<Card title={plural(list.total, 'conversation')}>
+  <Fragment slot="meta">latest message first</Fragment>
+  {
+    list.rows.length === 0 ? (
+      <p class="card__empty">Nothing in this range matches.</p>
+    ) : (
+      <Rows class="conversation-list__rows">
+        {list.rows.map((row) => (
+          <Row href={conversationHref(row.id, {}, range)}>
+            <Status class="rows__cell" tone={outcomeStatus(row.outcome)} form="pill">
+              {row.outcome ?? UNLABELLED_INLINE}
+            </Status>
+            <span class="rows__cell rows__cell--main">{row.title ?? UNTITLED}</span>
+            <span class="rows__cell rows__cell--muted">{goalName(row.goal)}</span>
+            <span class="rows__cell rows__cell--muted rows__cell--num">
+              {plural(row.steps, 'step')}
+              {row.failed > 0 && <span class="conversation-list__failed">{count(row.failed)} failed</span>}
+            </span>
+            <span class="rows__cell rows__cell--muted rows__cell--num">{duration(row.activeMs)}</span>
+            <span class="rows__cell rows__cell--muted">
+              {harnessName(row.harness)}
+              {row.agent !== null && ` · ${row.agent}`}
+              {` · ${row.startedBy}`}
+            </span>
+            <span class="rows__cell rows__cell--time">{when(row.lastAt)}</span>
+          </Row>
+        ))}
+      </Rows>
+    )
+  }
+  <Pager slot="note" page={page} size={list.pageSize} total={list.total} />
+</Card>

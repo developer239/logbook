@@ -1,0 +1,27 @@
+---
+import './ThreadMessage.css'
+
+// A bubble is a link, so a drag across its text selects it rather than
+// dragging the link.
+interface Props {
+  kind: 'prompt' | 'reply'
+  turnId: string
+  href: string
+  isSelected: boolean
+  isNested: boolean
+  id?: string | undefined
+}
+
+const { kind, turnId, href, isSelected, isNested, id } = Astro.props
+---
+
+<div
+  class:list={['thread-message', `thread-message--${kind}`, isNested && 'thread-message--nested']}
+  id={id}
+  data-message
+  data-turn={turnId}
+  aria-current={isSelected ? 'true' : undefined}
+>
+  <div class="thread-message__who"><slot name="who" /></div>
+  <a class="thread-message__bubble" href={href} draggable="false"><slot /></a>
+</div>

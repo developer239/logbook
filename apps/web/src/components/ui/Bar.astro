@@ -1,0 +1,22 @@
+---
+import type { BarKind } from './kinds'
+import './Bar.css'
+
+interface IBarSegment {
+  kind: BarKind
+  width: string
+  title?: string | undefined
+}
+
+interface Props {
+  segments: readonly IBarSegment[]
+  isTrack?: boolean | undefined
+  class?: string | undefined
+}
+
+const { segments, isTrack = false, class: className } = Astro.props
+---
+
+<span class:list={['bar', isTrack && 'bar--track', className]} aria-hidden="true">
+  {segments.map((segment) => <span class={`bar__segment bar__segment--${segment.kind}`} style={`width:${segment.width}`} title={segment.title} />)}
+</span>

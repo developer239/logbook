@@ -1,0 +1,36 @@
+---
+import type { HTMLAttributes } from 'astro/types'
+import './Card.css'
+
+interface Props extends Omit<HTMLAttributes<'section'>, 'title'> {
+  title: string
+  level?: 2 | 3
+  hasPinnedHeader?: boolean | undefined
+}
+
+const { title, level = 3, hasPinnedHeader = false, class: className, ...rest } = Astro.props
+const Heading = `h${level}` as const
+const note = Astro.slots.has('note') ? await Astro.slots.render('note') : ''
+---
+
+<section class:list={['card', hasPinnedHeader && 'card--pinned-header', className]} {...rest}>
+  <header class="card__header">
+    <Heading class="card__title">{title}</Heading>
+    {
+      Astro.slots.has('meta') && (
+        <span class="card__meta">
+          <slot name="meta" />
+        </span>
+      )
+    }
+  </header>
+  {
+    Astro.slots.has('default') && (
+      <div class="card__body">
+        <slot />
+      </div>
+    )
+  }
+  <slot name="flush" />
+  {note.trim() !== '' && <div class="card__note" set:html={note} />}
+</section>

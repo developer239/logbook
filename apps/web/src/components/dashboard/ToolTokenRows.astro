@@ -1,0 +1,62 @@
+---
+import { count, pct, tokensCompact } from '../../lib/format'
+import { stepsHref } from '../../lib/links'
+import type { IToolTokens } from '../../lib/queries/tool-tokens'
+import type { IRange } from '../../lib/range'
+import Bar from '../ui/Bar.astro'
+import Link from '../ui/Link.astro'
+import Row from '../ui/Row.astro'
+import Rows from '../ui/Rows.astro'
+import Tag from '../ui/Tag.astro'
+import './ToolTokenRows.css'
+
+interface Props {
+  rows: IToolTokens[]
+  range: IRange
+  most: number
+  hasDefinitions?: boolean
+}
+
+const { rows, range, most, hasDefinitions = false } = Astro.props
+const isSkill = (row: IToolTokens): boolean => row.source.kind === 'skills'
+
+const heads = [
+  { label: 'Tool or skill' },
+  ...(hasDefinitions ? [{ label: 'Definition', isEnd: true }] : []),
+  { label: 'Per call', isEnd: true },
+  { label: '' },
+  { label: 'All', isEnd: true },
+]
+---
+
+<Rows isGrid class:list={['tool-token-rows', hasDefinitions && 'tool-token-rows--definitions']} heads={heads}>
+  {
+    rows.map((row) => (
+      <Row>
+        <span class="rows__cell tool-token-rows__name">
+          {isSkill(row) || row.calls === 0 ? (
+            <code class:list={['tool-token-rows__tool', row.calls === 0 && 'tool-token-rows__tool--unused']} title={row.name}>
+              {row.name}
+            </code>
+          ) : (
+            <Link class="tool-token-rows__tool" href={stepsHref({ tool: row.name }, range)} title={row.name}>
+              <code>{row.name}</code>
+            </Link>
+          )}
+          {isSkill(row) && <Tag>skill</Tag>}
+          {row.calls === 0 && <Tag isFlag>unused</Tag>}
+          {row.isRetired && <Tag isFlag>removed</Tag>}
+          {row.calls > 0 && <span class="tool-token-rows__calls">{count(row.calls)}×</span>}
+        </span>
+        {hasDefinitions && (
+          <span class="rows__cell rows__cell--time">{row.definitionTokens === null ? 'none' : tokensCompact(row.definitionTokens)}</span>
+        )}
+        <span class:list={['rows__cell', 'rows__cell--num', row.calls === 0 && 'tool-token-rows__unused']}>
+          {row.typicalTokens === null ? 'not called' : tokensCompact(row.typicalTokens)}
+        </span>
+        <Bar isTrack class="rows__cell" segments={[{ kind: 'model', width: pct(row.totalTokens / most, 1) }]} />
+        <span class="rows__cell rows__cell--time">{tokensCompact(row.totalTokens)}</span>
+      </Row>
+    ))
+  }
+</Rows>

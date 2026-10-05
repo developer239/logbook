@@ -1,0 +1,48 @@
+---
+import TurnPane from '../../components/conversation-detail/TurnPane.astro'
+import Card from '../../components/ui/Card.astro'
+import PageProblem from '../../components/ui/PageProblem.astro'
+import { ParamError } from '../../lib/errors'
+import { decodeId } from '../../lib/links'
+import { load } from '../../lib/load'
+import { sessionCache } from '../../lib/queries/session'
+import { shownTurn } from '../../lib/queries/turn'
+import { parseRange } from '../../lib/range'
+
+// The page script swaps this pane in, sending the page's own parameters, so the
+// pane's links read the same as when the page draws it.
+export const partial = true
+
+const page = load(() => {
+  const id = decodeId(Astro.url.pathname.slice('/pane/'.length))
+  const range = parseRange(Astro.url.searchParams)
+  const turnId = Astro.url.searchParams.get('turn')
+
+  if (turnId === null) {
+    throw new ParamError('The Turn pane shows a turn the URL names')
+  }
+
+  const { turn, selected } = shownTurn(sessionCache(), id, turnId, Astro.url.searchParams.get('step'))
+
+  return { id, turn, selected, range }
+})
+
+if (!page.ok) {
+  Astro.response.status = page.status
+}
+---
+
+{
+  page.ok ? (
+    <TurnPane
+      turn={page.data.turn}
+      isNested={page.data.turn.sessionId !== page.data.id}
+      selected={page.data.selected}
+      range={page.data.range}
+    />
+  ) : (
+    <Card title="Turn" level={2} data-turn-pane="">
+      <PageProblem slot="flush" problem={page.problem} />
+    </Card>
+  )
+}

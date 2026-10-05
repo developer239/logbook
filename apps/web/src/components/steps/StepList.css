@@ -1,0 +1,10 @@
+.step-list__rows {
+  --rows-columns: minmax(0, 1fr) minmax(0, 13.75rem) 9.375rem minmax(0, 15rem) 6.875rem;
+  --rows-height: 2.875rem;
+}
+
+.step-list__usual {
+  display: block;
+  color: var(--text-3);
+  font-size: var(--text-xs);
+}

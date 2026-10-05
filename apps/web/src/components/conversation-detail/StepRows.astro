@@ -1,0 +1,134 @@
+---
+import { count, duration, pct, plural, tokensLine } from '../../lib/format'
+import { mainInput } from '../../lib/inputs'
+import { harnessName, purposeName } from '../../lib/labels'
+import { anchor, selectHref } from '../../lib/links'
+import { everyStep, type ISelectedStep, type Step } from '../../lib/queries/turn'
+import type { IRange } from '../../lib/range'
+import { stepKind } from '../../lib/step-kind'
+import StepLine from '../StepLine.astro'
+import Disclosure from '../ui/Disclosure.astro'
+import Link from '../ui/Link.astro'
+import StepDetail from './StepDetail.astro'
+import './StepRows.css'
+
+interface Props {
+  steps: Step[]
+  turnId: string
+  turnStart: number
+  spanMs: number
+  selected: ISelectedStep | null
+  range: IRange
+}
+
+const { steps, turnId, turnStart, spanMs, selected, range } = Astro.props
+
+const OPEN_UP_TO = 10
+const MAX_LEVEL = 3
+
+const at = (ms: number): string => pct(ms / spanMs)
+
+const subOf = (step: Step): string => {
+  if (step.kind === 'model') {
+    const tokens = tokensLine(step)
+
+    return step.model === null ? tokens : `${step.model} · ${tokens}`
+  }
+
+  if (step.started !== null) {
+    return `started ${step.started.agent}${step.started.model === null ? '' : ` · ${step.started.model}`}`
+  }
+
+  if (step.isFailed && step.cause === null) {
+    return 'failed with a real result'
+  }
+
+  if (step.durationMs === null) {
+    return 'no time recorded'
+  }
+
+  return purposeName(step.purpose) ?? ''
+}
+
+const classOf = (step: Step): string[] => [
+  'step-rows__row',
+  `step-rows__row--${stepKind(step)}`,
+  ...(step.level > 0 ? ['step-rows__row--nested'] : []),
+]
+
+// A real result is marked too, so the page's keys step through every failed call.
+const failedMark = (step: Step): string | undefined => (step.kind === 'tool' && step.isFailed ? '' : undefined)
+
+const depthOf = (step: Step): string | undefined =>
+  step.level > 0 ? `--depth:${String(Math.min(step.level, MAX_LEVEL) - 1)}` : undefined
+---
+
+{
+  steps.map((step) => {
+    const left = step.startAt - turnStart
+    const row = (
+      <>
+        <StepLine
+          class="step-rows__name"
+          kind={stepKind(step)}
+          name={step.kind === 'model' ? 'model request' : step.name}
+          input={step.kind === 'tool' ? mainInput(step.inputJson, 60) : undefined}
+        >
+          <Fragment slot="sub">
+            {step.kind === 'tool' && step.cause !== null ? <span class="step-rows__cause">failed · {step.cause}</span> : subOf(step)}
+          </Fragment>
+        </StepLine>
+        <span class="step-rows__took">{step.durationMs === null ? 'no time' : duration(step.durationMs)}</span>
+        <span class="step-rows__timeline">
+          <span class="step-rows__span" style={step.durationMs === null ? `left:${at(left)}` : `left:${at(left)};width:${at(step.durationMs)}`} />
+        </span>
+      </>
+    )
+    const started = step.kind === 'tool' ? step.started : null
+
+    return (
+      <>
+        {selected !== null && step.id === selected.id ? (
+          <details open id={anchor('step', step.id)} data-open-step>
+            <summary class:list={classOf(step)} style={depthOf(step)} data-failed-step={failedMark(step)}>
+              {row}
+            </summary>
+            <StepDetail
+              step={step}
+              close={selectHref(Astro.url, { turn: turnId })}
+              range={range}
+              usualMs={selected.usualMs}
+              isSlow={selected.isSlow}
+              sameCauseFailures={selected.sameCauseFailures}
+            />
+          </details>
+        ) : (
+          <a
+            class:list={classOf(step)}
+            style={depthOf(step)}
+            href={selectHref(Astro.url, { turn: turnId, step: step.id })}
+            data-failed-step={failedMark(step)}
+          >
+            {row}
+          </a>
+        )}
+        {started !== null && (
+          <Disclosure
+            class="step-rows__kids"
+            summaryClass="step-rows__kids-head"
+            isOpen={started.steps.length <= OPEN_UP_TO || everyStep(started.steps).some((child) => child.id === selected?.id)}
+          >
+            <Fragment slot="summary">
+              <b>{started.agent}</b> {harnessName(started.harness)} · {plural(started.steps.length, 'step')},
+              {started.failed === 0 ? ' none failed' : ` ${count(started.failed)} failed`}
+            </Fragment>
+            <div class="step-rows__kids-link">
+              <Link href={`#${anchor('spawn', started.sessionId, started.underTurnId)}`}>Show in the thread</Link>
+            </div>
+            <Astro.self steps={started.steps} turnId={turnId} turnStart={turnStart} spanMs={spanMs} selected={selected} range={range} />
+          </Disclosure>
+        )}
+      </>
+    )
+  })
+}

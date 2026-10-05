@@ -1,0 +1,35 @@
+---
+import { plural } from '../../lib/format'
+import { reactionStatus } from '../../lib/labels'
+import type { IReactionTrend, TREND_REACTIONS } from '../../lib/queries/interaction'
+import Card from '../ui/Card.astro'
+import TrendRows from './TrendRows.astro'
+
+type Props = IReactionTrend
+
+const { prompts, reactions } = Astro.props
+const NAMES: Readonly<Record<(typeof TREND_REACTIONS)[number], string>> = {
+  correction: 'Corrections',
+  pushback: 'Pushback',
+  praise: 'Praise',
+}
+---
+
+<Card title="Reactions to the agent">
+  <Fragment slot="meta">{plural(prompts, 'labelled prompt')}</Fragment>
+  <p class="card__lede">Share of my prompts holding each reaction. The line is one point a week, up to the end of the range.</p>
+  <TrendRows
+    of="prompts"
+    groups={[
+      {
+        rows: reactions.map((reaction) => ({
+          name: NAMES[reaction.kind],
+          tone: reactionStatus(reaction.kind),
+          count: reaction.count,
+          total: prompts,
+          weekly: reaction.weekly,
+        })),
+      },
+    ]}
+  />
+</Card>

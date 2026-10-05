@@ -1,0 +1,61 @@
+---
+import { count, percent } from '../../lib/format'
+import { TREND_WEEKS } from '../../lib/queries/interaction'
+import Row from '../ui/Row.astro'
+import Rows from '../ui/Rows.astro'
+import Sparkline from '../ui/Sparkline.astro'
+import Status from '../ui/Status.astro'
+import './TrendRows.css'
+
+interface ITrendRow {
+  name: string
+  tone: string
+  count: number
+  // What the count is a share of; a share of nothing shows as a dash.
+  total: number
+  weekly: readonly number[]
+}
+
+interface ITrendGroup {
+  // Rows of one subject under its name; a single group needs none.
+  title?: string | undefined
+  aside?: string | undefined
+  rows: readonly ITrendRow[]
+}
+
+interface Props {
+  groups: readonly ITrendGroup[]
+  of: string
+}
+
+const { groups, of } = Astro.props
+const HEADS = [{ label: 'Reaction' }, { label: 'Share', isEnd: true }, { label: `Last ${String(TREND_WEEKS)} weeks` }]
+---
+
+<Rows isGrid class="trend-rows" heads={HEADS}>
+  {
+    groups.map((group) => (
+      <>
+        {group.title !== undefined && (
+          <li class="trend-rows__group">
+            <code class="trend-rows__title" title={group.title}>
+              {group.title}
+            </code>
+            {group.aside !== undefined && <span class="trend-rows__aside">{group.aside}</span>}
+          </li>
+        )}
+        {group.rows.map((row) => (
+          <Row>
+            <Status class="rows__cell" tone={row.tone} form="text">
+              {row.name}
+            </Status>
+            <span class="rows__cell rows__cell--num" title={`${count(row.count)} of ${count(row.total)} ${of}`}>
+              {row.total === 0 ? '-' : percent((100 * row.count) / row.total)}
+            </span>
+            <Sparkline values={row.weekly} />
+          </Row>
+        ))}
+      </>
+    ))
+  }
+</Rows>

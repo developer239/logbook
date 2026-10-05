@@ -1,0 +1,67 @@
+---
+import { count, duration, plural } from '../../lib/format'
+import { mainInput } from '../../lib/inputs'
+import { UNTITLED } from '../../lib/labels'
+import { conversationHref, stepsHref } from '../../lib/links'
+import type { retryLoops } from '../../lib/queries/loops'
+import type { IRange } from '../../lib/range'
+import { MINUTE } from '../../lib/time'
+import { loopSummary } from '../../lib/views/retry-loops'
+import Card from '../ui/Card.astro'
+import Chip from '../ui/Chip.astro'
+import Link from '../ui/Link.astro'
+import './RetryLoops.css'
+
+type Props = ReturnType<typeof retryLoops> & { range: IRange }
+
+const { range, loops, tries, byTool } = Astro.props
+const LOOPS_SHOWN = 3
+const SPAN_SHOWN_MS = MINUTE
+const { shown, others } = loopSummary(byTool)
+---
+
+<Card title="Retry loops">
+  <Fragment slot="meta">
+    <Link href={stepsHref({ loop: '1' }, range)}>{plural(loops.length, 'loop')}, {plural(tries, 'try', 'tries')}</Link>
+  </Fragment>
+  {
+    loops.length === 0 ? (
+      <p class="card__empty">No retry loops in this range.</p>
+    ) : (
+      <>
+        <div class="retry-loops__summary">
+          {shown.map((entry) => (
+            <Chip>
+              <code>{entry.name}</code> {count(entry.loops)}
+            </Chip>
+          ))}
+          {others > 0 && (
+            <Chip>
+              <code>others</code> {count(others)}
+            </Chip>
+          )}
+        </div>
+        <ul class="retry-loops__list">
+          {loops.slice(0, LOOPS_SHOWN).map((loop) => (
+            <li class="retry-loops__item">
+              <span class="retry-loops__tries">×{count(loop.tries)}</span>
+              <span class="retry-loops__what">
+                <code>{loop.name}</code> <code class="retry-loops__input">{mainInput(loop.input, 60)}</code>
+              </span>
+              <span class="retry-loops__failed">
+                {count(loop.failed)} failed
+                {loop.spanMs >= SPAN_SHOWN_MS && <span class="retry-loops__over"> over {duration(loop.spanMs)}</span>}
+              </span>
+              <Link
+                class="retry-loops__conversation"
+                href={conversationHref(loop.sessionId, { turn: loop.turnId, step: loop.firstCallId }, range)}
+              >
+                {loop.title ?? UNTITLED}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </>
+    )
+  }
+</Card>

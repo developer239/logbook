@@ -1,0 +1,57 @@
+---
+import { count, pct, plural, tokensCompact } from '../../lib/format'
+import type { IRange } from '../../lib/range'
+import { type IToolGroup, mostTotal } from '../../lib/views/tool-tokens'
+import ToolTokenRows from '../dashboard/ToolTokenRows.astro'
+import Bar from '../ui/Bar.astro'
+import Card from '../ui/Card.astro'
+import Disclosure from '../ui/Disclosure.astro'
+import Rows from '../ui/Rows.astro'
+import Tag from '../ui/Tag.astro'
+import './PluginTokens.css'
+
+interface Props {
+  groups: IToolGroup[]
+  mostPlugin: number
+  range: IRange
+}
+
+const { groups, mostPlugin, range } = Astro.props
+const HEADS = [{ label: 'Plugin' }, { label: 'Calls', isEnd: true }, { label: '' }, { label: 'All', isEnd: true }]
+---
+
+<Card title="By plugin">
+  <Fragment slot="meta">what each costs in all, then its tools</Fragment>
+  <Rows isGrid class="plugin-tokens__rows" heads={HEADS}>
+    {
+      groups.map((group) => (
+        <li class:list={['plugin-tokens__group', group.source.kind !== 'plugin' && 'plugin-tokens__group--rest']}>
+          <Disclosure summaryClass="plugin-tokens__summary" bodyClass="plugin-tokens__body">
+            <Fragment slot="summary">
+              <span class="plugin-tokens__line">
+                <span class="plugin-tokens__name">
+                  <b class="plugin-tokens__title">{group.source.name}</b>
+                  {group.source.kind === 'plugin' && <Tag>plugin</Tag>}
+                  <span class="plugin-tokens__calls">
+                    {plural(group.tools.length, group.source.kind === 'skills' ? 'skill' : 'tool')}
+                    {group.definitionTokens > 0 && ` · definitions ${tokensCompact(group.definitionTokens)}`}
+                  </span>
+                  {group.unusedTools > 0 && <Tag isFlag>{count(group.unusedTools)} unused</Tag>}
+                  {group.retiredTools > 0 && <Tag isFlag>{count(group.retiredTools)} removed</Tag>}
+                </span>
+                <span class="rows__cell rows__cell--num">{count(group.calls)}</span>
+                {group.source.kind === 'plugin' ? (
+                  <Bar isTrack segments={[{ kind: 'model', width: pct(group.totalTokens / Math.max(mostPlugin, 1), 1) }]} />
+                ) : (
+                  <span />
+                )}
+                <span class="rows__cell rows__cell--time">{tokensCompact(group.totalTokens)}</span>
+              </span>
+            </Fragment>
+            <ToolTokenRows rows={group.tools} range={range} most={mostTotal(group.tools)} hasDefinitions />
+          </Disclosure>
+        </li>
+      ))
+    }
+  </Rows>
+</Card>

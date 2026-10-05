@@ -1,0 +1,36 @@
+---
+import { pct } from '../../lib/format'
+import type { ISelectedStep, ITurnDetail } from '../../lib/queries/turn'
+import type { IRange } from '../../lib/range'
+import { turnTicks } from '../../lib/views/turn-ticks'
+import StepRows from './StepRows.astro'
+import './StepTree.css'
+
+interface Props {
+  turn: ITurnDetail
+  selected: ISelectedStep | null
+  range: IRange
+}
+
+const { turn, selected, range } = Astro.props
+
+const { spanMs, stepMs, ticks } = turnTicks(turn.spanMs)
+const at = (ms: number): string => pct(ms / spanMs)
+---
+
+<div class="step-tree" style={`--tick:${at(stepMs)}`}>
+  <div class="step-tree__heads">
+    <span>Step</span>
+    <span class="step-tree__took">Took</span>
+    <span class="step-tree__ticks">
+      {
+        ticks.map((tick) => (
+          <span class="step-tree__tick" style={`left:${at(tick.atMs)}`}>
+            {tick.label}
+          </span>
+        ))
+      }
+    </span>
+  </div>
+  <StepRows steps={turn.steps} turnId={turn.id} turnStart={turn.startedAt} spanMs={spanMs} selected={selected} range={range} />
+</div>

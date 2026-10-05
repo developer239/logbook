@@ -1,0 +1,43 @@
+---
+import { count, percent } from '../../lib/format'
+import { reactionStatus } from '../../lib/labels'
+import type { IAgreement } from '../../lib/queries/check'
+import Card from '../ui/Card.astro'
+import Row from '../ui/Row.astro'
+import Rows from '../ui/Rows.astro'
+import Status from '../ui/Status.astro'
+import './Agreement.css'
+
+interface Props {
+  agreement: IAgreement[]
+}
+
+const { agreement } = Astro.props
+const right = agreement.reduce((total, row) => total + row.right, 0)
+const judged = agreement.reduce((total, row) => total + row.right + row.wrong, 0)
+const heads = [{ label: 'Reaction' }, { label: 'Judged', isEnd: true }, { label: 'Right', isEnd: true }]
+---
+
+<Card title="How often the model was right">
+  <Fragment slot="meta">{judged === 0 ? 'nothing judged' : `${percent((100 * right) / judged)} of ${count(judged)}`}</Fragment>
+  {
+    agreement.length === 0 ? (
+      <p class="card__empty">No verdicts in this range yet. Judge the reactions below.</p>
+    ) : (
+      <Rows isGrid class="agreement__rows" heads={heads}>
+        {agreement.map((row) => (
+          <Row>
+            <Status class="rows__cell" tone={reactionStatus(row.reaction)} form="text">
+              {row.reaction}
+            </Status>
+            <span class="rows__cell rows__cell--num">{count(row.right + row.wrong)}</span>
+            <span class="rows__cell rows__cell--num">{percent((100 * row.right) / (row.right + row.wrong))}</span>
+          </Row>
+        ))}
+      </Rows>
+    )
+  }
+  <Fragment slot="note">
+    Your verdicts on the reactions the cookbook found, from the labelling shown. It measures how often a reaction it found is real, not how many it missed.
+  </Fragment>
+</Card>

@@ -433,6 +433,10 @@
       "files": ["apps/web/src/**"],
       "env": {
         "browser": true
+      },
+      "rules": {
+        "typescript/dot-notation": "off",
+        "dot-notation": "off"
       }
     },
     {
@@ -456,6 +460,20 @@
         "typescript/no-unsafe-member-access": "off",
         "typescript/no-unnecessary-condition": "off",
         "prefer-named-capture-group": "off"
+      }
+    },
+    {
+      "files": ["apps/web/src/**/*.astro"],
+      "globals": {
+        "Astro": "readonly"
+      },
+      "rules": {
+        "naming/declaration-naming": [
+          "error",
+          {
+            "interfaceExceptions": ["Props"]
+          }
+        ]
       }
     }
   ]

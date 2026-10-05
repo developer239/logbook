@@ -1,0 +1,44 @@
+---
+import { filterOf } from '../../lib/filter'
+import { count, when } from '../../lib/format'
+import { DIDNT_FINISH, outcomeStatus, UNTITLED } from '../../lib/labels'
+import { conversationHref, conversationsHref } from '../../lib/links'
+import type { unfinished } from '../../lib/queries/unfinished'
+import type { IRange } from '../../lib/range'
+import Card from '../ui/Card.astro'
+import Link from '../ui/Link.astro'
+import Row from '../ui/Row.astro'
+import Rows from '../ui/Rows.astro'
+import Status from '../ui/Status.astro'
+import './DidntFinish.css'
+
+type Props = ReturnType<typeof unfinished> & { range: IRange }
+
+const { range, rows, conversationTotal } = Astro.props
+const SHOWN = 6
+---
+
+<Card title="Didn't finish">
+  <Fragment slot="meta"
+    ><Link href={conversationsHref(filterOf('outcome', DIDNT_FINISH), range)}>{count(rows.length)} of {count(conversationTotal)}</Link>, newest
+    first</Fragment
+  >
+  {
+    rows.length === 0 ? (
+      <p class="card__empty">Everything in this range finished, or handed its work on.</p>
+    ) : (
+      <Rows class="didnt-finish__rows">
+        {rows.slice(0, SHOWN).map((row) => (
+          <Row href={conversationHref(row.sessionId, {}, range)}>
+            <Status class="rows__cell" tone={outcomeStatus(row.outcome)} form="pill">
+              {row.outcome}
+            </Status>
+            <span class="rows__cell--main didnt-finish__note">{row.note ?? 'no note'}</span>
+            <span class="rows__cell didnt-finish__title">{row.title ?? UNTITLED}</span>
+            <span class="rows__cell rows__cell--time">{when(row.at)}</span>
+          </Row>
+        ))}
+      </Rows>
+    )
+  }
+</Card>

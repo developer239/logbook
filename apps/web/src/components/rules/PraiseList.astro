@@ -1,0 +1,41 @@
+---
+import { count, when } from '../../lib/format'
+import { UNTITLED } from '../../lib/labels'
+import { conversationHref } from '../../lib/links'
+import type { IPraise } from '../../lib/queries/rules'
+import type { IRange } from '../../lib/range'
+import Card from '../ui/Card.astro'
+import Row from '../ui/Row.astro'
+import Rows from '../ui/Rows.astro'
+import './PraiseList.css'
+
+interface Props {
+  praise: IPraise[]
+  range: IRange
+}
+
+const { praise, range } = Astro.props
+const SHOWN = 30
+---
+
+<Card title="What you praised">
+  <Fragment slot="meta">
+    {praise.length > SHOWN ? `the newest ${count(SHOWN)} of ${count(praise.length)}` : count(praise.length)}
+  </Fragment>
+  {
+    praise.length === 0 ? (
+      <p class="card__empty">No praise in this range, or the cookbook has not labelled the prompts yet.</p>
+    ) : (
+      <Rows class="praise-list__rows">
+        {praise.slice(0, SHOWN).map((row) => (
+          <Row href={conversationHref(row.sessionId, { turn: row.messageId }, range)}>
+            <span class="rows__cell--main">{row.quote === '' ? 'no quote' : row.quote}</span>
+            <span class="rows__cell rows__cell--muted">{row.target}</span>
+            <span class="rows__cell praise-list__title">{row.title ?? UNTITLED}</span>
+            <span class="rows__cell rows__cell--time">{when(row.at)}</span>
+          </Row>
+        ))}
+      </Rows>
+    )
+  }
+</Card>

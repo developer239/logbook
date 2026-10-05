@@ -1,0 +1,27 @@
+{
+  "name": "@log-book/web",
+  "version": "0.0.0-development",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "typecheck": "tsc --noEmit --runExternalCode"
+  },
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./types/entry.d.ts",
+      "default": "./dist/server/entry.mjs"
+    }
+  },
+  "dependencies": {
+    "@astrojs/node": "catalog:",
+    "astro": "catalog:"
+  },
+  "devDependencies": {
+    "@astrojs/ts-content-mapper": "catalog:",
+    "@types/node": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,127 @@
+---
+import { brief, clip, count, duration, plural, time, turnLabel } from '../../lib/format'
+import { harnessName, outcomeStatus, reactionStatus } from '../../lib/labels'
+import { anchor, selectHref } from '../../lib/links'
+import { markdown } from '../../lib/markdown'
+import type { IThreadTurn } from '../../lib/queries/thread'
+import Icon from '../ui/Icon.astro'
+import Status from '../ui/Status.astro'
+import Tile from '../ui/Tile.astro'
+import ThreadMessage from './ThreadMessage.astro'
+import './Thread.css'
+
+interface Props {
+  turns: IThreadTurn[]
+  agent: string
+  promptBy: string
+  selected: string | null
+  path: ReadonlySet<string>
+  isSpawn?: boolean
+}
+
+const { turns, agent, promptBy, selected, path, isSpawn = false } = Astro.props
+
+const BRIEF_LENGTH = 280
+---
+
+{
+  turns.map((turn, index) => {
+    const href = selectHref(Astro.url, { turn: turn.id })
+    const isSelected = turn.id === selected
+    const replyModel = turn.reply?.model ?? null
+
+    return (
+      <div class="thread__turn" data-turn={turn.id} data-failed={turn.failed}>
+        {!isSpawn && (
+          <div class="thread__line" id={anchor('turn', turn.id)}>
+            {turnLabel(turn.number)}
+            <span class="thread__time">{time(turn.startedAt)}</span>
+          </div>
+        )}
+        {turn.prompt !== null && !(isSpawn && index === 0) && (
+          <ThreadMessage kind="prompt" turnId={turn.id} href={href} isSelected={isSelected} isNested={isSpawn}>
+            <Fragment slot="who">
+              <b class="thread-message__speaker">{promptBy}</b>
+              {isSpawn && <span class="thread-message__meta">{time(turn.startedAt)}</span>}
+              {turn.prompt.reactions.map((reaction) => (
+                <Status class="thread-message__reaction" tone={reactionStatus(reaction)} form="text">
+                  {reaction}
+                </Status>
+              ))}
+            </Fragment>
+            <Fragment set:html={markdown(turn.prompt.text)} />
+          </ThreadMessage>
+        )}
+        {(turn.reply !== null || turn.steps > 0) && (
+          <ThreadMessage
+            kind="reply"
+            turnId={turn.id}
+            href={href}
+            isSelected={isSelected}
+            isNested={isSpawn}
+            id={isSpawn ? anchor('turn', turn.id) : undefined}
+          >
+            <Fragment slot="who">
+              <b class="thread-message__speaker">{agent}</b>
+              {replyModel !== null && <span class="thread-message__meta">{replyModel}</span>}
+              {isSpawn && turn.reply !== null && <span class="thread-message__meta">{time(turn.reply.at)}</span>}
+            </Fragment>
+            {turn.reply === null ? <p class="thread-message__empty">No reply</p> : <Fragment set:html={markdown(turn.reply.text)} />}
+            <div class="thread-message__work">
+              <span>{plural(turn.steps, 'step')}</span>
+              {turn.failed > 0 && <span class="thread-message__failed">{count(turn.failed)} failed</span>}
+              <span>{duration(turn.durationMs)}</span>
+              <span class="thread-message__go">{isSelected ? 'Selected' : 'Steps'}</span>
+            </div>
+          </ThreadMessage>
+        )}
+        {turn.spawned.map((spawn) => {
+          const opening = spawn.turns[0]?.prompt?.text ?? null
+
+          return (
+            <details class="thread__agent" id={anchor('spawn', spawn.sessionId, spawn.underTurnId)} data-spawn open={path.has(turn.id)}>
+              <summary class="thread__agent-summary">
+                <Tile kind="agent" />
+                <b>{spawn.agent}</b>
+                <span class="thread__agent-model">
+                  {harnessName(spawn.harness)}
+                  {spawn.model !== null && ` · ${spawn.model}`}
+                </span>
+                {spawn.outcome !== null && (
+                  <Status tone={outcomeStatus(spawn.outcome)} form="pill">
+                    {spawn.outcome}
+                  </Status>
+                )}
+                <span class="thread__agent-tally">
+                  {plural(spawn.steps, 'step')}
+                  {spawn.failed > 0 && `, ${count(spawn.failed)} failed`} · {duration(spawn.durationMs)}
+                </span>
+                <Icon name="chevron" class="thread__chevron" />
+              </summary>
+              {opening !== null && <p class="thread__brief">Brief: {brief(opening, BRIEF_LENGTH)}</p>}
+              <div class="thread__agent-body">
+                <Astro.self turns={spawn.turns} agent={spawn.agent} promptBy="Brief" selected={selected} path={path} isSpawn />
+              </div>
+            </details>
+          )
+        })}
+        {turn.harnessLines.map((line) => (
+          <div class="thread__note">
+            <Icon name="bell" />
+            {clip(line, 120)}
+          </div>
+        ))}
+        {turn.compactions.map((compaction) => (
+          <details class="thread__compaction">
+            <summary class="thread__note">
+              <Icon name="compact" />
+              Context compacted · {time(compaction.at)}
+              <Icon name="chevron" class="thread__chevron" />
+            </summary>
+            <div class="thread__summary" set:html={markdown(compaction.summary)} />
+          </details>
+        ))}
+      </div>
+    )
+  })
+}

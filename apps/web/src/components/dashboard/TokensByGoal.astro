@@ -1,0 +1,44 @@
+---
+import { count, pct, plural, tokensCompact } from '../../lib/format'
+import { goalName } from '../../lib/labels'
+import type { tokensByGoal } from '../../lib/queries/effort'
+import Bar from '../ui/Bar.astro'
+import Card from '../ui/Card.astro'
+import Row from '../ui/Row.astro'
+import Rows from '../ui/Rows.astro'
+import './TokensByGoal.css'
+
+type Props = ReturnType<typeof tokensByGoal>
+
+const { rows, measuredConversations, workConversations } = Astro.props
+const SHOWN = 8
+const most = Math.max(1, ...rows.map((row) => row.read))
+const HEADS = [{ label: 'Goal' }, { label: 'Read', isEnd: true }, { label: '' }, { label: 'Context', isEnd: true }]
+---
+
+<Card title="Tokens per conversation">
+  <Fragment slot="meta">typical, by goal</Fragment>
+  {
+    rows.length === 0 ? (
+      <p class="card__empty">Not enough conversations in this range to compare.</p>
+    ) : (
+      <Rows isGrid class="tokens-by-goal__rows" heads={HEADS}>
+        {rows.slice(0, SHOWN).map((row) => (
+          <Row>
+            <span class="rows__cell" title={plural(row.conversations, 'conversation')}>
+              {goalName(row.goal)}
+            </span>
+            <span class="rows__cell rows__cell--num">{tokensCompact(row.read)}</span>
+            <Bar isTrack class="rows__cell" segments={[{ kind: 'model', width: pct(row.read / most, 1) }]} />
+            <span class="rows__cell rows__cell--time">{tokensCompact(row.context)}</span>
+          </Row>
+        ))}
+      </Rows>
+    )
+  }
+  <Fragment slot="note">
+    Read is everything the model re-reads each request, mostly from cache. Context is the largest single request. Agents a
+    conversation started count under their own goal. {count(measuredConversations)} of {count(workConversations)} conversations recorded tokens; the rest
+    are left out.
+  </Fragment>
+</Card>

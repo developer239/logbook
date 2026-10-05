@@ -1,0 +1,11 @@
+---
+import './Tag.css'
+
+interface Props {
+  isFlag?: boolean | undefined
+}
+
+const { isFlag = false } = Astro.props
+---
+
+<span class:list={['tag', isFlag && 'tag--flag']}><slot /></span>
