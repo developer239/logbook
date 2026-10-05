@@ -1,0 +1,130 @@
+{
+  "harnessVersion": "2.1.286",
+  "sessions": [
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772445590000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000011/5f0c2a1e-0011-4000-8000-000000000001",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000011",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000011/5f0c2a1e-0011-4000-8000-000000000001",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000011",
+          "text": "continue from the summary",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": null,
+        "endedAt": 1772445590000,
+        "harness": "claude-code",
+        "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000011",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "5f0c2a1e-0000-4000-8000-000000000011",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772445590000,
+        "title": null
+      },
+      "toolCalls": []
+    },
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772445591000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000011/agent-a4f00000000000011/5f0c2a1e-0011-4000-8000-000000000020",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000011/agent-a4f00000000000011",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772445595000,
+          "createdAt": 1772445595000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000011/agent-a4f00000000000011/msg_example51",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772445591000,
+          "seq": 1,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000011/agent-a4f00000000000011",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000011/agent-a4f00000000000011/5f0c2a1e-0011-4000-8000-000000000020",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000011/agent-a4f00000000000011",
+          "text": "check the coupon parser",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000011/agent-a4f00000000000011/msg_example51",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000011/agent-a4f00000000000011",
+          "text": "The parser is fine.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": null,
+        "endedAt": 1772445595000,
+        "harness": "claude-code",
+        "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000011/agent-a4f00000000000011",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "5f0c2a1e-0000-4000-8000-000000000011/agent-a4f00000000000011",
+        "spawnedBySessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000011",
+        "spawnedByToolCallId": null,
+        "startedAt": 1772445591000,
+        "title": null
+      },
+      "toolCalls": []
+    }
+  ]
+}

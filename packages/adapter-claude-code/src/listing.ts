@@ -40,7 +40,7 @@ const fingerprintOf = async (paths: readonly string[]): Promise<string> => {
   return stats.map((fileStats) => `${String(fileStats.size)}@${String(Math.trunc(fileStats.mtimeMs))}`).join(',')
 }
 
-const listSubagentPaths = async (projectDir: string, sessionId: string): Promise<string[]> => {
+export const listSubagentPaths = async (projectDir: string, sessionId: string): Promise<string[]> => {
   const sessionDir = join(projectDir, sessionId)
   const subagentDir = join(sessionDir, SUBAGENTS_DIRECTORY)
   if (!(await isRealDirectory(sessionDir)) || !(await isRealDirectory(subagentDir))) {
