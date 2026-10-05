@@ -10,13 +10,13 @@ import {
 } from '@log-book/adapter-api/source-writer'
 import { claudeCodeSourceWriter } from '@log-book/adapter-claude-code/source-writer'
 import { openCodeSourceWriter } from '@log-book/adapter-opencode/source-writer'
-import { PROMPT_ACTS } from '@log-book/engine'
+import { PROMPT_ACTS, SHELL_FAILURES, SHELL_PURPOSES, TOOL_FAILURE_CAUSES } from '@log-book/engine'
 import { describe, expect, it } from 'vitest'
 import { PLAN_CORPUS } from '../corpus/index.js'
 import { MODELS } from '../corpus/models.js'
 import { planDataset } from './planner.js'
 import { scriptPlan } from './scripts.js'
-import type { IPlanInputs, IWriterDeclaration, IWriterScripts } from './types.js'
+import type { IPlan, IPlanInputs, IWriterDeclaration, IWriterScripts } from './types.js'
 
 type TCallStep = Extract<ScriptStep, { kind: 'call' }>
 
@@ -82,8 +82,13 @@ const median = (values: readonly number[]): number => {
 const isScriptedRun = (step: TCallStep): boolean =>
   step.family === 'shell' && String(step.input.command).startsWith('claude -p ')
 
+// A shell call that waits for something by design, such as `sleep` or the `claude -p` run.
+const isWaitingShell = (written: readonly IWriterScripts[], call: IWrittenStep & { step: TCallStep }): boolean =>
+  isScriptedRun(call.step) || written[call.writer]?.calls[call.step.key]?.shell?.purpose === 'wait for something'
+
 // Longer than 30 seconds and ten times the median of its writer's calls of its family, in a family the card keeps.
 const isSlow = (
+  written: readonly IWriterScripts[],
   call: IWrittenStep & { step: TCallStep },
   calls: readonly (IWrittenStep & { step: TCallStep })[]
 ): boolean => {
@@ -94,9 +99,53 @@ const isSlow = (
   )
   const duration = durationOf(call.step)
   return (
-    !NOT_SLOW.has(call.step.family) && !isScriptedRun(call.step) && duration > SLOW_MS && duration > SLOW_FACTOR * usual
+    !NOT_SLOW.has(call.step.family) &&
+    !isWaitingShell(written, call) &&
+    duration > SLOW_MS &&
+    duration > SLOW_FACTOR * usual
   )
 }
+
+const isFailedCall = ({ step }: { step: TCallStep }): boolean => step.status === 'error' && step.family !== 'shell'
+
+// The steps of one session in their order, its started sessions' steps left out.
+const stepsIn = (steps: readonly IWrittenStep[], session: string): ScriptStep[] =>
+  steps.filter((entry) => entry.session === session).map(({ step }) => step)
+
+// The step after this one in its session, events left out.
+const nextStep = (steps: readonly IWrittenStep[], entry: IWrittenStep): ScriptStep | undefined => {
+  const own = stepsIn(steps, entry.session)
+  return own.slice(own.indexOf(entry.step) + 1).find((step) => step.kind !== 'event')
+}
+
+// The agent got past a failed call when a later call of the same tool completed before the human's next prompt.
+const isRecovered = (steps: readonly IWrittenStep[], entry: IWrittenStep & { step: TCallStep }): boolean => {
+  const own = stepsIn(steps, entry.session)
+  const after = own.slice(own.indexOf(entry.step) + 1)
+  const prompt = after.findIndex((step) => step.kind === 'prompt' || step.kind === 'command')
+  return (prompt === -1 ? after : after.slice(0, prompt)).some(
+    (step) =>
+      step.kind === 'call' &&
+      step.status === 'completed' &&
+      step.family === entry.step.family &&
+      step.intent === entry.step.intent &&
+      step.tool === entry.step.tool
+  )
+}
+
+const writersWith = (steps: readonly IWrittenStep[], type: string): Set<number> =>
+  new Set(steps.flatMap(({ writer, step }) => (step.kind === 'event' && step.event.type === type ? [writer] : [])))
+
+// How the developer stopped the agent at this step, if they did.
+const stopOf = (step: ScriptStep): 'interrupt' | 'refuse' | null => {
+  if (step.kind === 'interrupt') {
+    return 'interrupt'
+  }
+  return step.kind === 'call' && step.status === 'rejected' ? 'refuse' : null
+}
+
+const isLabelled = (plan: IPlan, session: string): boolean =>
+  plan.sessions.find((planned) => planned.key === session)?.outcome !== null
 
 const without = (declaration: IWriterDeclaration, item: string): IWriterDeclaration => ({
   ...declaration,
@@ -114,6 +163,7 @@ const featuresOf = (
 })
 
 describe('the small plan coverage matrix, in its scripts', () => {
+  const plan = planDataset(inputs())
   const written = scriptsFor(inputs())
   const steps = allSteps(written)
   const calls = callsOf(steps)
@@ -154,7 +204,7 @@ describe('the small plan coverage matrix, in its scripts', () => {
       toolTime: calls.some(({ step }) => durationOf(step) > 0),
       humanWaits: new Set(questions.filter(({ step }) => durationOf(step) >= SLOW_MS).map(({ writer }) => writer)),
       waits: new Set(calls.filter(({ step }) => step.family === 'wait').map(({ writer }) => writer)),
-      slow: calls.some((call) => isSlow(call, calls)),
+      slow: calls.some((call) => isSlow(written, call, calls)),
     }).toStrictEqual({
       modelTime: true,
       toolTime: true,
@@ -164,7 +214,7 @@ describe('the small plan coverage matrix, in its scripts', () => {
     })
   })
 
-  it('row 6: 3 models in the first writer, 2 in the second, cache and reasoning tokens, and cost in the second', () => {
+  it('row 6: 3 models in the first writer, 2 in the second, cache and reasoning tokens, a model switch and cost in the second', () => {
     // Act
     const modelsOf = (writer: number): Set<string> =>
       new Set(replies.filter((reply) => reply.writer === writer).map(({ step }) => step.model))
@@ -175,11 +225,26 @@ describe('the small plan coverage matrix, in its scripts', () => {
       cacheRead: replies.some(({ step }) => (step.tokens?.cacheRead ?? 0) > 0),
       cacheWrite: replies.some(({ step }) => (step.tokens?.cacheWrite ?? 0) > 0),
       reasoning: replies.some(({ step }) => (step.tokens?.reasoning ?? 0) > 0),
+      switches: steps.flatMap(({ writer, session, step }) => {
+        if (step.kind !== 'event' || step.event.type !== 'model-switch') {
+          return []
+        }
+        const own = stepsIn(steps, session)
+        const next = own.slice(own.indexOf(step)).find((candidate) => candidate.kind === 'reply')
+        return [{ writer, isFollowed: next?.kind === 'reply' && next.model === step.event.model }]
+      }),
       costs: [
         replies.some(({ writer, step }) => writer === 0 && step.cost !== null),
         replies.filter(({ writer }) => writer === 1).every(({ step }) => step.cost !== null),
       ],
-    }).toStrictEqual({ models: [3, 2], cacheRead: true, cacheWrite: true, reasoning: true, costs: [false, true] })
+    }).toStrictEqual({
+      models: [3, 2],
+      cacheRead: true,
+      cacheWrite: true,
+      reasoning: true,
+      switches: [{ writer: 1, isFollowed: true }],
+      costs: [false, true],
+    })
   })
 
   it('row 7: all 14 tool families', () => {
@@ -271,6 +336,120 @@ describe('the small plan coverage matrix, in its scripts', () => {
     })
   })
 
+  it('row 11: every shell purpose, most settled by the rules and some left to the model, and every failure', () => {
+    // Act
+    const labels = calls
+      .filter(({ step }) => step.family === 'shell')
+      .map(({ writer, step }) => written[writer]?.calls[step.key]?.shell ?? null)
+    const settled = labels.filter((label) => label?.isRuleSettled === true).length
+
+    // Assert
+    expect({
+      labelled: labels.every((label) => label !== null),
+      purposes: SHELL_PURPOSES.filter((purpose) => labels.some((label) => label?.purpose === purpose)),
+      isMostlySettled: settled > labels.length / 2,
+      isSomeLeft: settled < labels.length,
+      failures: SHELL_FAILURES.filter((failure) => labels.some((label) => label?.failure === failure)),
+    }).toStrictEqual({
+      labelled: true,
+      purposes: [...SHELL_PURPOSES],
+      isMostlySettled: true,
+      isSomeLeft: true,
+      failures: [...SHELL_FAILURES],
+    })
+  })
+
+  it('row 12: failed calls of all 12 causes, settled and not, recovered and not, and a retry loop', () => {
+    // Arrange
+    const failed = calls.filter(isFailedCall)
+    const labels = failed.map(({ writer, step }) => written[writer]?.calls[step.key]?.failure ?? null)
+
+    // Act
+    const loops = calls.filter((entry) => {
+      const same = calls.filter(
+        (other) =>
+          other.session === entry.session &&
+          other.step.family === entry.step.family &&
+          JSON.stringify(other.step.input) === JSON.stringify(entry.step.input)
+      )
+      return same[0] === entry && same.map(({ step }) => step.status).join(' ') === 'error error error completed'
+    })
+
+    // Assert
+    expect({
+      causes: TOOL_FAILURE_CAUSES.filter((cause) => labels.some((label) => label?.cause === cause)),
+      settled: new Set(labels.map((label) => label?.isRuleSettled)),
+      recovered: new Set(failed.map((entry) => isRecovered(steps, entry))),
+      loops: loops.length,
+    }).toStrictEqual({
+      causes: [...TOOL_FAILURE_CAUSES],
+      settled: new Set([true, false]),
+      recovered: new Set([true, false]),
+      loops: 1,
+    })
+  })
+
+  it('row 13: a compaction and a failed request in both writers, an agent switch and idle only in the second', () => {
+    // Act
+    const writers = ['compaction', 'failed-request', 'agent-switch', 'idle'].map((type) => writersWith(steps, type))
+
+    // Assert
+    expect(writers).toStrictEqual([new Set([0, 1]), new Set([0, 1]), new Set([1]), new Set([1])])
+  })
+
+  it('row 14: interruptions and refused calls in both writers, followed by prompts labelled and not', () => {
+    // Act
+    const stops = steps.flatMap((entry) => {
+      const kind = stopOf(entry.step)
+      return kind === null
+        ? []
+        : [
+            {
+              kind,
+              writer: entry.writer,
+              isPromptNext: nextStep(steps, entry)?.kind === 'prompt',
+              isLabelled: isLabelled(plan, entry.session),
+            },
+          ]
+    })
+    const followed = stops.filter((stop) => stop.isPromptNext)
+    const unlabelled = plan.sessions.filter((session) => session.parentKey === null && session.outcome === null)
+
+    // Assert
+    expect({
+      writers: ['interrupt', 'refuse'].map(
+        (kind) => new Set(stops.filter((stop) => stop.kind === kind).map((stop) => stop.writer))
+      ),
+      labelled: ['interrupt', 'refuse'].map((kind) => followed.some((stop) => stop.kind === kind && stop.isLabelled)),
+      unlabelledInterrupt: followed.some((stop) => stop.kind === 'interrupt' && !stop.isLabelled),
+      unlabelledSessions: unlabelled.length,
+      isFewPrompts:
+        unlabelled.flatMap((session) => stepsIn(steps, session.key).filter((step) => step.kind === 'prompt')).length <=
+        80,
+    }).toStrictEqual({
+      writers: [new Set([0, 1]), new Set([0, 1])],
+      labelled: [true, true],
+      unlabelledInterrupt: true,
+      unlabelledSessions: 2,
+      isFewPrompts: true,
+    })
+  })
+
+  it("takes every failed call's error text from a tools.ts entry tagged with the cause the plan gives it", () => {
+    // Arrange
+    const { project, shared } = PLAN_CORPUS.tools
+    const entries = [...Object.values(project.shop), ...Object.values(project.billing), ...Object.values(shared)]
+
+    // Act
+    const unmatched = calls.filter(isFailedCall).filter(({ writer, step }) => {
+      const cause = written[writer]?.calls[step.key]?.failure?.cause
+      return !entries.some((entry) => entry.result === step.result && entry.failure?.cause === cause)
+    })
+
+    // Assert
+    expect(unmatched).toStrictEqual([])
+  })
+
   it('row 15, its act part: every act on at least one prompt, and an act for every prompt', () => {
     // Act
     const prompts = steps.filter(({ step }) => step.kind === 'prompt')
@@ -312,10 +491,28 @@ describe('scriptPlan', () => {
         const written = await writer.writeSessions(home, scripts?.scripts ?? [])
 
         // Assert
+        const planned = allSteps(scripts === undefined ? [] : [scripts]).map(({ step }) => step)
+        const refused = planned.filter((step) => step.kind === 'call' && step.status === 'rejected').length
+        const interrupts = planned.filter((step) => step.kind === 'interrupt').length
+        const events = written.expected.flatMap((session) =>
+          session.events.toSorted((left, right) => left.at - right.at)
+        )
+        const kinds = events.map((event) => event.kind)
         expect({
           commandFiles: commandFiles.length,
           sessions: (scripts?.scripts ?? []).every((script) => written.ids.has(script.key)),
-        }).toStrictEqual({ commandFiles: scripts?.commandFiles.length, sessions: true })
+          interrupted: kinds.filter((kind) => kind === 'interrupted').length,
+          rejected: kinds.filter((kind) => kind === 'tool-rejected').length,
+          isRejectionInterrupted: kinds.every(
+            (kind, index) => kind !== 'tool-rejected' || kinds[index + 1] === 'interrupted'
+          ),
+        }).toStrictEqual({
+          commandFiles: scripts?.commandFiles.length,
+          sessions: true,
+          interrupted: interrupts + refused,
+          rejected: refused,
+          isRejectionInterrupted: true,
+        })
       } finally {
         await rm(home, { recursive: true, force: true })
       }
@@ -344,20 +541,23 @@ describe('scriptPlan', () => {
     })
   })
 
-  it.each([7, 21])('keeps every script to the contract rules for seed %i', (seed) => {
-    // Arrange
-    const written = scriptsFor(inputs(DECLARATIONS, seed))
+  it.each(Array.from({ length: 40 }, (_seed, index) => index + 1))(
+    'keeps every script to the contract rules for seed %i',
+    (seed) => {
+      // Arrange
+      const written = scriptsFor(inputs(DECLARATIONS, seed))
 
-    // Act
-    const check = (): void => {
-      WRITERS.forEach((writer, index) => {
-        checkScripts(writer, written[index]?.scripts ?? [], [])
-      })
+      // Act
+      const check = (): void => {
+        WRITERS.forEach((writer, index) => {
+          checkScripts(writer, written[index]?.scripts ?? [], [])
+        })
+      }
+
+      // Assert
+      expect(check).not.toThrow()
     }
-
-    // Assert
-    expect(check).not.toThrow()
-  })
+  )
 
   it.each([...new Set([...SOURCE_CAPABILITIES, ...DECLARATIONS.flatMap((declaration) => declaration.families)])])(
     'gives no step that needs %s to writers that leave it out',

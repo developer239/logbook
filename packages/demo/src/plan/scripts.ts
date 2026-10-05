@@ -1,11 +1,27 @@
-import type { ICommandFile, IScriptTokens, ISessionScript, ScriptStep } from '@log-book/adapter-api/source-writer'
+import type {
+  ICommandFile,
+  IScriptTokens,
+  ISessionScript,
+  ScriptCallStatus,
+  ScriptEvent,
+  ScriptStep,
+} from '@log-book/adapter-api/source-writer'
 import type { PromptAct } from '@log-book/engine'
-import type { ISubagentTask, ITurnShape, UseName } from '../corpus/shapes.js'
+import type { ISubagentTask, ITurnShape, TurnEvent, UseName } from '../corpus/shapes.js'
 import type { IToolEntry } from '../corpus/tools.js'
 import { createStream, type IRandomStream } from '../random.js'
-import type { IPlan, IPlanCorpus, IPlannedSession, IPlannedTurn, IWriterDeclaration, IWriterScripts } from './types.js'
+import type {
+  ICallLabels,
+  IPlan,
+  IPlanCorpus,
+  IPlannedSession,
+  IPlannedTurn,
+  IWriterDeclaration,
+  IWriterScripts,
+} from './types.js'
 
 type TCommandStep = Extract<ScriptStep, { kind: 'command' }>
+type TStop = NonNullable<ITurnShape['stop']>
 
 interface IScriptInputs {
   corpus: IPlanCorpus
@@ -35,6 +51,16 @@ const MIN_REPLY_MS = SECOND_MS
 // The `claude -p` call exits a moment after the session it started ends.
 const EXIT_MS = SECOND_MS
 const MICRO = 1_000_000
+const STOP_CAPABILITIES: Readonly<Record<TStop, string>> = { interrupt: 'interrupt', refuse: 'tool-reject' }
+const STOP_STATUSES: Readonly<Record<TStop, ScriptCallStatus>> = { interrupt: 'pending', refuse: 'rejected' }
+const EVENT_CAPABILITIES: Readonly<Record<TurnEvent, string | null>> = {
+  'compaction': null,
+  'failed-request': null,
+  'agent-switch': 'agent-switch',
+  'model-switch': 'model-switch',
+  'idle': 'idle-event',
+}
+const OPENING_EVENTS: readonly TurnEvent[] = ['compaction', 'agent-switch', 'model-switch']
 const SLOT = /\{(?<name>[a-z]+)\}/gu
 
 // A template with each `{slot}` filled; a slot without a value is a corpus error.
@@ -71,6 +97,7 @@ class WriterScripter {
   public readonly corpus: IPlanCorpus
   public readonly seed: number
   public readonly acts: Record<string, PromptAct> = {}
+  public readonly calls: Record<string, ICallLabels> = {}
   private readonly plan: IPlan
   private readonly declaration: IWriterDeclaration
   private readonly writer: number
@@ -99,6 +126,7 @@ class WriterScripter {
       .filter((session) => session.parentKey === null)
       .map((session) => this.scriptOf(session, null, null)),
     acts: this.acts,
+    calls: this.calls,
   })
 
   public readonly has = (capability: string): boolean => this.declaration.capabilities.includes(capability)
@@ -106,6 +134,12 @@ class WriterScripter {
   public readonly hasFamily = (family: string): boolean => this.declaration.families.includes(family)
 
   public readonly modelOf = (session: IPlannedSession): string => this.models.get(session.key) ?? ''
+
+  // The model after this one in the writer's list, or null when it declares only one.
+  public readonly nextModel = (model: string): string | null => {
+    const { models } = this.declaration
+    return models.length < 2 ? null : (models[(models.indexOf(model) + 1) % models.length] ?? null)
+  }
 
   public readonly childrenOf = (session: IPlannedSession): IPlannedSession[] =>
     this.plan.sessions.filter((candidate) => candidate.parentKey === session.key)
@@ -147,6 +181,7 @@ class SessionScripter {
   private readonly steps: ScriptStep[] = []
   private count = 0
   private isTurnStart = false
+  private model: string
 
   constructor(
     writer: WriterScripter,
@@ -160,6 +195,7 @@ class SessionScripter {
     this.stream = createStream(writer.seed, `${session.key}/script`)
     this.slots = slots ?? this.sessionSlots()
     this.children = writer.childrenOf(session)
+    this.model = writer.modelOf(session)
   }
 
   public readonly script = (): ISessionScript => {
@@ -206,17 +242,46 @@ class SessionScripter {
     }
   }
 
-  // The turn's opening steps at its start, then each use after a reply, and the closing reply at its end.
+  // The turn's opening steps at its start, then each use after a reply, and the closing reply at its end, or the
+  // developer stopping the agent at its last use.
   private readonly turn = (turn: IPlannedTurn, plan: ITurnPlan): void => {
     const { shape } = plan
-    let at = turn.start
+    const from = this.openTurn(turn.start, plan)
+    const stop = shape.stop === undefined || !this.writer.has(STOP_CAPABILITIES[shape.stop]) ? null : shape.stop
+    const names = shape.stop === undefined ? shape.uses : shape.uses.slice(0, -1)
+    const uses = names.flatMap((name) => this.use(name) ?? [])
+    const stopped = stop === null ? null : this.stoppedUse(shape.uses.at(-1), stop, turn.end)
+    if (stopped === null) {
+      this.layOut(from, turn.end, uses, plan.closing)
+    } else {
+      this.layOut(from, turn.end, [...uses, stopped], null)
+    }
+    if (stopped !== null && stop === 'interrupt') {
+      this.steps.push({ kind: 'interrupt', key: this.key('i'), at: turn.end })
+    }
+    this.event(shape, 'idle', turn.end)
+  }
+
+  // The events at the turn's start, a built-in command, then its prompt or command; returns when its replies start.
+  private readonly openTurn = (start: number, plan: ITurnPlan): number => {
+    const { shape } = plan
+    let at = start
+    for (const type of OPENING_EVENTS) {
+      this.event(shape, type, at)
+    }
     if (shape.offersTools === true && this.writer.has('tools-offered')) {
       const { offered } = this.writer.corpus.tools
       this.steps.push({ kind: 'event', key: this.key('e'), at, event: { type: 'tools-offered', ...offered } })
     }
     if (shape.builtIn !== undefined && this.writer.has('typed-command')) {
-      const model = this.writer.modelOf(this.session)
-      this.steps.push({ kind: 'command', key: this.key('m'), at, name: shape.builtIn, arguments: model, body: null })
+      this.steps.push({
+        kind: 'command',
+        key: this.key('m'),
+        at,
+        name: shape.builtIn,
+        arguments: this.model,
+        body: null,
+      })
       at += TYPING_MS
     }
     const command = shape.command === undefined ? null : this.commandStep(shape.command, at)
@@ -227,13 +292,56 @@ class SessionScripter {
     } else {
       this.steps.push(command)
     }
+    this.event(shape, 'failed-request', at)
     this.isTurnStart = true
-    this.layOut(
-      at,
-      turn.end,
-      shape.uses.flatMap((name) => this.use(name) ?? []),
-      plan.closing
-    )
+    return at
+  }
+
+  // An event the turn's shape names, where the writer records it.
+  private readonly event = (shape: ITurnShape, type: TurnEvent, at: number): void => {
+    const capability = EVENT_CAPABILITIES[type]
+    if (shape.events?.includes(type) !== true || (capability !== null && !this.writer.has(capability))) {
+      return
+    }
+    const event = this.eventOf(type)
+    if (event !== null) {
+      this.steps.push({ kind: 'event', key: this.key('e'), at, event })
+    }
+  }
+
+  private readonly eventOf = (type: TurnEvent): ScriptEvent | null => {
+    const { replies } = this.writer.corpus
+    if (type === 'compaction') {
+      return { type, summary: fill(this.stream.pick(replies.compactions), this.slots) }
+    }
+    if (type === 'failed-request') {
+      return { type, error: this.stream.pick(replies.requestErrors) }
+    }
+    if (type === 'agent-switch') {
+      return { type, agent: this.stream.pick(replies.agents) }
+    }
+    if (type === 'idle') {
+      return { type, outcome: replies.idleOutcome }
+    }
+    return this.modelSwitch()
+  }
+
+  // Replies after the switch come from the next of the writer's models.
+  private readonly modelSwitch = (): ScriptEvent | null => {
+    const next = this.writer.nextModel(this.model)
+    if (next === null) {
+      return null
+    }
+    const previous = this.model
+    this.model = next
+    return { type: 'model-switch', model: next, previous }
+  }
+
+  // The turn's last use, ending at the turn's end: still running when the developer interrupts, or refused when it
+  // was asked.
+  private readonly stoppedUse = (name: UseName | undefined, stop: TStop, end: number): IUse | null => {
+    const use = name === undefined ? null : this.toolUse(name, stop)
+    return use === null ? null : { ...use, at: end - use.durationMs }
   }
 
   // Typed by its name where the writer records typed commands, else as its file's body where it records templates.
@@ -249,7 +357,8 @@ class SessionScripter {
   }
 
   // Splits the turn at each use with its own time; each stretch shares the time its uses leave among its replies.
-  private readonly layOut = (from: number, end: number, uses: readonly IUse[], closing: string): void => {
+  // Without a closing reply, the last use ends the turn.
+  private readonly layOut = (from: number, end: number, uses: readonly IUse[], closing: string | null): void => {
     let cursor = from
     let timed: IUse[] = []
     for (const use of uses) {
@@ -262,7 +371,11 @@ class SessionScripter {
         timed = []
       }
     }
-    this.stretch(cursor, end, timed, closing)
+    if (closing !== null) {
+      this.stretch(cursor, end, timed, closing)
+    } else if (timed.length > 0 || cursor !== end) {
+      throw new Error(`The turn of ${this.session.key} ends before its last use`)
+    }
   }
 
   private readonly stretch = (from: number, end: number, uses: readonly IUse[], closing: string | null): void => {
@@ -285,7 +398,7 @@ class SessionScripter {
     const { reasoning } = this.writer.corpus.replies
     const thinking = this.isTurnStart ? fill(this.stream.pick(reasoning), this.slots) : null
     this.isTurnStart = false
-    const model = this.writer.modelOf(this.session)
+    const { model } = this
     const tokens = tokensOf(this.stream, thinking !== null)
     const cost = this.writer.has('reported-cost') ? this.costOf(model, tokens) : null
     this.steps.push({ kind: 'reply', key: this.key('r'), at, endAt, model, text, reasoning: thinking, tokens, cost })
@@ -325,7 +438,7 @@ class SessionScripter {
         ],
       }
     }
-    return this.toolUse(name)
+    return this.toolUse(name, null)
   }
 
   private readonly toolEntry = (name: UseName): IToolEntry => {
@@ -342,7 +455,7 @@ class SessionScripter {
   private readonly isRecordable = (entry: IToolEntry): boolean =>
     this.writer.hasFamily(entry.family) && (entry.family !== 'mcp' || this.writer.has('mcp-server'))
 
-  private readonly toolUse = (name: UseName): IUse | null => {
+  private readonly toolUse = (name: UseName, stop: TStop | null): IUse | null => {
     const entry = this.toolEntry(name)
     if (!this.isRecordable(entry)) {
       return null
@@ -355,7 +468,7 @@ class SessionScripter {
       at: null,
       durationMs: entry.durationMs,
       write: (startAt) => [
-        this.callStep({ ...entry, server }, startAt),
+        this.callStep({ ...entry, server }, startAt, stop),
         ...(entry.family === 'tool-search' && this.writer.has('tools-loaded')
           ? [this.toolsLoaded(startAt + entry.durationMs)]
           : []),
@@ -363,19 +476,25 @@ class SessionScripter {
     }
   }
 
-  private readonly callStep = (entry: IToolEntry, startAt: number): ScriptStep => ({
-    kind: 'call',
-    key: this.key('c'),
-    family: entry.family,
-    intent: entry.intent,
-    tool: entry.tool,
-    server: entry.server,
-    input: entry.input,
-    status: 'completed',
-    result: entry.result,
-    startAt,
-    endAt: startAt + entry.durationMs,
-  })
+  // A stopped call keeps no result: a running one has no end yet, a refused one ends when it was refused.
+  private readonly callStep = (entry: IToolEntry, startAt: number, stop: TStop | null): ScriptStep => {
+    const key = this.key('c')
+    const status = stop === null ? entry.status : STOP_STATUSES[stop]
+    this.writer.calls[key] = { shell: entry.shell, failure: status === 'error' ? entry.failure : null }
+    return {
+      kind: 'call',
+      key,
+      family: entry.family,
+      intent: entry.intent,
+      tool: entry.tool,
+      server: entry.server,
+      input: entry.input,
+      status,
+      result: stop === null ? entry.result : null,
+      startAt,
+      endAt: stop === 'interrupt' ? null : startAt + entry.durationMs,
+    }
+  }
 
   private readonly toolsLoaded = (at: number): ScriptStep => ({
     kind: 'event',
@@ -421,10 +540,17 @@ class SessionScripter {
       tool: null,
       server: null,
       input: { command: `claude -p "${firstOf(steps, 'prompt', false)}"` },
+      status: 'completed',
       result: firstOf(steps, 'reply', true),
       durationMs: scripted.end + EXIT_MS - scripted.start,
+      shell: this.writer.corpus.tools.scriptedRun,
+      failure: null,
     }
-    return { at: scripted.start, durationMs: entry.durationMs, write: (startAt) => [this.callStep(entry, startAt)] }
+    return {
+      at: scripted.start,
+      durationMs: entry.durationMs,
+      write: (startAt) => [this.callStep(entry, startAt, null)],
+    }
   }
 }
 
