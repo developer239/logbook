@@ -132,6 +132,7 @@ describe('importTranscript', () => {
       parts: [
         [`${SESSION}/u1`, 0, 'text', 'run the tests'],
         [`${SESSION}/msg_a`, 0, 'reasoning', 'Run them first.'],
+        [`${SESSION}/u2`, 0, 'tool_result', 'ok'],
         [`${SESSION}/msg_a`, 1, 'text', 'All tests pass.'],
       ],
       problems: [],
@@ -378,6 +379,126 @@ describe('importTranscript', () => {
           },
         ],
       },
+      problems: [],
+    })
+  })
+
+  it('imports a call with its family and server, and a pending call without an end', async () => {
+    // Arrange
+    const lines = [
+      user('u1', 0, 'open an issue and run the tests'),
+      assistant('msg_1', 'a1', 1, [
+        { type: 'tool_use', id: 'toolu_1', name: 'mcp__tracker__create_issue', input: { title: 'Rounding' } },
+        { type: 'tool_use', id: 'toolu_2', name: 'Bash', input: { command: 'pnpm test' } },
+      ]),
+      user('u2', 2, [{ type: 'tool_result', tool_use_id: 'toolu_1', content: 'Created issue 12.', is_error: true }]),
+    ]
+
+    // Act
+    const unit = await importLines(lines)
+
+    // Assert
+    const session = onlySession(unit)
+    expect({
+      calls: session.toolCalls,
+      parts: session.parts.map((part) => [part.messageId, part.kind, part.text, part.toolCallId]),
+      problems: validateImportedUnit(claudeCode().descriptor, unit),
+    }).toStrictEqual({
+      calls: [
+        {
+          id: `${SESSION}/toolu_1`,
+          sessionId: SESSION,
+          messageId: `${SESSION}/msg_1`,
+          name: 'mcp__tracker__create_issue',
+          server: 'tracker',
+          bareName: 'create_issue',
+          family: 'mcp:tracker',
+          inputJson: '{"title":"Rounding"}',
+          status: 'error',
+          childSessionId: null,
+          startedAt: at(1),
+          endedAt: at(2),
+        },
+        {
+          id: `${SESSION}/toolu_2`,
+          sessionId: SESSION,
+          messageId: `${SESSION}/msg_1`,
+          name: 'Bash',
+          server: null,
+          bareName: 'Bash',
+          family: 'shell',
+          inputJson: '{"command":"pnpm test"}',
+          status: 'pending',
+          childSessionId: null,
+          startedAt: at(1),
+          endedAt: null,
+        },
+      ],
+      parts: [
+        [`${SESSION}/u1`, 'text', 'open an issue and run the tests', null],
+        [`${SESSION}/msg_1`, 'tool_call', 'mcp__tracker__create_issue {"title":"Rounding"}', `${SESSION}/toolu_1`],
+        [`${SESSION}/msg_1`, 'tool_call', 'Bash {"command":"pnpm test"}', `${SESSION}/toolu_2`],
+        [`${SESSION}/u2`, 'tool_result', 'Created issue 12.', `${SESSION}/toolu_1`],
+      ],
+      problems: [],
+    })
+  })
+
+  it.each([
+    ['string content', 'All 12 tests passed.', 'All 12 tests passed.'],
+    [
+      'text, tool reference and image blocks',
+      [
+        { type: 'text', text: 'Loaded.' },
+        { type: 'tool_reference', tool_name: 'search_docs' },
+        { type: 'image', source: { type: 'base64', data: 'aGVsbG8=' } },
+      ],
+      `Loaded.\n(tool reference: search_docs)\n${IMAGE_PART_TEXT}`,
+    ],
+    ['an empty result', '', ''],
+    ['an empty block list', [], ''],
+    [
+      'a persisted-output preview',
+      '<persisted-output>\nOutput too large. Preview:\nline 1\n</persisted-output>',
+      '<persisted-output>\nOutput too large. Preview:\nline 1\n</persisted-output>',
+    ],
+  ])('takes the result text from %s', async (_case, content, expected) => {
+    // Arrange
+    const lines = [
+      assistant('msg_1', 'a1', 0, [
+        { type: 'tool_use', id: 'toolu_1', name: 'Read', input: { file_path: '/home/example/a.ts' } },
+      ]),
+      user('u1', 1, [{ type: 'tool_result', tool_use_id: 'toolu_1', content }]),
+    ]
+
+    // Act
+    const unit = await importLines(lines)
+
+    // Assert
+    const session = onlySession(unit)
+    expect({
+      result: session.parts.filter((part) => part.kind === 'tool_result').map((part) => part.text),
+      status: session.toolCalls.map((call) => call.status),
+      problems: validateImportedUnit(claudeCode().descriptor, unit),
+    }).toStrictEqual({ result: [expected], status: ['completed'], problems: [] })
+  })
+
+  it('keeps the part of a result whose call is not in the file, and invents no call', async () => {
+    // Arrange
+    const lines = [user('u1', 0, [{ type: 'tool_result', tool_use_id: 'toolu_earlier', content: 'done' }])]
+
+    // Act
+    const unit = await importLines(lines)
+
+    // Assert
+    const session = onlySession(unit)
+    expect({
+      calls: session.toolCalls,
+      parts: session.parts.map((part) => [part.kind, part.text, part.toolCallId]),
+      problems: validateImportedUnit(claudeCode().descriptor, unit),
+    }).toStrictEqual({
+      calls: [],
+      parts: [['tool_result', 'done', `${SESSION}/toolu_earlier`]],
       problems: [],
     })
   })

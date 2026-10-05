@@ -73,6 +73,7 @@ export const fixtureSet21: IFixtureSet = {
     { locator: session(SHOP, 1), harnessVersion: '2.1.286', unknownRecords: [] },
     { locator: session(SHOP, 2), harnessVersion: '2.1.286', unknownRecords: [] },
     { locator: session(SHOP, 6), harnessVersion: '2.2.3', unknownRecords: [] },
+    { locator: session(SHOP, 7), harnessVersion: '2.1.286', unknownRecords: [] },
   ],
   environment: (home) => environment(home, { [CONFIG_DIR_VARIABLE]: join(home, '.claude') }),
   prepare: async () => Promise.resolve(),

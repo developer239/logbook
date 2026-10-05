@@ -146,6 +146,22 @@
         },
         {
           "idx": 1,
+          "kind": "tool_call",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000001/msg_example01",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000001",
+          "text": "Read {\"file_path\":\"/home/example/work/shop/src/checkout/checkout-form.tsx\"}",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000001/toolu_example01"
+        },
+        {
+          "idx": 0,
+          "kind": "tool_result",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000001/5f0c2a1e-0001-4000-8000-000000000005",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000001",
+          "text": "export const CheckoutForm = () => null",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000001/toolu_example01"
+        },
+        {
+          "idx": 2,
           "kind": "text",
           "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000001/msg_example01",
           "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000001",
@@ -183,7 +199,22 @@
         "startedAt": 1772442000000,
         "title": "Checkout coupons"
       },
-      "toolCalls": []
+      "toolCalls": [
+        {
+          "bareName": "Read",
+          "childSessionId": null,
+          "endedAt": 1772442007000,
+          "family": "read",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000001/toolu_example01",
+          "inputJson": "{\"file_path\":\"/home/example/work/shop/src/checkout/checkout-form.tsx\"}",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000001/msg_example01",
+          "name": "Read",
+          "server": null,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000001",
+          "startedAt": 1772442006000,
+          "status": "completed"
+        }
+      ]
     }
   ]
 }
