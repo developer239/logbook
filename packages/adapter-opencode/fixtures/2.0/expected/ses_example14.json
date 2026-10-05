@@ -1,0 +1,230 @@
+{
+  "harnessVersion": "2.0.21",
+  "sessions": [
+    {
+      "events": [
+        {
+          "at": 1772533220000,
+          "dataJson": "{\"reason\":null,\"status\":null}",
+          "id": "opencode:ses_example14/msg_example40",
+          "kind": "compaction",
+          "sessionId": "opencode:ses_example14"
+        },
+        {
+          "at": 1772533230000,
+          "dataJson": "{\"error\":\"API Error: Connection dropped.\"}",
+          "id": "opencode:ses_example14/msg_example41",
+          "kind": "error",
+          "sessionId": "opencode:ses_example14"
+        }
+      ],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772533200000,
+          "gitBranch": null,
+          "id": "opencode:ses_example14/msg_example38",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "opencode:ses_example14",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "build",
+          "completedAt": 1772533210000,
+          "createdAt": 1772533201000,
+          "gitBranch": null,
+          "id": "opencode:ses_example14/msg_example39",
+          "model": "anthropic/claude-sonnet-5-5",
+          "reportedCost": 0.008,
+          "requestedAt": 1772533201000,
+          "seq": 2,
+          "sessionId": "opencode:ses_example14",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 400,
+          "tokensCacheWrite": 20,
+          "tokensInput": 900,
+          "tokensOutput": 60,
+          "tokensReasoning": 12
+        },
+        {
+          "actor": "harness",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772533220000,
+          "gitBranch": null,
+          "id": "opencode:ses_example14/msg_example40",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 3,
+          "sessionId": "opencode:ses_example14",
+          "sourceRole": "compaction",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772533230000,
+          "gitBranch": null,
+          "id": "opencode:ses_example14/msg_example41",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": 1772533230000,
+          "seq": 4,
+          "sessionId": "opencode:ses_example14",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772533245000,
+          "createdAt": 1772533240000,
+          "gitBranch": null,
+          "id": "opencode:ses_example14/msg_example42",
+          "model": "anthropic/claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772533240000,
+          "seq": 5,
+          "sessionId": "opencode:ses_example14",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example14/msg_example38",
+          "sessionId": "opencode:ses_example14",
+          "text": "check the discount rate is used everywhere",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example14/msg_example39",
+          "sessionId": "opencode:ses_example14",
+          "text": "Searching for the rate.",
+          "toolCallId": null
+        },
+        {
+          "idx": 1,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example14/msg_example39",
+          "sessionId": "opencode:ses_example14",
+          "text": "shell {\"command\":\"pnpm test discount\"}",
+          "toolCallId": "opencode:ses_example14/prt_example31"
+        },
+        {
+          "idx": 2,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example14/msg_example39",
+          "sessionId": "opencode:ses_example14",
+          "text": "6 passed",
+          "toolCallId": "opencode:ses_example14/prt_example31"
+        },
+        {
+          "idx": 3,
+          "kind": "tool_call",
+          "messageId": "opencode:ses_example14/msg_example39",
+          "sessionId": "opencode:ses_example14",
+          "text": "grep {\"pattern\":\"rate\",\"path\":\"/home/example/work/shop/src\"}",
+          "toolCallId": "opencode:ses_example14/prt_example32"
+        },
+        {
+          "idx": 4,
+          "kind": "tool_result",
+          "messageId": "opencode:ses_example14/msg_example39",
+          "sessionId": "opencode:ses_example14",
+          "text": "src/checkout/rate.ts",
+          "toolCallId": "opencode:ses_example14/prt_example32"
+        },
+        {
+          "idx": 0,
+          "kind": "compaction",
+          "messageId": "opencode:ses_example14/msg_example40",
+          "sessionId": "opencode:ses_example14",
+          "text": "The rate is used in checkout only.",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example14/msg_example42",
+          "sessionId": "opencode:ses_example14",
+          "text": "Retrying: the rate is used in checkout only.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": "build",
+        "endedAt": 1772533245000,
+        "harness": "opencode",
+        "id": "opencode:ses_example14",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "ses_example14",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772533200000,
+        "title": "Discount rate check"
+      },
+      "toolCalls": [
+        {
+          "bareName": "shell",
+          "childSessionId": null,
+          "endedAt": 1772533202900,
+          "family": "shell",
+          "id": "opencode:ses_example14/prt_example31",
+          "inputJson": "{\"command\":\"pnpm test discount\"}",
+          "messageId": "opencode:ses_example14/msg_example39",
+          "name": "shell",
+          "server": null,
+          "sessionId": "opencode:ses_example14",
+          "startedAt": 1772533202200,
+          "status": "completed"
+        },
+        {
+          "bareName": "grep",
+          "childSessionId": null,
+          "endedAt": 1772533204900,
+          "family": "search",
+          "id": "opencode:ses_example14/prt_example32",
+          "inputJson": "{\"pattern\":\"rate\",\"path\":\"/home/example/work/shop/src\"}",
+          "messageId": "opencode:ses_example14/msg_example39",
+          "name": "grep",
+          "server": null,
+          "sessionId": "opencode:ses_example14",
+          "startedAt": 1772533204200,
+          "status": "completed"
+        }
+      ]
+    }
+  ]
+}

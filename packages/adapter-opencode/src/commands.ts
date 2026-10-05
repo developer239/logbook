@@ -36,8 +36,11 @@ export const resolveConfigDir = (env: IAdapterEnvironment): string => {
 
 // A command file's template prefix: its body without front matter, whitespace collapsed, cut at the first placeholder
 // and at 160 characters; null when fewer than 40 characters are left.
+// A command file's body as OpenCode expands it: without its front matter.
+export const withoutFrontMatter = (content: string): string => content.replace(FRONT_MATTER, '')
+
 export const templatePrefix = (content: string): string | null => {
-  const body = collapse(content.replace(FRONT_MATTER, ''))
+  const body = collapse(withoutFrontMatter(content))
   const cut = PLACEHOLDER.exec(body)
   const prefix = (cut === null ? body : body.slice(0, cut.index)).trimEnd().slice(0, TEMPLATE_PREFIX_CHARS)
   return prefix.length < MIN_TEMPLATE_PREFIX_CHARS ? null : prefix
