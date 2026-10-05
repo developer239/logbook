@@ -30,6 +30,27 @@ const event = (id: string, kind: IEventRecord['kind'], seconds: number, data: un
   dataJson: JSON.stringify(data),
 })
 
+const refusal = "The user doesn't want to proceed with this tool use. The tool use was rejected."
+
+const call = (seconds: number): TLine =>
+  line('a1', seconds, {
+    type: 'assistant',
+    message: {
+      id: 'msg_1',
+      model: 'claude-sonnet-5-5',
+      content: [{ type: 'tool_use', id: 'toolu_1', name: 'Bash', input: { command: 'git push' } }],
+    },
+  })
+
+const result = (seconds: number, content: string): TLine =>
+  line('r1', seconds, {
+    type: 'user',
+    message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content, is_error: true }] },
+  })
+
+const marker = (uuid: string, seconds: number, text: string): TLine =>
+  line(uuid, seconds, { type: 'user', message: { role: 'user', content: [{ type: 'text', text }] } })
+
 describe('importTranscript events and unknown records', () => {
   let directory = ''
 
@@ -294,27 +315,6 @@ describe('importTranscript events and unknown records', () => {
   })
 
   describe('interruptions and refused tool calls', () => {
-    const refusal = "The user doesn't want to proceed with this tool use. The tool use was rejected."
-
-    const call = (seconds: number): TLine =>
-      line('a1', seconds, {
-        type: 'assistant',
-        message: {
-          id: 'msg_1',
-          model: 'claude-sonnet-5-5',
-          content: [{ type: 'tool_use', id: 'toolu_1', name: 'Bash', input: { command: 'git push' } }],
-        },
-      })
-
-    const result = (seconds: number, content: string): TLine =>
-      line('r1', seconds, {
-        type: 'user',
-        message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content, is_error: true }] },
-      })
-
-    const marker = (uuid: string, seconds: number, text: string): TLine =>
-      line(uuid, seconds, { type: 'user', message: { role: 'user', content: [{ type: 'text', text }] } })
-
     it.each([
       ['[Request interrupted by user]', '[Request interrupted by user]'],
       ['[Request interrupted by user for tool use]', '[Request interrupted by user for tool use]'],
