@@ -2,6 +2,7 @@ import type { IHarnessAdapter } from '@log-book/adapter-api'
 import { detectClaude, type ClaudeDetection } from './claude/detect.js'
 import { runLabelling, type LabelPreflight, type LabelProgress, type LabelRunResult } from './labels/label-run.js'
 import { planLabelling, type LabelPlan } from './labels/plan.js'
+import { previewLabelling, type ILabelPreview } from './labels/preview.js'
 import type { LabelTaskName } from './labels/tasks.js'
 import { readOperations, type IReadOperations } from './read/read.js'
 import { checkRegistrations } from './registration.js'
@@ -44,6 +45,8 @@ export interface IEngine {
     readonly detect: (options?: { signal?: AbortSignal }) => Promise<ClaudeDetection>
     // What a run would send now, taking no lock, writing nothing and starting no `claude -p`.
     readonly plan: (options?: { model?: string; signal?: AbortSignal }) => Promise<LabelPlan>
+    // The next batches of a task exactly as a run would send them now, without running `claude`.
+    readonly preview: (options: { task: LabelTaskName; batches?: number }) => Promise<ILabelPreview>
     // Every task in order, under the labelling lock, with its run record.
     readonly update: (options: ILabelCallOptions) => Promise<LabelRunResult>
     // One task, only the run's own model's labels counting as done, with a sample or a limit.
@@ -71,6 +74,7 @@ export const createEngine = (options: IEngineOptions): IEngine => {
     labels: {
       detect: async (options = {}) => detectClaude(options.signal),
       plan: async (options = {}) => planLabelling({ ...options, warehousePath }),
+      preview: async (options) => previewLabelling({ ...options, warehousePath }),
       update: async (options) => runLabelling({ ...options, warehousePath, scope: { kind: 'update' } }),
       run: async ({ task, sample, limit, ...options }) =>
         runLabelling({
