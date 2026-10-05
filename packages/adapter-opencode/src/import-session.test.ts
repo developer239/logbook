@@ -37,6 +37,15 @@ const onlySession = (unit: IImportedUnit): IImportedSession => {
   return session
 }
 
+// A skill call with the given input and status.
+const skillCall = (id: string, input: Record<string, unknown>, status: string): Record<string, unknown> => ({
+  type: 'tool',
+  id,
+  name: 'skill',
+  state: { status, input, content: [{ type: 'text', text: 'Write release notes.' }], error: 'not found' },
+  time: { created: 1000, completed: 1500 },
+})
+
 const context = {
   signal: new AbortController().signal,
   onProgress: () => undefined,
@@ -308,5 +317,179 @@ describe('importUnit for OpenCode', () => {
 
     // Assert
     await expect(imported).rejects.toMatchObject({ code: ADAPTER_ERROR_CODES.ADAPTER_UNIT_GONE })
+  })
+
+  it.each<[string, Record<string, unknown>, string, string | null]>([
+    [
+      'an error',
+      { status: 'error', error: { type: 'ToolError', message: 'File not found' } },
+      'error',
+      'ToolError: File not found',
+    ],
+    [
+      'a completed shell call that exited non-zero',
+      { status: 'completed', metadata: { exit: 2 }, content: [{ type: 'text', text: 'failed' }] },
+      'error',
+      'failed',
+    ],
+    [
+      'a completed call',
+      {
+        status: 'completed',
+        metadata: { exit: 0 },
+        content: [{ type: 'text', text: 'line one' }, { type: 'image' }, { type: 'text', text: 'line two' }],
+      },
+      'completed',
+      'line one\nline two',
+    ],
+    ['a running call', { status: 'running' }, 'pending', null],
+  ])('records the status and result of %s', async (_case, state, status, result) => {
+    // Arrange
+    const row: IRow = {
+      id: 'msg_01',
+      type: 'assistant',
+      seq: 1,
+      data: {
+        content: [
+          {
+            type: 'tool',
+            id: 'prt_01',
+            name: 'bash',
+            state: { input: { command: 'pnpm test' }, ...state },
+            time: { created: 1000, ran: 1200, completed: 1900 },
+          },
+        ],
+      },
+    }
+
+    // Act
+    const session = onlySession(
+      await importSession(`${sessionRow('ses_example01')}${messageRow('ses_example01', row)}`)
+    )
+
+    // Assert
+    expect({
+      call: session.toolCalls.map((call) => [
+        call.id,
+        call.name,
+        call.bareName,
+        call.server,
+        call.family,
+        call.inputJson,
+        call.status,
+        call.startedAt,
+        call.endedAt,
+      ]),
+      parts: session.parts.map((part) => [part.kind, part.text, part.toolCallId]),
+    }).toStrictEqual({
+      call: [[`${SESSION}/prt_01`, 'bash', 'bash', null, 'shell', '{"command":"pnpm test"}', status, 1200, 1900]],
+      parts: [
+        ['tool_call', 'bash {"command":"pnpm test"}', `${SESSION}/prt_01`],
+        ...(result === null ? [] : [['tool_result', result, `${SESSION}/prt_01`]]),
+      ],
+    })
+  })
+
+  it('times a call with no ran time from its creation, and links a 1.x task call to its child', async () => {
+    // Arrange
+    const row: IRow = {
+      id: 'msg_01',
+      type: 'assistant',
+      seq: 1,
+      data: {
+        content: [
+          {
+            type: 'tool',
+            id: 'prt_01',
+            name: 'task',
+            state: { status: 'completed', input: { prompt: 'look' }, metadata: { sessionId: 'ses_child01' } },
+            time: { created: 1000 },
+          },
+        ],
+      },
+    }
+
+    // Act
+    const session = onlySession(
+      await importSession(`${sessionRow('ses_example01')}${messageRow('ses_example01', row)}`)
+    )
+
+    // Assert
+    expect(
+      session.toolCalls.map((call) => [call.family, call.childSessionId, call.startedAt, call.endedAt])
+    ).toStrictEqual([['subagent', 'opencode:ses_child01', 1000, null]])
+  })
+
+  it('records a skill-loaded event for a completed skill call, by name or id, and none for a failed one', async () => {
+    // Arrange
+    const row: IRow = {
+      id: 'msg_01',
+      type: 'assistant',
+      seq: 1,
+      data: {
+        time: { created: 900 },
+        content: [
+          skillCall('prt_01', { name: 'write-release-notes' }, 'completed'),
+          skillCall('prt_02', { id: 'review-checklist' }, 'completed'),
+          skillCall('prt_03', { name: 'missing-skill' }, 'error'),
+        ],
+      },
+    }
+
+    // Act
+    const session = onlySession(
+      await importSession(`${sessionRow('ses_example01')}${messageRow('ses_example01', row)}`)
+    )
+
+    // Assert
+    expect(
+      session.events.map((event) => [event.id, event.kind, event.at, JSON.parse(event.dataJson) as unknown])
+    ).toStrictEqual([
+      [
+        `${SESSION}/prt_01:skill`,
+        'skill-loaded',
+        1500,
+        { name: 'write-release-notes', chars: 20, toolCallId: `${SESSION}/prt_01` },
+      ],
+      [
+        `${SESSION}/prt_02:skill`,
+        'skill-loaded',
+        1500,
+        { name: 'review-checklist', chars: 20, toolCallId: `${SESSION}/prt_02` },
+      ],
+    ])
+  })
+
+  it('records an unknown part type as an unknown event at the message time', async () => {
+    // Arrange
+    const row: IRow = {
+      id: 'msg_01',
+      type: 'assistant',
+      seq: 1,
+      data: {
+        time: { created: 900 },
+        content: [
+          { type: 'text', text: 'Done.' },
+          { type: 'step-marker', step: 2 },
+        ],
+      },
+    }
+
+    // Act
+    const session = onlySession(
+      await importSession(`${sessionRow('ses_example01')}${messageRow('ses_example01', row)}`)
+    )
+
+    // Assert
+    expect(
+      session.events.map((event) => [event.id, event.kind, event.at, JSON.parse(event.dataJson) as unknown])
+    ).toStrictEqual([
+      [
+        `${SESSION}/msg_01:part-1`,
+        'unknown',
+        900,
+        { what: 'part', type: 'step-marker', harnessVersion: '2.0.21', raw: { type: 'step-marker', step: 2 } },
+      ],
+    ])
   })
 })
