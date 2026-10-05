@@ -15,6 +15,8 @@ export interface ICliIo {
 }
 
 interface ICommandContext {
+  // The command's words, such as `labels run`.
+  command: string
   values: Readonly<Record<string, OptionValue>>
   positionals: readonly string[]
   io: ICliIo
@@ -37,7 +39,7 @@ const runCommand = async (runner: CommandRunner, context: ICommandContext, io: I
     if (io.signal.aborted) {
       return exitCodeOf('interrupted')
     }
-    const report = errorReport(error, { version: context.version, home: io.home })
+    const report = errorReport(error, { version: context.version, home: io.home, command: context.command })
     if (io.env[DEBUG] === '1' && error instanceof Error && error.stack !== undefined) {
       io.stderr(line(error.stack))
     }
@@ -74,5 +76,6 @@ export const runCli = async (io: ICliIo, runners: Readonly<Record<string, Comman
     io.stderr(line(`logbook ${parsed.command} is not in this build yet.`))
     return exitCodeOf('failure')
   }
-  return runCommand(runner, { values: parsed.values, positionals: parsed.positionals, io, version }, io)
+  const context = { command: parsed.command, values: parsed.values, positionals: parsed.positionals, io, version }
+  return runCommand(runner, context, io)
 }

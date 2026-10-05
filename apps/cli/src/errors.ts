@@ -1,7 +1,13 @@
 import { LogBookError } from '@log-book/core'
-import { resolveWarehousePath, WAREHOUSE_ERROR_CODES, WarehouseVersionError } from '@log-book/warehouse'
+import {
+  resolveWarehousePath,
+  WAREHOUSE_ERROR_CODES,
+  WarehouseLockHeldError,
+  WarehouseVersionError,
+} from '@log-book/warehouse'
 import { tildePath } from './format.js'
 import { EXIT_CODES, PACKAGE, type ExitCodeName } from './grammar.js'
+import { lockLine } from './lock-lines.js'
 
 export interface IErrorReport {
   code: number
@@ -13,6 +19,8 @@ interface IErrorContext {
   // This Log Book's version.
   version: string
   home: string
+  // The words of the command that met the error, such as `labels run`.
+  command: string
 }
 
 export const exitCodeOf = (name: ExitCodeName): number => {
@@ -43,6 +51,9 @@ const versionReport = (error: WarehouseVersionError, context: IErrorContext): IE
 export const errorReport = (error: unknown, context: IErrorContext): IErrorReport => {
   if (error instanceof WarehouseVersionError) {
     return versionReport(error, context)
+  }
+  if (error instanceof WarehouseLockHeldError) {
+    return { code: exitCodeOf('already running'), line: lockLine(error, context.command, context.home) }
   }
   if (error instanceof LogBookError && error.code === WAREHOUSE_ERROR_CODES.WAREHOUSE_NOT_FOUND) {
     const path = tildePath(resolveWarehousePath(), context.home)
