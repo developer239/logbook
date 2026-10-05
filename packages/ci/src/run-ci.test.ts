@@ -21,7 +21,7 @@ describe('the ci command dispatcher', () => {
     const result = await run(['nope'])
 
     // Assert
-    expect(result).toStrictEqual({ code: 2, stdout: '', stderr: 'No command named nope; there are none yet.\n' })
+    expect(result).toStrictEqual({ code: 2, stdout: '', stderr: 'No command named nope; the commands are deps.\n' })
   })
 
   it('exits 2 when no command is given', async () => {
@@ -29,6 +29,6 @@ describe('the ci command dispatcher', () => {
     const result = await run([])
 
     // Assert
-    expect(result).toStrictEqual({ code: 2, stdout: '', stderr: 'No command given; there are none yet.\n' })
+    expect(result).toStrictEqual({ code: 2, stdout: '', stderr: 'No command given; the commands are deps.\n' })
   })
 })

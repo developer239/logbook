@@ -45,6 +45,8 @@ jobs:
           printf '%s\n' "$PR_TITLE" | pnpm exec commitlint --verbose
       - name: 2. Format
         run: pnpm format:check
+      - name: 3. Dependency rule
+        run: pnpm check:deps
       - name: 9. Build packages
         run: pnpm build:packages
       - name: 10. Lint
