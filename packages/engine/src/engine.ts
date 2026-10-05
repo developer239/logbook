@@ -1,4 +1,5 @@
 import type { IHarnessAdapter } from '@log-book/adapter-api'
+import { detectClaude, type ClaudeDetection } from './claude/detect.js'
 import { readOperations, type IReadOperations } from './read/read.js'
 import { checkRegistrations } from './registration.js'
 import { runCompact, type CompactProgress, type ICompactResult } from './rewrite/compact.js'
@@ -12,7 +13,7 @@ export interface IEngineOptions {
   readonly onProgress?: (progress: SyncProgress) => void
 }
 
-// The engine's operations; later tickets add labels.
+// The engine's operations; later tickets add labelling itself.
 export interface IEngine {
   readonly adapters: readonly IHarnessAdapter[]
   readonly warehousePath: string
@@ -28,6 +29,10 @@ export interface IEngine {
   readonly forget: (
     options: ForgetTarget & { signal: AbortSignal; onProgress?: (progress: ForgetProgress) => void }
   ) => Promise<IForgetSessionsResult>
+  readonly labels: {
+    // Whether the user's Claude Code is there, new enough and signed in; the host and the doctor run it on its own.
+    readonly detect: (options?: { signal?: AbortSignal }) => Promise<ClaudeDetection>
+  }
 }
 
 // The one entry point of @log-book/engine. It does no I/O: it checks the adapter list before anything runs and returns
@@ -45,5 +50,8 @@ export const createEngine = (options: IEngineOptions): IEngine => {
       runCompact({ warehousePath, signal, onProgress: onCompactProgress }),
     forget: async ({ signal, onProgress: onForgetProgress = () => undefined, ...target }) =>
       runForget({ warehousePath, target, signal, onProgress: onForgetProgress }),
+    labels: {
+      detect: async (options = {}) => detectClaude(options.signal),
+    },
   }
 }
