@@ -21,6 +21,8 @@ export { DEFAULT_LABEL_MODEL, isLabelModelId } from './labels/model.js'
 export type { LabelPlan } from './labels/plan.js'
 export type { ILabelPreview } from './labels/preview.js'
 export { LABEL_INPUT_RATES, type ILabelInputRate } from './labels/rates.js'
+export { shellRulePurpose } from './labels/rules/shell-rules.js'
+export { toolFailureRuleCause } from './labels/rules/tool-failure-rules.js'
 export {
   LABEL_TASK_NAMES,
   LABEL_TASKS,

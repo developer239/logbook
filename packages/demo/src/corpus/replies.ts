@@ -15,6 +15,14 @@ export interface IReplyCorpus {
   closing: Readonly<Record<ClosingKind, readonly string[]>>
   // The thinking a turn's first reply records.
   reasoning: readonly string[]
+  // What a compaction continues from.
+  compactions: readonly string[]
+  // Why a model request failed.
+  requestErrors: readonly string[]
+  // The agent an agent switch moves to.
+  agents: readonly string[]
+  // How a session went idle.
+  idleOutcome: string
 }
 
 // Slots: `{work}` the session's item of work, `{file}` a source file of its project.
@@ -66,4 +74,11 @@ export const REPLIES: IReplyCorpus = {
     'Reading the tests first tells me what the code is expected to keep doing.',
     'The smallest safe step is to change one function and run the tests after it.',
   ],
+  compactions: [
+    'Earlier in this session: {work}. The change in {file} is written; its tests still need a run.',
+    'Summary so far: the work is {work}, and the open question is whether {file} keeps its old behaviour.',
+  ],
+  requestErrors: ['API Error: 529 Overloaded.', 'API Error: Connection dropped.'],
+  agents: ['plan'],
+  idleOutcome: 'completed',
 }

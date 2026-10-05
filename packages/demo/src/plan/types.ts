@@ -6,7 +6,7 @@ import type { IProject, ProjectName } from '../corpus/projects.js'
 import type { IPromptCorpus } from '../corpus/prompts.js'
 import type { IReplyCorpus } from '../corpus/replies.js'
 import type { IShapeCorpus, ShapeName } from '../corpus/shapes.js'
-import type { IToolCorpus } from '../corpus/tools.js'
+import type { IFailureLabels, IShellLabels, IToolCorpus } from '../corpus/tools.js'
 import type { IWorkItem } from '../corpus/work.js'
 
 export type DemoSize = 'small'
@@ -96,4 +96,11 @@ export interface IWriterScripts {
   scripts: ISessionScript[]
   // The act of each prompt step, by its key.
   acts: Record<string, PromptAct>
+  // The labels each call step stands for, by its key.
+  calls: Record<string, ICallLabels>
+}
+
+export interface ICallLabels {
+  shell: IShellLabels | null
+  failure: IFailureLabels | null
 }

@@ -14,6 +14,10 @@ export type UseName =
   | `spawn:${SubagentTaskName}`
   | 'run-scripted'
 
+// An event of the turn where the writer records it: `compaction`, `agent-switch` and `model-switch` at its start,
+// `failed-request` right after its prompt, `idle` at its end.
+export type TurnEvent = 'compaction' | 'failed-request' | 'agent-switch' | 'model-switch' | 'idle'
+
 export interface ITurnShape {
   // The act of the prompt that opens the turn.
   act: PromptAct
@@ -24,8 +28,12 @@ export interface ITurnShape {
   builtIn?: string
   // A tools-offered event at the turn's start where the writer records one.
   offersTools?: boolean
+  events?: readonly TurnEvent[]
   // In order, each after a reply of the agent.
   uses: readonly UseName[]
+  // How the turn ends where the writer records it: the developer interrupts the agent while the last use is still
+  // running, or refuses the last use when it is asked. A writer that records neither closes the turn without that use.
+  stop?: 'interrupt' | 'refuse'
   closing: ClosingKind
 }
 
@@ -73,28 +81,45 @@ export const SHAPES: IShapeCorpus = {
   shapes: {
     'feature through a subagent': {
       goals: ['build a feature'],
-      rows: [3, 7, 15],
+      rows: [3, 7, 14, 15],
       turns: [
-        { act: 'task', uses: ['update-todos', 'find-files', 'read-source', 'edit-source'], closing: 'progress' },
+        {
+          act: 'task',
+          uses: ['update-todos', 'find-files', 'read-source', 'edit-source', 'git-push'],
+          stop: 'refuse',
+          closing: 'progress',
+        },
         { act: 'continue', uses: ['spawn:check-discount'], closing: 'done' },
       ],
     },
     'feature that runs a question': {
       goals: ['build a feature'],
-      rows: [4, 5, 15],
+      rows: [4, 5, 12, 15],
       turns: [
         { act: 'task', uses: ['run-scripted', 'read-source'], closing: 'asks' },
-        { act: 'answer', uses: ['ask-human', 'edit-source', 'git-status'], closing: 'handoff' },
+        {
+          act: 'answer',
+          uses: ['health-down', 'health-down', 'health-down', 'health-up', 'ask-human', 'edit-source', 'git-status'],
+          closing: 'handoff',
+        },
       ],
     },
     'review through a subagent': {
       goals: ['review'],
-      rows: [3, 9, 10],
+      rows: [3, 9, 10, 11, 12],
       turns: [
         {
           act: 'task',
           command: { name: 'review', arguments: 'the checkout form' },
-          uses: ['skill:review-checklist', 'git-diff', 'read-source'],
+          uses: [
+            'skill:review-checklist',
+            'git-diff',
+            'read-source',
+            'grep-code',
+            'typecheck-missing',
+            'search-fault',
+            'find-files',
+          ],
           closing: 'progress',
         },
         { act: 'continue', uses: ['spawn:review-form'], closing: 'unclear' },
@@ -102,10 +127,16 @@ export const SHAPES: IShapeCorpus = {
     },
     'refactor in steps': {
       goals: ['refactor, migrate or clean up'],
-      rows: [6, 10, 15],
+      rows: [6, 10, 11, 14, 15],
       turns: [
-        { act: 'task', builtIn: 'model', uses: ['read-source', 'edit-source', 'run-tests'], closing: 'progress' },
-        { act: 'report', uses: ['run-tests', 'edit-source'], closing: 'partly' },
+        {
+          act: 'task',
+          builtIn: 'model',
+          uses: ['read-source', 'sed-edit', 'typecheck', 'run-tests'],
+          stop: 'interrupt',
+          closing: 'progress',
+        },
+        { act: 'report', uses: ['test-typo', 'run-tests', 'edit-source'], closing: 'partly' },
       ],
     },
     'quick question': {
@@ -115,80 +146,117 @@ export const SHAPES: IShapeCorpus = {
     },
     'tracked bug fix': {
       goals: ['fix a bug'],
-      rows: [5, 7, 8, 15],
+      rows: [5, 7, 8, 12, 15],
       turns: [
         {
           act: 'task',
           offersTools: true,
-          uses: ['load-tools', 'tracker-issue', 'read-source', 'web-search'],
+          uses: ['load-tools', 'tracker-unauthorized', 'tracker-issue', 'read-source', 'web-search', 'ask-human'],
           closing: 'progress',
         },
-        { act: 'other', uses: ['ask-human', 'edit-source', 'run-tests-slow'], closing: 'abandoned' },
+        { act: 'other', uses: ['edit-mismatch', 'edit-source', 'run-tests-slow'], closing: 'abandoned' },
       ],
     },
     'feature with tests': {
       goals: ['build a feature'],
-      rows: [5, 7],
+      rows: [5, 7, 11, 12, 13],
       turns: [
         {
           act: 'task',
-          uses: ['read-source', 'write-test', 'run-tests', 'dispatch-check', 'wait-check'],
+          uses: [
+            'read-missing',
+            'read-source',
+            'write-test',
+            'tests-failing',
+            'run-tests',
+            'dispatch-check',
+            'wait-check',
+          ],
           closing: 'progress',
         },
-        { act: 'continue', uses: ['web-fetch', 'other-tool', 'run-tests'], closing: 'done' },
+        {
+          act: 'continue',
+          events: ['compaction', 'failed-request'],
+          uses: ['jq-data', 'install', 'render-missing', 'other-tool', 'read-gone', 'run-tests'],
+          closing: 'done',
+        },
       ],
     },
     'plan a flow': {
       goals: ['plan or specify'],
-      rows: [5, 15],
+      rows: [5, 11, 14, 15],
       turns: [
-        { act: 'task', uses: ['web-search', 'read-source', 'ask-human'], closing: 'asks' },
-        { act: 'answer', uses: ['write-doc'], closing: 'done' },
+        { act: 'task', uses: ['web-search', 'read-source', 'web-fetch'], stop: 'interrupt', closing: 'asks' },
+        {
+          act: 'continue',
+          uses: ['write-doc', 'open-pr', 'wait-ci', 'curl-api', 'curl-timeout'],
+          closing: 'done',
+        },
       ],
     },
     'bug fix with tests': {
       goals: ['fix a bug'],
-      rows: [5, 6, 15],
+      rows: [5, 6, 11, 14, 15],
       turns: [
-        { act: 'task', uses: ['read-source', 'search-text', 'edit-source', 'run-tests'], closing: 'progress' },
-        { act: 'report', uses: ['run-tests-slow', 'git-diff'], closing: 'failed' },
+        {
+          act: 'task',
+          uses: ['read-source', 'search-text', 'edit-source', 'run-tests', 'git-push'],
+          stop: 'refuse',
+          closing: 'progress',
+        },
+        { act: 'report', uses: ['pytest-failing', 'run-tests-slow', 'git-diff'], closing: 'failed' },
       ],
     },
     'debug through a subagent': {
       goals: ['debug or diagnose'],
-      rows: [3, 21],
+      rows: [3, 11, 12, 21],
       turns: [
-        { act: 'task', uses: ['read-source', 'trace-drift'], closing: 'progress' },
+        { act: 'task', uses: ['read-source', 'read-too-large', 'trace-drift', 'heredoc-write'], closing: 'progress' },
         { act: 'continue', uses: ['spawn:find-tests'], closing: 'blocked' },
       ],
     },
     'fix through a subagent': {
       goals: ['fix a bug'],
-      rows: [3, 7],
+      rows: [3, 7, 11, 12],
       turns: [
-        { act: 'task', uses: ['read-source', 'edit-source'], closing: 'progress' },
+        { act: 'task', uses: ['read-source', 'read-secret', 'edit-source', 'run-script'], closing: 'progress' },
         { act: 'continue', uses: ['spawn:check-fix'], closing: 'done' },
       ],
     },
     'debug with a helper': {
       goals: ['debug or diagnose'],
-      rows: [5, 7, 15],
+      rows: [5, 6, 7, 12, 13, 15],
       turns: [
-        { act: 'task', uses: ['search-text', 'dispatch-check', 'wait-check', 'other-tool'], closing: 'progress' },
-        { act: 'other', uses: ['web-fetch', 'edit-source', 'run-tests'], closing: 'done' },
+        {
+          act: 'task',
+          events: ['agent-switch'],
+          uses: ['search-invalid', 'search-text', 'dispatch-check', 'wait-cancelled', 'other-tool'],
+          closing: 'progress',
+        },
+        {
+          act: 'other',
+          events: ['model-switch', 'idle'],
+          uses: ['search-rate', 'fetch-empty', 'web-fetch', 'edit-source', 'run-tests'],
+          closing: 'done',
+        },
       ],
     },
     'release with a command': {
       goals: ['ship and operate'],
-      rows: [9, 10, 15],
+      rows: [9, 10, 11, 13, 15],
       turns: [
         {
           act: 'task',
           command: { name: 'release-notes', arguments: '2.3.0' },
-          uses: ['skill:write-release-notes', 'git-log', 'write-doc'],
+          uses: ['skill:write-release-notes', 'git-log', 'write-doc', 'install-denied', 'open-docs'],
           closing: 'progress',
         },
-        { act: 'question', uses: ['ask-human', 'git-tag'], closing: 'done' },
+        {
+          act: 'question',
+          events: ['compaction', 'failed-request', 'idle'],
+          uses: ['ask-human', 'git-tag'],
+          closing: 'done',
+        },
       ],
     },
   },
