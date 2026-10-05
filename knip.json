@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreBinaries": ["pgrep"],
   "workspaces": {
     ".": {
       "entry": ["lint/*.mjs"]
@@ -10,6 +11,10 @@
     "packages/adapter-claude-code": {
       "entry": ["src/index.ts", "src/source-writer/index.ts"],
       "project": ["src/**/*.ts", "fixtures/**/*.ts"]
+    },
+    "packages/engine": {
+      "entry": ["src/compact/rewrite-process.ts"],
+      "project": ["src/**/*.ts"]
     },
     "packages/demo": {
       "entry": ["src/index.ts", "src/command.ts"],
