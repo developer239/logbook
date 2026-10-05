@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { RULES_LABELLER, type ILabelRecord, type WarehouseStore } from '@log-book/warehouse'
+import { RULES_LABELLER, type ILabelRecord, type IWarehouseReader, type WarehouseStore } from '@log-book/warehouse'
 import { runLabelBatch } from '../../claude/batch-call.js'
 import type { BatchResult } from '../../claude/batch-result.js'
 import { parseBatchAnswer, type IItemAnswer, type TLabelValues } from './batch-answer.js'
@@ -64,31 +64,36 @@ const firstField = (task: ILabelRunTask): string => {
   return field.name
 }
 
+// What decides a task's pending records: the plan counts them with the same rule a run labels them by.
+export type TPendingSelection = Pick<ILabelTaskRun, 'task' | 'model' | 'doneBy' | 'sample' | 'limit'>
+
 // The records labelled with the task's first field at its current version, built again from the warehouse each run.
-const labelledIds = (run: ILabelTaskRun): Set<string> => {
-  const byLabeller = run.doneBy === 'own-model' ? 'labeller = ?' : 'labeller <> ?'
-  const rows = run.store.all<{ id: string }>(
+const labelledIds = (reader: IWarehouseReader, selection: TPendingSelection): Set<string> => {
+  const byLabeller = selection.doneBy === 'own-model' ? 'labeller = ?' : 'labeller <> ?'
+  const rows = reader.all<{ id: string }>(
     `SELECT DISTINCT record_id AS id FROM label WHERE record_type = ? AND name = ? AND version = ? AND ${byLabeller}`,
-    run.task.recordType,
-    firstField(run.task),
-    run.task.version,
-    run.doneBy === 'own-model' ? run.model : RULES_LABELLER
+    selection.task.recordType,
+    firstField(selection.task),
+    selection.task.version,
+    selection.doneBy === 'own-model' ? selection.model : RULES_LABELLER
   )
   return new Set(rows.map((row) => row.id))
 }
 
-const pendingOf = (run: ILabelTaskRun): ILabelItem[] => {
-  const candidates = run.task.candidates(run.store)
+// The records a task would label now: its candidates, a sample of them when asked, without the ones done, at most
+// the limit.
+export const pendingRecords = (reader: IWarehouseReader, selection: TPendingSelection): ILabelItem[] => {
+  const candidates = selection.task.candidates(reader)
   const chosen =
-    run.sample === undefined
+    selection.sample === undefined
       ? candidates
       : candidates
           .map((item) => ({ item, key: sampleKey(item.recordId) }))
           .toSorted((left, right) => (left.key < right.key ? -1 : 1))
-          .slice(0, run.sample)
+          .slice(0, selection.sample)
           .map(({ item }) => item)
-  const done = labelledIds(run)
-  return chosen.filter((item) => !done.has(item.recordId)).slice(0, run.limit)
+  const done = labelledIds(reader, selection)
+  return chosen.filter((item) => !done.has(item.recordId)).slice(0, selection.limit)
 }
 
 const chunk = <TItem>(items: readonly TItem[], size: number): TItem[][] =>
@@ -252,7 +257,7 @@ class TaskRunner {
 // a valid answer, and writes each kept batch as it lands. A run stopped at any point keeps every batch it wrote, and
 // the next run asks only for what is still unlabelled. Up to 4 batches are in flight, each its own `claude -p`.
 export const runLabelTask = async (run: ILabelTaskRun): Promise<ILabelTaskResult> => {
-  const pending = pendingOf(run)
+  const pending = pendingRecords(run.store, run)
   run.store.replanLabelRunTask(run.runId, run.task.name, pending.length)
   return new TaskRunner(run, pending).label()
 }

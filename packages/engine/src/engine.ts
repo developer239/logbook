@@ -1,5 +1,6 @@
 import type { IHarnessAdapter } from '@log-book/adapter-api'
 import { detectClaude, type ClaudeDetection } from './claude/detect.js'
+import { planLabelling, type LabelPlan } from './labels/plan.js'
 import { readOperations, type IReadOperations } from './read/read.js'
 import { checkRegistrations } from './registration.js'
 import { runCompact, type CompactProgress, type ICompactResult } from './rewrite/compact.js'
@@ -32,6 +33,8 @@ export interface IEngine {
   readonly labels: {
     // Whether the user's Claude Code is there, new enough and signed in; the host and the doctor run it on its own.
     readonly detect: (options?: { signal?: AbortSignal }) => Promise<ClaudeDetection>
+    // What a run would send now, taking no lock, writing nothing and starting no `claude -p`.
+    readonly plan: (options?: { model?: string; signal?: AbortSignal }) => Promise<LabelPlan>
   }
 }
 
@@ -52,6 +55,7 @@ export const createEngine = (options: IEngineOptions): IEngine => {
       runForget({ warehousePath, target, signal, onProgress: onForgetProgress }),
     labels: {
       detect: async (options = {}) => detectClaude(options.signal),
+      plan: async (options = {}) => planLabelling({ ...options, warehousePath }),
     },
   }
 }

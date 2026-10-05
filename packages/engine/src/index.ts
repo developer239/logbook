@@ -15,7 +15,10 @@ export {
 export type { IUnitProgress } from './sync/import-step.js'
 export type { ISyncAdapterResult, ISyncResult, SyncProgress } from './sync/sync.js'
 export { ITEM_CONTENTS, type IItemPart } from './labels/item-contents.js'
+export type { ILabelFacts } from './labels/facts.js'
 export { DEFAULT_LABEL_MODEL, isLabelModelId } from './labels/model.js'
+export type { LabelPlan } from './labels/plan.js'
+export { LABEL_INPUT_RATES, type ILabelInputRate } from './labels/rates.js'
 export {
   LABEL_TASK_NAMES,
   LABEL_TASKS,
