@@ -13,5 +13,8 @@
     "@commitlint/load": "catalog:",
     "@commitlint/types": "catalog:",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "yaml": "catalog:"
   }
 }

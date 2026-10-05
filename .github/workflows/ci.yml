@@ -51,6 +51,8 @@ jobs:
         run: |
           pnpm check:fixtures
           pnpm check:tests
+      - name: 8. Release guard
+        run: pnpm check:release
       - name: 9. Build packages
         run: pnpm build:packages
       - name: 10. Lint
