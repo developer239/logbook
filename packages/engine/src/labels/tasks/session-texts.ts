@@ -3,6 +3,10 @@ import type { IWarehouseReader } from '@log-book/warehouse'
 import type { IItemPart } from '../item-contents.js'
 import { cutToPart } from './item-text.js'
 
+// A session's last turn may still be going: it is judged once the session has been quiet this long, because a label
+// is never revised.
+export const QUIET_MS = 60 * 60 * 1000
+
 export interface ISessionHeader {
   id: string
   origin: string
