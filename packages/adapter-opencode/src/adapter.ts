@@ -1,5 +1,6 @@
 import type { IHarnessAdapter, IHarnessDescriptor } from '@log-book/adapter-api'
 import { ERROR_CODES, LogBookError } from '@log-book/core'
+import { openDatabase } from './database.js'
 import { DATA_HOME_VARIABLE, DATABASE_VARIABLE, DISABLE_CHANNEL_DATABASE_VARIABLE, locateDatabase } from './locate.js'
 
 // name, defaultAgent and filterAlias are the values the conversation filter has always used.
@@ -20,6 +21,6 @@ const notImplemented = (what: string): Promise<never> =>
 export const openCode = (): IHarnessAdapter => ({
   descriptor: DESCRIPTOR,
   locate: locateDatabase,
-  openSource: () => notImplemented('open its database'),
+  openSource: openDatabase,
   prepareCommands: () => notImplemented('recognise commands'),
 })
