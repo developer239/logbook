@@ -7,6 +7,10 @@
     "packages/*": {
       "project": ["src/**/*.ts"]
     },
+    "packages/demo": {
+      "entry": ["src/index.ts", "src/command.ts"],
+      "project": ["src/**/*.ts"]
+    },
     "apps/*": {
       "project": ["src/**/*.ts"]
     }
