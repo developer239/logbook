@@ -22,7 +22,7 @@ catalog:
   '@commitlint/lint': 21.2.3
   '@commitlint/load': 21.2.3
   '@commitlint/types': 21.2.3
-  '@types/node': 24.19.1
+  '@types/node': 26.6.4
   astro: 7.3.5
   esbuild: 0.28.2
   husky: 9.1.7
