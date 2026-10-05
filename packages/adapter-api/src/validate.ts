@@ -258,6 +258,27 @@ const validatePart = (scope: ISessionScope, part: IPartRecord): void => {
   reportAdapterId(scope, record, { kind: part.kind, text: part.text })
 }
 
+// An event's data without its id fields (`id` and every `…Id`), which hold session, message or tool call ids and so
+// the adapter id by design.
+const withoutIdFields = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map((item: unknown) => withoutIdFields(item))
+  }
+  if (isRecord(value)) {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([key]) => key !== 'id' && !key.endsWith('Id'))
+        .map(([key, item]) => [key, withoutIdFields(item)])
+    )
+  }
+  return value
+}
+
+const dataTextOf = (dataJson: string): string => {
+  const { isValid, value } = parseJson(dataJson)
+  return isValid ? JSON.stringify(withoutIdFields(value)) : dataJson
+}
+
 const validateEvent = (scope: ISessionScope, event: IEventRecord): void => {
   const { report } = scope
   const record = `event ${event.id}`
@@ -271,7 +292,7 @@ const validateEvent = (scope: ISessionScope, event: IEventRecord): void => {
   if (!isEventDataValid(event.kind, event.dataJson)) {
     report(record, `dataJson is not a JSON document of the ${event.kind} shape`)
   }
-  reportAdapterId(scope, record, { kind: event.kind, dataJson: event.dataJson })
+  reportAdapterId(scope, record, { kind: event.kind, dataJson: dataTextOf(event.dataJson) })
 }
 
 const validateSession = (report: TReport, adapterId: string, imported: IImportedSession, ids: IUnitIds): void => {

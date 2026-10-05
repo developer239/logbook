@@ -286,6 +286,27 @@ describe('validateImportedUnit', () => {
     expect(problems).toStrictEqual([])
   })
 
+  it('passes event data whose id fields hold ids, which carry the adapter id', () => {
+    // Arrange and act
+    const problems = validateBroken((session) => {
+      nth(session.events, 0).kind = 'interrupted'
+      nth(session.events, 0).dataJson = JSON.stringify({ messageId: `${S1}/m1` })
+    })
+
+    // Assert
+    expect(problems).toStrictEqual([])
+  })
+
+  it('reports the adapter id in an event data field that is not an id', () => {
+    // Arrange and act
+    const problems = validateBroken((session) => {
+      nth(session.events, 1).dataJson = JSON.stringify({ name: `${ADAPTER_ID} review`, chars: 120, toolCallId: null })
+    })
+
+    // Assert
+    expect(problems).toStrictEqual([`event ${S1}/e2: dataJson contains the adapter id`])
+  })
+
   it('passes an mcp family that matches the call server', () => {
     // Arrange and act
     const problems = validateBroken((session) => {
