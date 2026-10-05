@@ -21,7 +21,9 @@
     "test:demo": "vitest run --project demo-build",
     "test:docs": "vitest run --project docs-browser",
     "demo:purity": "node packages/demo/bin/logbook-demo.mjs purity",
-    "prepare": "husky"
+    "prepare": "husky",
+    "ci:build": "pnpm --filter @log-book/ci build",
+    "check:deps": "pnpm ci:build && node packages/ci/dist/index.js deps"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",
