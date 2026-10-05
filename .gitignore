@@ -11,3 +11,6 @@ mise.local.toml
 # editor and OS files
 .idea/
 .DS_Store
+
+# demo dataset builds
+packages/demo/out/
