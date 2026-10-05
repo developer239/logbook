@@ -30,6 +30,11 @@
     "case": "local"
   },
   {
+    "file": "packages/demo/src/import/import-demo.ts",
+    "calls": "runs the built logbook CLI (doctor, then sync) as a child in the demo's sealed environment",
+    "case": "local"
+  },
+  {
     "file": "packages/ci/src/tracked-files.ts",
     "calls": "runs git ls-files to list the repository's tracked files for the CI checks",
     "case": "local"
