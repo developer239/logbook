@@ -125,6 +125,9 @@ importers:
       '@log-book/warehouse':
         specifier: workspace:*
         version: link:../../packages/warehouse
+      '@log-book/web':
+        specifier: workspace:*
+        version: link:../web
     devDependencies:
       vitest:
         specifier: 'catalog:'

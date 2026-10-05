@@ -21,6 +21,15 @@ export const integerOf = (values: OptionValues, name: string): number | undefine
   return value
 }
 
+// An integer option the parser always gives, from its default when the command line leaves it out.
+export const requiredIntegerOf = (values: OptionValues, name: string): number => {
+  const value = integerOf(values, name)
+  if (value === undefined) {
+    throw new TypeError(`The parser let the command through without its --${name}`)
+  }
+  return value
+}
+
 // A required text option the parser has made sure is given.
 export const requiredTextOf = (values: OptionValues, name: string): string => {
   const value = textOf(values, name)

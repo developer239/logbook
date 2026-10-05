@@ -179,6 +179,28 @@ describe('runCli', () => {
     expect((await running).code).toBe(130)
   })
 
+  it('keeps the exit code of the host, which a stop signal ends as planned', async () => {
+    // Arrange
+    const controller = new AbortController()
+    const { promise: started, resolve: start } = Promise.withResolvers<undefined>()
+    const host: CommandRunner = async ({ io }) => {
+      const aborted = new Promise((resolve) => {
+        io.signal.addEventListener('abort', resolve)
+      })
+      start(undefined)
+      await aborted
+      return 0
+    }
+
+    // Act
+    const running = run(['start'], { start: host }, {}, controller.signal)
+    await started
+    controller.abort()
+
+    // Assert
+    expect((await running).code).toBe(0)
+  })
+
   it('exits 9 for a host of another version before it opens the warehouse', async () => {
     // Arrange
     const directory = await mkdtemp(join(tmpdir(), 'cli-host-'))

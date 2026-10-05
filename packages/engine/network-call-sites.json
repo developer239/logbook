@@ -20,6 +20,16 @@
     "case": "local"
   },
   {
+    "file": "apps/cli/src/host-server.ts",
+    "calls": "listens on 127.0.0.1 only, for the web app",
+    "case": "local"
+  },
+  {
+    "file": "apps/cli/src/child-registry.ts",
+    "calls": "starts logbook children: process.execPath with the CLI's entry, an argument array, no shell",
+    "case": "local"
+  },
+  {
     "file": "packages/ci/src/tracked-files.ts",
     "calls": "runs git ls-files to list the repository's tracked files for the CI checks",
     "case": "local"
