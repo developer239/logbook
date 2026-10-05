@@ -19,7 +19,8 @@
     "test:related": "vitest related --run",
     "test:e2e": "vitest run --project e2e",
     "test:demo": "vitest run --project demo-build",
-    "test:docs": "vitest run --project docs-browser"
+    "test:docs": "vitest run --project docs-browser",
+    "demo:purity": "node packages/demo/bin/logbook-demo.mjs purity"
   },
   "devDependencies": {
     "@types/node": "catalog:",

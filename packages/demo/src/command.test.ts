@@ -25,3 +25,16 @@ describe('logbook-demo entry', () => {
     })
   })
 })
+
+describe('logbook-demo purity', () => {
+  it("exits 0 and prints nothing when the generator's sources are pure", async () => {
+    // Arrange
+    const command = { command: process.execPath, args: [ENTRY, 'purity'], timeoutMs: 5000, label: 'logbook-demo' }
+
+    // Act
+    const result = await runSubprocess(command)
+
+    // Assert
+    expect(result).toStrictEqual({ exitCode: 0, stdout: '', stderr: '' })
+  })
+})

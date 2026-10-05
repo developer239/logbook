@@ -18,7 +18,9 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@log-book/core": "workspace:*",
     "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@log-book/core": "workspace:*"
   }
 }

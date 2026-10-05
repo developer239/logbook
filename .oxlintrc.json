@@ -440,6 +440,12 @@
       "rules": {
         "unicorn/no-empty-file": "off"
       }
+    },
+    {
+      "files": ["packages/demo/src/random.ts"],
+      "rules": {
+        "no-bitwise": "off"
+      }
     }
   ]
 }
