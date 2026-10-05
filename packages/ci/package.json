@@ -1,0 +1,17 @@
+{
+  "name": "@log-book/ci",
+  "version": "0.0.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@commitlint/lint": "catalog:",
+    "@commitlint/load": "catalog:",
+    "@commitlint/types": "catalog:",
+    "vitest": "catalog:"
+  }
+}
