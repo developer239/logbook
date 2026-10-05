@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, mkdirSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, statSync } from 'node:fs'
 import { dirname, isAbsolute, relative } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { LogBookError, openSqlite, type ISqliteDb } from '@log-book/core'
@@ -89,9 +89,11 @@ export class WarehouseStore implements IWarehouseReader {
   public readonly previousVersion: number
   public readonly version: number
   private readonly db: ISqliteDb
+  private readonly path: string
 
-  private constructor(db: ISqliteDb, previousVersion: number, version: number) {
+  private constructor(db: ISqliteDb, path: string, previousVersion: number, version: number) {
     this.db = db
+    this.path = path
     this.previousVersion = previousVersion
     this.version = version
   }
@@ -122,7 +124,7 @@ export class WarehouseStore implements IWarehouseReader {
     db.exec(`PRAGMA journal_size_limit = ${String(JOURNAL_SIZE_LIMIT_BYTES)}`)
     applyMigrations(db)
     tightenModes(path, isDirectoryOwned)
-    return new WarehouseStore(db, previousVersion, SCHEMA_VERSION)
+    return new WarehouseStore(db, path, previousVersion, SCHEMA_VERSION)
   }
 
   // Opens for reading only, and only a warehouse at this build's version: under the host, the host has migrated it
@@ -142,7 +144,7 @@ export class WarehouseStore implements IWarehouseReader {
         SCHEMA_VERSION
       )
     }
-    return new WarehouseStore(db, version, version)
+    return new WarehouseStore(db, path, version, version)
   }
 
   // node:sqlite returns rows without a prototype; readers get plain objects.
@@ -385,6 +387,38 @@ export class WarehouseStore implements IWarehouseReader {
         label.labelledAt
       )
     }
+  }
+
+  // The compaction, one call per step so the engine's rewrite process can report the end of each (forget's purge runs
+  // the same three). Step 1 rewrites the full-text index, so deleted text no longer sits in its old segments.
+  public readonly optimizeFullText = (): void => {
+    this.db.exec("INSERT INTO part_fts (part_fts) VALUES ('optimize')")
+  }
+
+  // Step 2 rewrites the file without its free pages. It needs free disk of up to twice the warehouse's size and holds
+  // the write lock for its whole length; stopped before it commits, SQLite rolls it back and the file is as it was.
+  // `auto_vacuum` stays off: sync reuses free pages anyway.
+  public readonly vacuum = (): void => {
+    this.db.exec('VACUUM')
+  }
+
+  // Step 3 moves the rewrite into the file and empties the write-ahead log. False when a reader still uses the log, so
+  // it could not be emptied; a later checkpoint finishes the move.
+  public readonly truncateWal = (): boolean => {
+    const row = this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').get() as { busy: number }
+    return row.busy === 0
+  }
+
+  // Read just before `VACUUM`, so after a stop the count tells a rolled-back rewrite from a finished one.
+  public readonly readPageCount = (): number => {
+    const row = this.db.prepare('PRAGMA page_count').get() as { page_count: number }
+    return row.page_count
+  }
+
+  // The bytes the warehouse takes: its file and its write-ahead log, which is absent after the last connection closes.
+  public readonly readFileBytes = (): number => {
+    const wal = `${this.path}-wal`
+    return statSync(this.path).size + (existsSync(wal) ? statSync(wal).size : 0)
   }
 
   private readonly transaction = <TResult>(work: () => TResult): TResult => {
