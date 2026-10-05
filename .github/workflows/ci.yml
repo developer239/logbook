@@ -47,6 +47,10 @@ jobs:
         run: pnpm format:check
       - name: 3. Dependency rule
         run: pnpm check:deps
+      - name: 6. Fixture and test conventions
+        run: |
+          pnpm check:fixtures
+          pnpm check:tests
       - name: 9. Build packages
         run: pnpm build:packages
       - name: 10. Lint

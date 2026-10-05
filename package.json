@@ -23,7 +23,9 @@
     "demo:purity": "node packages/demo/bin/logbook-demo.mjs purity",
     "prepare": "husky",
     "ci:build": "pnpm --filter @log-book/ci build",
-    "check:deps": "pnpm ci:build && node packages/ci/dist/index.js deps"
+    "check:deps": "pnpm ci:build && node packages/ci/dist/index.js deps",
+    "check:fixtures": "pnpm ci:build && node packages/ci/dist/index.js fixtures",
+    "check:tests": "pnpm ci:build && node packages/ci/dist/index.js tests"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",

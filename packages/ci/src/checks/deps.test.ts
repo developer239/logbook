@@ -1,16 +1,11 @@
-import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
-import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
+import { gitWorkspaces } from '../testing/git-workspace.js'
 import { dependencyFindings } from './deps.js'
 
 type TFiles = Readonly<Record<string, string>>
 
-const run = promisify(execFile)
 const WORKSPACE = 'workspace:*'
-const directories: string[] = []
+const workspaces = gitWorkspaces()
 
 const manifest = (name: string, fields: Readonly<Record<string, readonly string[]>> = {}): string =>
   JSON.stringify({
@@ -67,22 +62,10 @@ const FOLLOWING: TFiles = {
 }
 
 // The findings of the rule on a temporary git workspace holding these files.
-const findings = async (files: TFiles): Promise<string[]> => {
-  const root = await mkdtemp(join(tmpdir(), 'ci-deps-'))
-  directories.push(root)
-  await Promise.all(
-    Object.entries(files).map(async ([path, text]) => {
-      await mkdir(dirname(join(root, path)), { recursive: true })
-      await writeFile(join(root, path), text)
-    })
-  )
-  await run('git', ['init', '-q'], { cwd: root })
-  await run('git', ['add', '-A'], { cwd: root })
-  return dependencyFindings(root)
-}
+const findings = async (files: TFiles): Promise<string[]> => dependencyFindings(await workspaces.create(files))
 
 afterEach(async () => {
-  await Promise.all(directories.splice(0).map(async (root) => rm(root, { recursive: true, force: true })))
+  await workspaces.removeAll()
 })
 
 describe('the dependency rule check', () => {
