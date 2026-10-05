@@ -25,8 +25,9 @@ export interface ILabelRunTaskCounts {
 export interface ILabelRunReport {
   readonly status: 'ran'
   outcome: LabelRunOutcome
-  // For `failed`: a missing prerequisite (authentication refused, the binary gone) or another failure.
-  failureKind: 'missing-prerequisite' | 'failure' | null
+  // For `failed`: a missing prerequisite, named as detection names it (authentication refused, the binary gone), or
+  // another failure.
+  failureKind: 'not-signed-in' | 'not-found' | 'failure' | null
   tasks: ILabelRunTaskCounts[]
   totals: { planned: number; done: number; unanswered: number; inputTokens: number; outputTokens: number }
   // The record's error, in the `~/` form.
@@ -94,7 +95,10 @@ const failureKindOf = (stop: ILabelTaskStop | null): ILabelRunReport['failureKin
   if (stop?.outcome !== 'failed') {
     return null
   }
-  return stop.isMissingPrerequisite ? 'missing-prerequisite' : 'failure'
+  if (stop.cause === 'authentication') {
+    return 'not-signed-in'
+  }
+  return stop.cause === 'binary-missing' ? 'not-found' : 'failure'
 }
 
 const reportOf = (results: readonly ILabelTaskResult[], model: string, startedAt: number): ILabelRunReport => {

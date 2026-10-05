@@ -1,3 +1,4 @@
+import { createLabelRunners } from './labels-run.js'
 import { createReadRunners } from './read-commands.js'
 import type { CommandRunner } from './run-cli.js'
 import { createSyncRunner } from './sync.js'
@@ -7,4 +8,5 @@ import { createSyncRunner } from './sync.js'
 export const COMMAND_RUNNERS: Readonly<Record<string, CommandRunner>> = {
   sync: createSyncRunner(),
   ...createReadRunners(),
+  ...createLabelRunners(),
 }

@@ -67,6 +67,7 @@ const run = async (startSync: StartSync, send?: (message: SyncMessage) => void):
       stderr: (text) => {
         stderr += text
       },
+      isStderrTty: false,
       signal: new AbortController().signal,
     },
     { sync: runner }
@@ -113,6 +114,7 @@ const io = {
   home: '${HOME}',
   stdout: (text) => process.stdout.write(text),
   stderr: (text) => process.stderr.write(text),
+  isStderrTty: false,
   signal: new AbortController().signal,
 }
 process.exitCode = await createSyncRunner(startSync, ipcChannel)({

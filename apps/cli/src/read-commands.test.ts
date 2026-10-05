@@ -51,6 +51,7 @@ const run = async (argv: readonly string[], read?: IReadOperations): Promise<IRu
       stderr: (text) => {
         stderr += text
       },
+      isStderrTty: false,
       signal: new AbortController().signal,
     },
     read === undefined ? createReadRunners() : createReadRunners(() => read)

@@ -16,6 +16,7 @@ process.exitCode = await runCli(
     home: homedir(),
     stdout: (text) => process.stdout.write(text),
     stderr: (text) => process.stderr.write(text),
+    isStderrTty: process.stderr.isTTY,
     signal: controller.signal,
   },
   COMMAND_RUNNERS

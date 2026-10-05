@@ -418,7 +418,7 @@ describe('runLabelling', () => {
       { outcome: 'unreachable', failureKind: null },
       /^Labelling stopped: Claude Code could not reach its API \(/u,
     ],
-    ['auth-refused', { outcome: 'failed', failureKind: 'missing-prerequisite' }, /^Claude Code is not signed in \(/u],
+    ['auth-refused', { outcome: 'failed', failureKind: 'not-signed-in' }, /^Claude Code is not signed in \(/u],
   ] as const)('ends at %s with its outcome, keeping the batch in flight', async (envelope, expected, error) => {
     // Arrange
     arrange(Array.from({ length: 30 }, (_call, index) => shellCall(index)))
@@ -464,7 +464,7 @@ describe('runLabelling', () => {
       hasHome: record?.error?.includes(home),
     }).toStrictEqual({
       outcome: 'failed',
-      failureKind: 'missing-prerequisite',
+      failureKind: 'not-found',
       isTilde: true,
       hasHome: false,
     })

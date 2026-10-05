@@ -37,6 +37,7 @@ const run = async (
       stderr: (text) => {
         stderr += text
       },
+      isStderrTty: false,
       signal,
     },
     runners
