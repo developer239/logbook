@@ -161,6 +161,8 @@ export const fixtureSet20: IFixtureSet = {
     { locator: session(9), harnessVersion: '2.1.4', unknownRecords: [] },
     { locator: session(10), harnessVersion: '2.0.21', unknownRecords: [{ type: 'step-marker', step: 1 }] },
     { locator: session(11), harnessVersion: '2.0.21', unknownRecords: [] },
+    { locator: session(12), harnessVersion: '2.0.21', unknownRecords: [] },
+    { locator: session(13), harnessVersion: '1.18.34', unknownRecords: [] },
   ],
   environment: (home) => environment(home, { OPENCODE_DB: join(home, DATABASE) }),
   // Journal mode DELETE, so a read-only open adds no file.

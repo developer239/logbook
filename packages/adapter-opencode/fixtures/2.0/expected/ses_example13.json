@@ -1,0 +1,96 @@
+{
+  "harnessVersion": "1.18.34",
+  "sessions": [
+    {
+      "events": [
+        {
+          "at": 1772533101000,
+          "dataJson": "{\"error\":\"aborted: The operation was aborted.\"}",
+          "id": "opencode:ses_example13/msg_example37",
+          "kind": "error",
+          "sessionId": "opencode:ses_example13"
+        },
+        {
+          "at": 1772533104000,
+          "dataJson": "{\"messageId\":\"opencode:ses_example13/msg_example37\"}",
+          "id": "opencode:ses_example13/msg_example37:interrupted",
+          "kind": "interrupted",
+          "sessionId": "opencode:ses_example13"
+        }
+      ],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772533100000,
+          "gitBranch": null,
+          "id": "opencode:ses_example13/msg_example36",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "opencode:ses_example13",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "build",
+          "completedAt": 1772533104000,
+          "createdAt": 1772533101000,
+          "gitBranch": null,
+          "id": "opencode:ses_example13/msg_example37",
+          "model": "anthropic/claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772533101000,
+          "seq": 2,
+          "sessionId": "opencode:ses_example13",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example13/msg_example36",
+          "sessionId": "opencode:ses_example13",
+          "text": "export the invoices",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example13/msg_example37",
+          "sessionId": "opencode:ses_example13",
+          "text": "Exporting",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": "build",
+        "endedAt": 1772533104000,
+        "harness": "opencode",
+        "id": "opencode:ses_example13",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/billing",
+        "sourceId": "ses_example13",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772533100000,
+        "title": "Invoice export"
+      },
+      "toolCalls": []
+    }
+  ]
+}
