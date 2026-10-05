@@ -3,6 +3,7 @@ export type { ForgetProgress, ForgetState, ForgetTarget, IForgetSessionsResult }
 export { REWRITE_PROCESS_PATH } from './rewrite/rewrite.js'
 export { CLAUDE_MINIMUM_VERSION, type ClaudeDetection, type ClaudeMissing } from './claude/detect.js'
 export { createEngine, type IEngine, type IEngineOptions, type ILabelCallOptions } from './engine.js'
+export { adapterEnvironment } from './home-path.js'
 export type { IReadOperations } from './read/read.js'
 export type { ISessionFilter } from './read/queries.js'
 export {

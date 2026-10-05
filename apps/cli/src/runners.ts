@@ -1,3 +1,4 @@
+import { createDoctorRunner } from './doctor.js'
 import { createLabelDropRunner } from './labels-drop.js'
 import { createLabelReadRunners } from './labels-read.js'
 import { createLabelRunners } from './labels-run.js'
@@ -15,4 +16,5 @@ export const COMMAND_RUNNERS: Readonly<Record<string, CommandRunner>> = {
   ...createLabelReadRunners(),
   'labels drop': createLabelDropRunner(),
   ...createRewriteRunners(),
+  'doctor': createDoctorRunner(),
 }
