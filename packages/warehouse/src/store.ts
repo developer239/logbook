@@ -10,6 +10,8 @@ import type {
   IHarnessStepRecord,
   IImportedSession,
   ILabelRecord,
+  ILabelRunEndRecord,
+  ILabelRunStartRecord,
   ILinkRecord,
   ISessionCommandRecord,
   ISourceStateRecord,
@@ -385,6 +387,65 @@ export class WarehouseStore implements IWarehouseReader {
         label.name,
         label.value,
         label.labelledAt
+      )
+    }
+  }
+
+  // A labelling run's record: the run and one row per task it runs, and no other, with nothing done yet. Returns the
+  // run's id. Records are never deleted: dropping labels and forgetting sessions leave them.
+  public readonly startLabelRun = (start: ILabelRunStartRecord): number =>
+    this.transaction(() => {
+      this.db
+        .prepare('INSERT INTO label_run (pid, started_at, model) VALUES (?, ?, ?)')
+        .run(start.pid, start.startedAt, start.model)
+      const { id } = this.db.prepare('SELECT last_insert_rowid() AS id').get() as { id: number }
+      const insert = this.db.prepare(
+        'INSERT INTO label_run_task (run_id, task, version, planned, done) VALUES (?, ?, ?, ?, 0)'
+      )
+      for (const task of start.tasks) {
+        insert.run(id, task.task, task.version, task.planned)
+      }
+      return id
+    })
+
+  // The records one of the run's tasks plans to label, counted again when the task starts.
+  public readonly replanLabelRunTask = (runId: number, task: string, planned: number): void => {
+    this.transaction(() => {
+      this.requireRunTask(runId, task)
+      this.db.prepare('UPDATE label_run_task SET planned = ? WHERE run_id = ? AND task = ?').run(planned, runId, task)
+    })
+  }
+
+  // One batch's model labels and the records it labelled, in one transaction, so a task's `done` always equals the
+  // records whose labels are written. The caller counts the records: one record's labels can span several rows.
+  public readonly writeLabelRunBatch = (
+    runId: number,
+    task: string,
+    labels: readonly ILabelRecord[],
+    recordCount: number
+  ): void => {
+    this.transaction(() => {
+      this.requireRunTask(runId, task)
+      this.insertLabels(labels)
+      this.db
+        .prepare('UPDATE label_run_task SET done = done + ? WHERE run_id = ? AND task = ?')
+        .run(recordCount, runId, task)
+    })
+  }
+
+  public readonly endLabelRun = (runId: number, end: ILabelRunEndRecord): void => {
+    this.db
+      .prepare('UPDATE label_run SET ended_at = ?, outcome = ?, error = ? WHERE id = ?')
+      .run(end.endedAt, end.outcome, end.error, runId)
+  }
+
+  // A task the run did not start with would write labels no `done` counts.
+  private readonly requireRunTask = (runId: number, task: string): void => {
+    const row = this.db.prepare('SELECT 1 FROM label_run_task WHERE run_id = ? AND task = ?').get(runId, task)
+    if (row === undefined) {
+      throw new LogBookError(
+        `The labelling run ${String(runId)} has no task ${task}.`,
+        WAREHOUSE_ERROR_CODES.WAREHOUSE_RUN_TASK_UNKNOWN
       )
     }
   }

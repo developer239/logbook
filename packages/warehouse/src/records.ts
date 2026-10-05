@@ -243,3 +243,30 @@ export interface ISyncEndRecord {
   // The first problem line for `partial`, the last line of the ending error for `failed`, null otherwise.
   error: string | null
 }
+
+// One task a labelling run runs, as the engine names it, with the label version of its rows and the records it plans to
+// label.
+export interface ILabelRunTaskRecord {
+  task: string
+  version: number
+  planned: number
+}
+
+export interface ILabelRunStartRecord {
+  // The labelling process's, the pid it writes into the labelling lock.
+  pid: number
+  startedAt: number
+  // Exactly the labeller of the labels the run writes.
+  model: string
+  tasks: readonly ILabelRunTaskRecord[]
+}
+
+// `limit`: the usage or spend limit; `unreachable`: Claude Code could not reach its API.
+export type LabelRunOutcome = 'ok' | 'stopped' | 'limit' | 'unreachable' | 'failed'
+
+export interface ILabelRunEndRecord {
+  endedAt: number
+  outcome: LabelRunOutcome
+  // The message the run ended with for `limit`, `unreachable` and `failed`, null for `ok` and `stopped`.
+  error: string | null
+}
