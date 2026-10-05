@@ -20,6 +20,7 @@
     "record:claude": "node src/testing/record-claude.ts"
   },
   "dependencies": {
+    "@log-book/adapter-api": "workspace:*",
     "@log-book/core": "workspace:*",
     "@log-book/warehouse": "workspace:*"
   },
