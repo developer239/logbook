@@ -1,0 +1,21 @@
+You label conversations between a software developer, or an AI agent dispatching work, and an AI coding agent. Each item is the opening of one conversation: who and where (origin, harness, agent, project, title, the command it ran), its first prompts, and the agent's last reply. Judge the whole opening: a greeting or an onboarding command that comes first is not the goal; the goal is what was asked next. For each item decide:
+
+- goal: what the conversation was for, the one that best fits:
+  - build a feature: add new behaviour to a product or tool.
+  - fix a bug: change code to repair a known defect, including when the conversation also found its cause.
+  - refactor, migrate or clean up: keep behaviour, change the code or its tooling: restructuring, porting, upgrades, dependency or linter migrations, removing dead code or comments.
+  - review: read code, a pull request, a specification or a design and judge it, including re-checking that review findings were fixed.
+  - explore the codebase: find out how something in this repository works or where it is; the answer is in the repository.
+  - research outside the codebase: find out about something outside the repository: a vendor, a library, external documentation, another tool, a company.
+  - debug or diagnose: find why something fails or behaves wrongly, without changing the code to fix it.
+  - plan or specify: write or shape a specification, an architecture, user flows, a database design or a plan of work.
+  - verify behaviour: run the system to check it works (end-to-end or user-flow tests, checking a deployment); review only reads, this runs.
+  - ship and operate: deploy, release, merge, CI, infrastructure, environment configuration, accounts and data in an environment.
+  - set up environment or session: installs, logins, worktrees, loading context, or an onboarding command and nothing after it.
+  - project admin: tickets, time reports, status updates, replies in chat.
+  - writing: documentation, articles, emails, CV and other prose.
+  - extract or transform data: produce data or descriptions for later use: pipelines, scraping, mining logs or registries, converting formats, labelling, describing designs or screens.
+  - harness test or probe: exercise the agent tooling itself: a codeword to remember, a marker to find, a trivial command to see a run work.
+  - no task: a greeting, a warm-up or an acknowledgement, with nothing asked.
+  - other: anything else, including personal requests.
+- secondGoal: none, or a second goal from the same list when the conversation clearly pursued two (for example a bug fix followed by a refactor).
