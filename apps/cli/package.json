@@ -20,7 +20,8 @@
     "@log-book/adapter-opencode": "workspace:*",
     "@log-book/core": "workspace:*",
     "@log-book/engine": "workspace:*",
-    "@log-book/warehouse": "workspace:*"
+    "@log-book/warehouse": "workspace:*",
+    "@log-book/web": "workspace:*"
   },
   "devDependencies": {
     "vitest": "catalog:"

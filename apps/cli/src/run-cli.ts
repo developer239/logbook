@@ -33,12 +33,19 @@ const DEBUG = 'LOGBOOK_DEBUG'
 
 const line = (text: string): string => `${text}\n`
 
-const runCommand = async (runner: CommandRunner, context: ICommandContext, io: ICliIo): Promise<number> => {
+// A one-shot command stopped by a signal exits `interrupted`; the host, which runs until stopped, keeps its own code.
+const runCommand = async (
+  runner: CommandRunner,
+  context: ICommandContext,
+  io: ICliIo,
+  isOneShot: boolean
+): Promise<number> => {
+  const isInterrupted = (): boolean => isOneShot && io.signal.aborted
   try {
     const code = await runner(context)
-    return io.signal.aborted ? exitCodeOf('interrupted') : code
+    return isInterrupted() ? exitCodeOf('interrupted') : code
   } catch (error) {
-    if (io.signal.aborted) {
+    if (isInterrupted()) {
       return exitCodeOf('interrupted')
     }
     const report = errorReport(error, { version: context.version, home: io.home, command: context.command })
@@ -79,5 +86,8 @@ export const runCli = async (io: ICliIo, runners: Readonly<Record<string, Comman
     return exitCodeOf('failure')
   }
   const context = { command: parsed.command, values: parsed.values, positionals: parsed.positionals, io, version }
-  return runCommand(runner, context, io)
+  const isOneShot = COMMANDS.some(
+    (command) => command.words.join(' ') === parsed.command && command.exitCodes.includes('interrupted')
+  )
+  return runCommand(runner, context, io, isOneShot)
 }
