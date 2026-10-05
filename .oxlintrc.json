@@ -436,7 +436,7 @@
       }
     },
     {
-      "files": ["packages/*/src/**/index.ts", "apps/cli/src/grammar.ts"],
+      "files": ["packages/*/src/**/index.ts"],
       "rules": {
         "unicorn/no-empty-file": "off"
       }
