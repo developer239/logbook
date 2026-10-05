@@ -1,0 +1,17 @@
+[
+  {
+    "file": "packages/engine/src/claude/claude-process.ts",
+    "calls": "starts the user's claude binary (--version, auth status --json, -p)",
+    "case": "labelling"
+  },
+  {
+    "file": "packages/engine/src/rewrite/rewrite.ts",
+    "calls": "forks the engine's rewrite process",
+    "case": "local"
+  },
+  {
+    "file": "packages/core/src/subprocess.ts",
+    "calls": "starts a child process for its caller; what it starts is listed at each caller",
+    "case": "local"
+  }
+]
