@@ -1,0 +1,38 @@
+[
+  {
+    "prompt": {
+      "actor": "user",
+      "text": "<command-message>review</command-message>\n<command-name>/review</command-name>\n<command-args>the checkout form</command-args>",
+      "projectDir": "work/shop"
+    },
+    "expected": { "command": "review", "source": "typed", "hasFile": true }
+  },
+  {
+    "prompt": {
+      "actor": "harness",
+      "text": "<command-message>deploy</command-message>\n<command-name>/deploy</command-name>",
+      "projectDir": "work/shop"
+    },
+    "expected": { "command": "deploy", "source": "typed", "hasFile": true }
+  },
+  {
+    "prompt": {
+      "actor": "user",
+      "text": "<command-name>/deploy</command-name>",
+      "projectDir": "work/billing"
+    },
+    "expected": { "command": "deploy", "source": "typed", "hasFile": false }
+  },
+  {
+    "prompt": {
+      "actor": "harness",
+      "text": "<command-name>/context</command-name>",
+      "projectDir": null
+    },
+    "expected": { "command": "context", "source": "typed", "hasFile": false }
+  },
+  {
+    "prompt": { "actor": "user", "text": "Please review the diff", "projectDir": "work/shop" },
+    "expected": null
+  }
+]

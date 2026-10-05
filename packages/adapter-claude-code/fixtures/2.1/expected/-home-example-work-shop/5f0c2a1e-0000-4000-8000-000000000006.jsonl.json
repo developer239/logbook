@@ -1,0 +1,81 @@
+{
+  "harnessVersion": "2.2.3",
+  "sessions": [
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772444400000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000006/5f0c2a1e-0006-4000-8000-000000000001",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000006",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772444404000,
+          "createdAt": 1772444404000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000006/msg_example09",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772444400000,
+          "seq": 1,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000006",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000006/5f0c2a1e-0006-4000-8000-000000000001",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000006",
+          "text": "what does the cart badge count",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000006/msg_example09",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000006",
+          "text": "The number of distinct items in the cart.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": null,
+        "endedAt": 1772444404000,
+        "harness": "claude-code",
+        "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000006",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "5f0c2a1e-0000-4000-8000-000000000006",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772444400000,
+        "title": null
+      },
+      "toolCalls": []
+    }
+  ]
+}

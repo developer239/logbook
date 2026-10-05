@@ -1,0 +1,170 @@
+{
+  "harnessVersion": "2.1.286",
+  "sessions": [
+    {
+      "events": [
+        {
+          "at": 1772443203000,
+          "dataJson": "{\"error\":\"API Error: Connection dropped.\"}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000003/5f0c2a1e-0003-4000-8000-000000000002",
+          "kind": "error",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003"
+        }
+      ],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772443200000,
+          "gitBranch": "fix/invoice-rounding",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000003/5f0c2a1e-0003-4000-8000-000000000001",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "harness",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772443203000,
+          "gitBranch": "fix/invoice-rounding",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000003/5f0c2a1e-0003-4000-8000-000000000002",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772443230000,
+          "gitBranch": "fix/invoice-rounding",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000003/5f0c2a1e-0003-4000-8000-000000000003",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 2,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772443234000,
+          "createdAt": 1772443234000,
+          "gitBranch": "fix/invoice-rounding",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000003/msg_example06",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772443230000,
+          "seq": 3,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "harness",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772443260000,
+          "gitBranch": "fix/invoice-rounding",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000003/5f0c2a1e-0003-4000-8000-000000000005",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 4,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003/5f0c2a1e-0003-4000-8000-000000000001",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003",
+          "text": "summarise the open invoice bugs",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003/5f0c2a1e-0003-4000-8000-000000000002",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003",
+          "text": "API Error: Connection dropped.",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003/5f0c2a1e-0003-4000-8000-000000000003",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003",
+          "text": "try again",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003/msg_example06",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003",
+          "text": "Two open bugs: rounding and the late fee.",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003/5f0c2a1e-0003-4000-8000-000000000005",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000003",
+          "text": "No response requested.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": null,
+        "endedAt": 1772443260000,
+        "harness": "claude-code",
+        "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000003",
+        "isScripted": true,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/billing",
+        "sourceId": "5f0c2a1e-0000-4000-8000-000000000003",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772443200000,
+        "title": null
+      },
+      "toolCalls": []
+    }
+  ]
+}

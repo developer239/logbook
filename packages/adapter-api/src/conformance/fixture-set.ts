@@ -21,9 +21,9 @@ export interface ILocateVariant {
     | { readonly kind: 'not-found'; readonly lookedAt: string | null }
 }
 
-// A committed fixture tree of one tested harness version, with what the suite needs to drive it. Its golden files sit
-// in `<root>/expected/`: `<locator>.json` per unit and `commands.json` with the prompts and their expected answers,
-// project directories relative to the home. `expected/` is never copied into a case's home.
+// A committed fixture tree of one tested harness version, with what the suite needs to drive it. Its harness files sit
+// in `<root>/home/`, which each case copies as its home, and its golden files in `<root>/expected/`: `<locator>.json`
+// per unit and `commands.json` with the prompts and their expected answers, project directories relative to the home.
 export interface IFixtureSet {
   // `major.minor`, one of the adapter's `testedVersions`.
   readonly harnessVersion: string

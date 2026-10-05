@@ -7,6 +7,10 @@
     "packages/*": {
       "project": ["src/**/*.ts"]
     },
+    "packages/adapter-claude-code": {
+      "entry": ["src/index.ts", "src/source-writer/index.ts"],
+      "project": ["src/**/*.ts", "fixtures/**/*.ts"]
+    },
     "packages/demo": {
       "entry": ["src/index.ts", "src/command.ts"],
       "project": ["src/**/*.ts"]
