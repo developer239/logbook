@@ -1,5 +1,7 @@
 import type { ICommandFile, ISessionScript } from '@log-book/adapter-api/source-writer'
 import type {
+  LabelRecordType,
+  LabelTaskName,
   PromptAct,
   Reaction,
   ReactionAbout,
@@ -14,7 +16,7 @@ import type { IModelRates } from '../corpus/models.js'
 import type { IProject, ProjectName } from '../corpus/projects.js'
 import type { IPromptCorpus } from '../corpus/prompts.js'
 import type { IReplyCorpus } from '../corpus/replies.js'
-import type { IShapeCorpus, ShapeName } from '../corpus/shapes.js'
+import type { IShapeCorpus, ShapeName, SubagentTaskName } from '../corpus/shapes.js'
 import type { IFailureLabels, IShellLabels, IToolCorpus } from '../corpus/tools.js'
 import type { IWorkItem } from '../corpus/work.js'
 
@@ -35,6 +37,7 @@ export interface IWriterDeclaration {
 export interface IPlanCorpus {
   projects: Readonly<Record<ProjectName, IProject>>
   work: Readonly<Record<ProjectName, readonly IWorkItem[]>>
+  outcomeNotes: Readonly<Record<SessionOutcome, string>>
   shapes: IShapeCorpus
   prompts: IPromptCorpus
   replies: IReplyCorpus
@@ -49,8 +52,8 @@ export interface IPlanInputs {
   // Epoch milliseconds; every planned time is the anchor minus an offset.
   anchor: number
   labels: LabelsVariant
-  // The labeller of every planned label.
-  model: string
+  // The labelling model, the build's --model; null for the engine's default.
+  model: string | null
   corpus: IPlanCorpus
   writers: readonly IWriterDeclaration[]
 }
@@ -111,6 +114,8 @@ export interface IWriterScripts {
   replies: Record<string, IPlannedReply>
   // The labels each call step stands for, by its key.
   calls: Record<string, ICallLabels>
+  // The task each started session was started with, by its session key.
+  subagents: Record<string, SubagentTaskName>
 }
 
 export interface IPlannedReaction {
@@ -133,4 +138,44 @@ export interface IPlannedReply {
 export interface ICallLabels {
   shell: IShellLabels | null
   failure: IFailureLabels | null
+}
+
+// A model label as the warehouse will hold it, its record named by plan key: a session's or a step's, or
+// `<prompt key>#<n>` for a reaction.
+export interface IPlannedLabel {
+  recordKey: string
+  recordType: LabelRecordType
+  labeller: string
+  version: number
+  name: string
+  value: string
+  labelledAt: number
+  // The number of the labelling run that writes it.
+  run: number
+}
+
+export interface IPlannedRunTask {
+  task: LabelTaskName
+  version: number
+  planned: number
+  done: number
+}
+
+// A labelling run as a user's own command would have recorded it.
+export interface IPlannedRun {
+  number: number
+  // The command it stands for.
+  command: string
+  model: string
+  pid: number
+  startedAt: number
+  endedAt: number
+  outcome: 'ok'
+  error: null
+  tasks: IPlannedRunTask[]
+}
+
+export interface ILabelPlan {
+  labels: IPlannedLabel[]
+  runs: IPlannedRun[]
 }

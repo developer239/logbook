@@ -7,7 +7,7 @@ import { PROMPTS } from './prompts.js'
 import { REPLIES } from './replies.js'
 import { SHAPES } from './shapes.js'
 import { TOOLS } from './tools.js'
-import { WORK } from './work.js'
+import { OUTCOME_NOTES, WORK } from './work.js'
 
 // Every text the dataset holds comes from here, keyed by corpus file so a rule that finds a bad entry names its file
 // and key; each corpus file's data exports are listed under it, so the corpus rules hold them all. The rules find
@@ -21,13 +21,14 @@ export const CORPUS = {
   'replies.ts': { REPLIES },
   'shapes.ts': { SHAPES },
   'tools.ts': { TOOLS },
-  'work.ts': { WORK },
+  'work.ts': { OUTCOME_NOTES, WORK },
 }
 
 // The corpus the planner and the script builder take.
 export const PLAN_CORPUS: IPlanCorpus = {
   projects: PROJECTS,
   work: WORK,
+  outcomeNotes: OUTCOME_NOTES,
   shapes: SHAPES,
   prompts: PROMPTS,
   replies: REPLIES,

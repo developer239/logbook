@@ -1,3 +1,6 @@
+import { LogBookError } from '@log-book/core'
+import { DEFAULT_LABEL_MODEL, isLabelModelId } from '@log-book/engine'
+import { DEMO_ERROR_CODES } from '../errors.js'
 import { createStream, type IRandomStream } from '../random.js'
 import { dayStart, HOUR_MS, MINUTE_MS } from './calendar.js'
 import {
@@ -123,7 +126,7 @@ class SmallPlanner {
       seed,
       anchor,
       labels,
-      labelModel: labels === 'all' ? model : null,
+      labelModel: labels === 'all' ? (model ?? DEFAULT_LABEL_MODEL) : null,
       days: SMALL_DAYS,
       sessions: this.sessions,
     }
@@ -243,4 +246,12 @@ class SmallPlanner {
 
 // The small set's plan: which sessions exist, when, in which writer and project, and how they nest. Pure: it reads no
 // clock, environment, file or locale, and the same inputs give an equal plan.
-export const planDataset = (inputs: IPlanInputs): IPlan => new SmallPlanner(inputs).plan()
+export const planDataset = (inputs: IPlanInputs): IPlan => {
+  if (inputs.model !== null && !isLabelModelId(inputs.model)) {
+    throw new LogBookError(
+      `The labelling model ${JSON.stringify(inputs.model)} is not a model id.`,
+      DEMO_ERROR_CODES.DEMO_PLAN_INVALID
+    )
+  }
+  return new SmallPlanner(inputs).plan()
+}
