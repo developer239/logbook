@@ -90,16 +90,8 @@ const days = range === null || range.key === 'all' ? null : { from: isoDay(range
   </div>
 </header>
 
-<script is:inline>
-  document.querySelector('[data-sync]')?.addEventListener('submit', (event) => {
-    const form = event.currentTarget
-    // The page script moves the URL as the selection changes, so the sync returns
-    // to the page as it is now, unless this is the sync's own page.
-    if (location.pathname !== new URL(form.action).pathname) {
-      form.elements.back.value = location.pathname + location.search
-    }
+<script>
+  import { watchSyncButton } from '../scripts/sync-button'
 
-    form.querySelector('[data-sync-label]').textContent = 'Syncing…'
-    form.querySelector('button').disabled = true
-  })
+  watchSyncButton()
 </script>

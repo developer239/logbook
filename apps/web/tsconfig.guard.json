@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": ["src/lib/guard.ts"],
+  "compilerOptions": {
+    "rootDir": "src/lib",
+    "outDir": "dist"
+  }
+}
