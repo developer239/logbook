@@ -76,3 +76,4 @@ export {
 } from './locks.js'
 export { resolveDataDirectory, resolveWarehousePath } from './paths.js'
 export { RULES_LABELLER, WarehouseStore, type IWarehouseReader, type SourceState } from './store.js'
+export { SCHEMA_DESCRIPTION } from './schema-description.js'
