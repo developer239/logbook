@@ -15,7 +15,7 @@ const withHomeAsTilde = (path: string, homeDir: string): string => {
 
 // CLAUDE_CONFIG_DIR when set and not empty (as Claude Code treats an empty value), resolved against the directory
 // logbook started in when relative; otherwise ~/.claude.
-const resolveConfigDir = (env: IAdapterEnvironment): string => {
+export const resolveConfigDir = (env: IAdapterEnvironment): string => {
   const configured = env.variables[CONFIG_DIR_VARIABLE]
   return configured === undefined || configured === '' ? join(env.homeDir, '.claude') : resolve(env.cwd, configured)
 }
