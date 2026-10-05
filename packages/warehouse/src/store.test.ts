@@ -3,12 +3,14 @@ import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { openSqlite, runSubprocess } from '@log-book/core'
+import { LogBookError, openSqlite, runSubprocess } from '@log-book/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { WAREHOUSE_ERROR_CODES } from './errors.js'
 import type {
   IHarnessDescriptorRecord,
   IImportedSession,
   ILabelRecord,
+  ILabelRunStartRecord,
   ILinkRecord,
   ISessionCommandRecord,
   ISourceStateRecord,
@@ -1041,6 +1043,213 @@ describe('WarehouseStore derived tables and labels', () => {
     // Assert
     expect(replacing).toThrow('cannot store TEXT value in INTEGER column turn.started_at')
     expect(opened.all('SELECT message_id FROM turn')).toStrictEqual([{ message_id: 'test-harness:s1/m1' }])
+  })
+})
+
+const ALL_TASKS = ['shell', 'tool-failure', 'session', 'outcome', 'prompt', 'reply']
+
+const runStart = (tasks: readonly string[]): ILabelRunStartRecord => ({
+  pid: 4242,
+  startedAt: 1_000,
+  model: 'model-a',
+  tasks: tasks.map((task) => ({ task, version: 2, planned: 10 })),
+})
+
+const RUN_TASKS_READ = 'SELECT run_id, task, version, planned, done FROM label_run_task ORDER BY task'
+
+describe('WarehouseStore labelling run record', () => {
+  let directory = ''
+  let store: WarehouseStore | null = null
+
+  const openStore = async (): Promise<WarehouseStore> => {
+    store = await WarehouseStore.open(join(directory, 'warehouse.db'))
+    return store
+  }
+
+  beforeEach(async () => {
+    directory = await realpath(await mkdtemp(join(tmpdir(), 'log-book-label-run-')))
+    vi.stubEnv('XDG_DATA_HOME', join(directory, 'data'))
+  })
+
+  afterEach(async () => {
+    store?.close()
+    store = null
+    await rm(directory, { recursive: true, force: true })
+  })
+
+  it('starts a run with the six tasks, each with nothing done', async () => {
+    // Arrange
+    const opened = await openStore()
+
+    // Act
+    const id = opened.startLabelRun(runStart(ALL_TASKS))
+
+    // Assert
+    expect({
+      runs: opened.all('SELECT id, pid, started_at, ended_at, outcome, error, model FROM label_run'),
+      tasks: opened.all(RUN_TASKS_READ),
+    }).toStrictEqual({
+      runs: [{ id, pid: 4242, started_at: 1_000, ended_at: null, outcome: null, error: null, model: 'model-a' }],
+      tasks: ALL_TASKS.toSorted().map((task) => ({ run_id: id, task, version: 2, planned: 10, done: 0 })),
+    })
+  })
+
+  it("changes only a started task's row, and refuses a task the run did not start with", async () => {
+    // Arrange
+    const opened = await openStore()
+    const id = opened.startLabelRun(runStart(['prompt']))
+
+    // Act
+    opened.replanLabelRunTask(id, 'prompt', 7)
+    opened.writeLabelRunBatch(id, 'prompt', [labelRecord({ recordType: 'message', name: 'act' })], 1)
+    const refusals = [
+      (): void => {
+        opened.replanLabelRunTask(id, 'reply', 3)
+      },
+      (): void => {
+        opened.writeLabelRunBatch(id, 'reply', [labelRecord({ recordType: 'message', recordId: 'm2' })], 1)
+      },
+    ].map((refused) => {
+      try {
+        refused()
+        return null
+      } catch (error: unknown) {
+        return error instanceof LogBookError ? [error.code, error.message] : error
+      }
+    })
+
+    // Assert
+    expect({
+      refusals,
+      tasks: opened.all(RUN_TASKS_READ),
+      labels: opened.all('SELECT record_id, name FROM label'),
+    }).toStrictEqual({
+      refusals: [
+        [WAREHOUSE_ERROR_CODES.WAREHOUSE_RUN_TASK_UNKNOWN, `The labelling run ${String(id)} has no task reply.`],
+        [WAREHOUSE_ERROR_CODES.WAREHOUSE_RUN_TASK_UNKNOWN, `The labelling run ${String(id)} has no task reply.`],
+      ],
+      tasks: [{ run_id: id, task: 'prompt', version: 2, planned: 7, done: 1 }],
+      labels: [{ record_id: 'test-harness:s1/c1', name: 'act' }],
+    })
+  })
+
+  it('writes neither the run nor a task when the list names a task twice', async () => {
+    // Arrange
+    const opened = await openStore()
+
+    // Act
+    const starting = (): number => opened.startLabelRun(runStart(['shell', 'prompt', 'shell']))
+
+    // Assert
+    expect(starting).toThrow('UNIQUE constraint failed: label_run_task.run_id, label_run_task.task')
+    expect({ runs: opened.all('SELECT id FROM label_run'), tasks: opened.all(RUN_TASKS_READ) }).toStrictEqual({
+      runs: [],
+      tasks: [],
+    })
+  })
+
+  it("raises each task's done by the records its batches labelled, with their labels written", async () => {
+    // Arrange
+    const opened = await openStore()
+    const id = opened.startLabelRun(runStart(['prompt', 'shell']))
+
+    // Act
+    opened.writeLabelRunBatch(
+      id,
+      'prompt',
+      [
+        labelRecord({ recordType: 'message', recordId: 'm1', name: 'act' }),
+        labelRecord({ recordType: 'reaction', recordId: 'm1:0', name: 'reaction' }),
+        labelRecord({ recordType: 'message', recordId: 'm2', name: 'act' }),
+      ],
+      2
+    )
+    opened.writeLabelRunBatch(id, 'prompt', [labelRecord({ recordType: 'message', recordId: 'm3', name: 'act' })], 1)
+    opened.writeLabelRunBatch(id, 'shell', [labelRecord({ recordId: 'c1', name: 'purpose' })], 1)
+
+    // Assert
+    expect({
+      done: opened.all('SELECT task, done FROM label_run_task ORDER BY task'),
+      labels: opened.all<{ count: number }>('SELECT count(*) AS count FROM label'),
+    }).toStrictEqual({
+      done: [
+        { task: 'prompt', done: 3 },
+        { task: 'shell', done: 1 },
+      ],
+      labels: [{ count: 5 }],
+    })
+  })
+
+  it('leaves the labels and done unchanged when a batch label insert fails', async () => {
+    // Arrange
+    const opened = await openStore()
+    const id = opened.startLabelRun(runStart(['shell']))
+    const broken = { ...labelRecord({ recordId: 'c2' }), labelledAt: 'soon' as unknown as number }
+
+    // Act
+    const writing = (): void => {
+      opened.writeLabelRunBatch(id, 'shell', [labelRecord({ recordId: 'c1' }), broken], 2)
+    }
+
+    // Assert
+    expect(writing).toThrow('cannot store TEXT value in INTEGER column label.labelled_at')
+    expect({
+      tasks: opened.all('SELECT done FROM label_run_task'),
+      labels: opened.all('SELECT record_id FROM label'),
+    }).toStrictEqual({
+      tasks: [{ done: 0 }],
+      labels: [],
+    })
+  })
+
+  it("re-plans only that task's planned", async () => {
+    // Arrange
+    const opened = await openStore()
+    const id = opened.startLabelRun(runStart(['shell', 'session']))
+    opened.writeLabelRunBatch(id, 'shell', [labelRecord({})], 1)
+
+    // Act
+    opened.replanLabelRunTask(id, 'shell', 40)
+
+    // Assert
+    expect(opened.all(RUN_TASKS_READ)).toStrictEqual([
+      { run_id: id, task: 'session', version: 2, planned: 10, done: 0 },
+      { run_id: id, task: 'shell', version: 2, planned: 40, done: 1 },
+    ])
+  })
+
+  it.each([
+    ['limit', 'You have reached your usage limit.'],
+    ['stopped', null],
+  ] as const)('ends a run with the outcome %s, its time and its error', async (outcome, error) => {
+    // Arrange
+    const opened = await openStore()
+    const id = opened.startLabelRun(runStart(['shell']))
+
+    // Act
+    opened.endLabelRun(id, { endedAt: 9_000, outcome, error })
+
+    // Assert
+    expect(opened.all('SELECT ended_at, outcome, error FROM label_run')).toStrictEqual([
+      { ended_at: 9_000, outcome, error },
+    ])
+  })
+
+  it('keeps the run and its tasks when the labels it wrote are dropped', async () => {
+    // Arrange
+    const opened = await openStore()
+    const id = opened.startLabelRun(runStart(['shell']))
+    opened.writeLabelRunBatch(id, 'shell', [labelRecord({})], 1)
+
+    // Act
+    const dropped = opened.dropLabels('tool_call', 'model-a', ['purpose'])
+
+    // Assert
+    expect({
+      dropped,
+      runs: opened.all('SELECT id FROM label_run'),
+      tasks: opened.all('SELECT task, done FROM label_run_task'),
+    }).toStrictEqual({ dropped: 1, runs: [{ id }], tasks: [{ task: 'shell', done: 1 }] })
   })
 })
 
