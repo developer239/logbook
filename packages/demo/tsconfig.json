@@ -4,7 +4,8 @@
     "rootDir": ".",
     "outDir": "dist",
     "allowJs": true,
-    "checkJs": true
+    "checkJs": true,
+    "resolveJsonModule": true
   },
   "include": ["src", "bin"]
 }

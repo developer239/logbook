@@ -21,6 +21,7 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@log-book/core": "workspace:*"
+    "@log-book/core": "workspace:*",
+    "@log-book/engine": "workspace:*"
   }
 }

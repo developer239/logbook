@@ -1,5 +1,5 @@
 import { readdir, readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { isErrnoCode } from '@log-book/core'
 
 // The generator's sources, relative to the package: whatever they compute must follow from the seed alone.
@@ -228,7 +228,7 @@ const listSources = async (packageDirectory: string, directory: string): Promise
   const entries = await readEntries(join(packageDirectory, directory))
   return entries
     .filter((entry) => entry.isFile() && isScannedSource(entry.name))
-    .map((entry) => join(entry.parentPath, entry.name).slice(packageDirectory.length + 1))
+    .map((entry) => relative(packageDirectory, join(entry.parentPath, entry.name)))
 }
 
 // Every use of an API that makes the generator's output depend on the machine, the clock or the zone it runs on, one
