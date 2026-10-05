@@ -1,5 +1,5 @@
 import { ERROR_CODES, LogBookError } from '@log-book/core'
-import { WAREHOUSE_ERROR_CODES, WarehouseStore } from '@log-book/warehouse'
+import { WarehouseSessionUnknownError, WarehouseStore } from '@log-book/warehouse'
 import type { RewriteStep } from './rewrite-messages.js'
 import { bytesOf, failureOf, rewrittenSize, runRewriteProcess, underBothLocks, type IRewriteEnd } from './rewrite.js'
 
@@ -9,6 +9,8 @@ export type ForgetTarget = { readonly sessions: readonly string[] } | { readonly
 export type ForgetProgress =
   // Before the deletion: the sessions the input named, and the subagent sessions added to them.
   | { readonly phase: 'resolved'; readonly named: number; readonly subagents: number }
+  // Once the sessions are resolved, before the deletion: the warehouse file and its write-ahead log.
+  | { readonly phase: 'started'; readonly sizeBefore: number }
   | { readonly phase: 'step-ended'; readonly step: RewriteStep }
 
 // How far a forget got: nothing forgotten; forgotten, with the compaction stopped or failed; forgotten and rewritten.
@@ -37,9 +39,6 @@ export interface IForgetRun {
 
 type TSettled = Omit<IForgetSessionsResult, 'sizeBefore' | 'durationMs'>
 
-const unknown = (message: string): LogBookError =>
-  new LogBookError(message, WAREHOUSE_ERROR_CODES.WAREHOUSE_SESSION_UNKNOWN)
-
 // One session the id names, by its warehouse id or the id its harness shows; null when it names none.
 const sessionNamed = (store: WarehouseStore, id: string): string | null => {
   const rows = store.all<{ id: string }>('SELECT id FROM session WHERE id = ? OR source_id = ?', id, id)
@@ -57,14 +56,18 @@ const resolve = (store: WarehouseStore, target: ForgetTarget): string[] => {
   if ('project' in target) {
     const ids = store.sessionsInProject(target.project)
     if (ids.length === 0) {
-      throw unknown(`The warehouse holds no session in the project ${target.project}.`)
+      throw new WarehouseSessionUnknownError(`The warehouse holds no session in the project ${target.project}.`, {
+        project: target.project,
+      })
     }
     return ids
   }
   const named = target.sessions.map((id) => ({ id, session: sessionNamed(store, id) }))
   const missing = named.filter(({ session }) => session === null).map(({ id }) => id)
   if (missing.length > 0) {
-    throw unknown(`The warehouse holds no session ${missing.join(', ')}.`)
+    throw new WarehouseSessionUnknownError(`The warehouse holds no session ${missing.join(', ')}.`, {
+      sessions: missing,
+    })
   }
   return [...new Set(named.map(({ session }) => session ?? ''))]
 }
@@ -146,6 +149,7 @@ export const runForget = async ({
   return underBothLocks(warehousePath, 'forget', async () => {
     const sessionIds = await sessionsToForget(warehousePath, target, onProgress)
     const sizeBefore = bytesOf(warehousePath)
+    onProgress({ phase: 'started', sizeBefore })
     const task = { kind: 'forget', sessionIds, forgottenAt: Date.now() } as const
     const end = await runRewriteProcess(warehousePath, task, signal, (step) => {
       onProgress({ phase: 'step-ended', step })

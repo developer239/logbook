@@ -2,7 +2,7 @@ import { chmodSync, existsSync, mkdirSync, statSync } from 'node:fs'
 import { dirname, isAbsolute, relative } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { LogBookError, openSqlite, type ISqliteDb } from '@log-book/core'
-import { WAREHOUSE_ERROR_CODES, WarehouseVersionError } from './errors.js'
+import { WAREHOUSE_ERROR_CODES, WarehouseSessionUnknownError, WarehouseVersionError } from './errors.js'
 import { applyMigrations, readUserVersion, SCHEMA_VERSION } from './migrations.js'
 import { resolveDataDirectory } from './paths.js'
 import type {
@@ -480,10 +480,9 @@ export class WarehouseStore implements IWarehouseReader {
   public readonly forgetSessions = (sessionIds: readonly string[], forgottenAt: number): IForgetResult => {
     const unknown = sessionIds.filter((id) => this.get('SELECT 1 FROM session WHERE id = ?', id) === undefined)
     if (unknown.length > 0) {
-      throw new LogBookError(
-        `The warehouse holds no session ${unknown.join(', ')}.`,
-        WAREHOUSE_ERROR_CODES.WAREHOUSE_SESSION_UNKNOWN
-      )
+      throw new WarehouseSessionUnknownError(`The warehouse holds no session ${unknown.join(', ')}.`, {
+        sessions: unknown,
+      })
     }
     return this.transaction(() => {
       const ids = this.withSubagentDescendants(sessionIds)

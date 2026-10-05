@@ -41,3 +41,16 @@ export class WarehouseLockHeldError extends LogBookError {
     this.path = holder.path
   }
 }
+
+// What a forget named that the warehouse does not hold: session ids, or a project with no session. The words users
+// read are the CLI's; the error carries what matched nothing as values.
+export type UnknownSessionTarget = { readonly sessions: readonly string[] } | { readonly project: string }
+
+export class WarehouseSessionUnknownError extends LogBookError {
+  public readonly target: UnknownSessionTarget
+
+  constructor(message: string, target: UnknownSessionTarget) {
+    super(message, WAREHOUSE_ERROR_CODES.WAREHOUSE_SESSION_UNKNOWN)
+    this.target = target
+  }
+}

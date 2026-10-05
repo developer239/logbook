@@ -3,6 +3,7 @@ import {
   resolveWarehousePath,
   WAREHOUSE_ERROR_CODES,
   WarehouseLockHeldError,
+  WarehouseSessionUnknownError,
   WarehouseVersionError,
 } from '@log-book/warehouse'
 import { tildePath } from './format.js'
@@ -46,11 +47,20 @@ const versionReport = (error: WarehouseVersionError, context: IErrorContext): IE
   }
 }
 
+// What a forget named that matched nothing, each unknown id or the project as the user reads it.
+const unknownSessionLine = ({ target }: WarehouseSessionUnknownError, home: string): string =>
+  'project' in target
+    ? `No session belongs to the project ${tildePath(target.project, home)}.`
+    : `No session matches ${target.sessions.join(', ')}.`
+
 // The exit code and the one line an error ends a command with. The warehouse errors carry their versions as values,
 // so no message is read to find them.
 export const errorReport = (error: unknown, context: IErrorContext): IErrorReport => {
   if (error instanceof WarehouseVersionError) {
     return versionReport(error, context)
+  }
+  if (error instanceof WarehouseSessionUnknownError) {
+    return { code: exitCodeOf('usage error'), line: unknownSessionLine(error, context.home) }
   }
   if (error instanceof WarehouseLockHeldError) {
     return { code: exitCodeOf('already running'), line: lockLine(error, context.command, context.home) }

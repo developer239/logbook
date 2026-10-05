@@ -62,7 +62,13 @@ export {
   type IToolCallRow,
   type ITurnRow,
 } from './rows.js'
-export { WAREHOUSE_ERROR_CODES, WarehouseLockHeldError, WarehouseVersionError } from './errors.js'
+export {
+  WAREHOUSE_ERROR_CODES,
+  WarehouseLockHeldError,
+  WarehouseSessionUnknownError,
+  WarehouseVersionError,
+  type UnknownSessionTarget,
+} from './errors.js'
 export {
   readLabelsLock,
   readSyncLock,
