@@ -1,0 +1,29 @@
+{
+  "is_error": false,
+  "api_error_status": null,
+  "terminal_reason": "completed",
+  "subtype": "success",
+  "result": "<tag>command</tag>\nls -la\n\n<tag>output</tag>\n```\ntotal 8\ndrwx------  3 user  staff   96 Oct  5 10:23 .\ndrwx------@ 22 user  staff  704 Oct  5 10:23 ..\ndrwx------  2 user  staff   64 Oct  5 10:23 .git\n```\n\n<tag>status</tag>\nThe directory listing shows a minimal git repository structure with only the `.git` folder present. The working directory appears to be empty of tracked files.",
+  "usage": {
+    "input_tokens": 394,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "output_tokens": 139,
+    "output_tokens_details": {
+      "thinking_tokens": 0
+    },
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "not_available",
+    "iterations": [],
+    "speed": "standard",
+    "fallback_credit": null
+  }
+}

@@ -16,9 +16,11 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "record:claude": "node src/testing/record-claude.ts"
   },
   "dependencies": {
+    "@log-book/core": "workspace:*",
     "@log-book/warehouse": "workspace:*"
   },
   "devDependencies": {

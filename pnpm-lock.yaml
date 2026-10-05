@@ -109,6 +109,9 @@ importers:
 
   packages/engine:
     dependencies:
+      '@log-book/core':
+        specifier: workspace:*
+        version: link:../core
       '@log-book/warehouse':
         specifier: workspace:*
         version: link:../warehouse
