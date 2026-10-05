@@ -13,5 +13,15 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@log-book/adapter-api": "workspace:*",
+    "@log-book/adapter-claude-code": "workspace:*",
+    "@log-book/adapter-opencode": "workspace:*",
+    "@log-book/engine": "workspace:*",
+    "@log-book/warehouse": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
   }
 }
