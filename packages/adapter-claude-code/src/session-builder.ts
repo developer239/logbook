@@ -43,7 +43,7 @@ const INTERRUPT_MARKER = '[Request interrupted by user'
 // The result Claude Code writes for a tool call the human refused.
 const REJECTION_TEXT = "The user doesn't want to proceed with this tool use"
 
-const isHarnessText = (text: string | null): boolean => {
+export const isHarnessText = (text: string | null): boolean => {
   const start = text?.trimStart() ?? ''
   return HARNESS_PREFIXES.some((prefix) => start.startsWith(prefix))
 }

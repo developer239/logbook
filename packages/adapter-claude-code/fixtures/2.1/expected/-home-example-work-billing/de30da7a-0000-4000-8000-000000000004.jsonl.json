@@ -1,0 +1,158 @@
+{
+  "harnessVersion": "2.1.300",
+  "sessions": [
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532600000,
+          "gitBranch": "fix/invoice-rounding",
+          "id": "claude-code:de30da7a-0000-4000-8000-000000000004/de30da7a-0004-4000-8000-000000000001",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "claude-code:de30da7a-0000-4000-8000-000000000004",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772532603000,
+          "createdAt": 1772532603000,
+          "gitBranch": "fix/invoice-rounding",
+          "id": "claude-code:de30da7a-0000-4000-8000-000000000004/msg_demo9",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772532600000,
+          "seq": 1,
+          "sessionId": "claude-code:de30da7a-0000-4000-8000-000000000004",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "tool",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532604000,
+          "gitBranch": "fix/invoice-rounding",
+          "id": "claude-code:de30da7a-0000-4000-8000-000000000004/de30da7a-0004-4000-8000-000000000004",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 2,
+          "sessionId": "claude-code:de30da7a-0000-4000-8000-000000000004",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "harness",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532610000,
+          "gitBranch": "fix/invoice-rounding",
+          "id": "claude-code:de30da7a-0000-4000-8000-000000000004/de30da7a-0004-4000-8000-000000000005",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 3,
+          "sessionId": "claude-code:de30da7a-0000-4000-8000-000000000004",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:de30da7a-0000-4000-8000-000000000004/de30da7a-0004-4000-8000-000000000001",
+          "sessionId": "claude-code:de30da7a-0000-4000-8000-000000000004",
+          "text": "summarise the open invoice bugs",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:de30da7a-0000-4000-8000-000000000004/msg_demo9",
+          "sessionId": "claude-code:de30da7a-0000-4000-8000-000000000004",
+          "text": "Listing them.",
+          "toolCallId": null
+        },
+        {
+          "idx": 1,
+          "kind": "tool_call",
+          "messageId": "claude-code:de30da7a-0000-4000-8000-000000000004/msg_demo9",
+          "sessionId": "claude-code:de30da7a-0000-4000-8000-000000000004",
+          "text": "Bash {\"command\":\"gh issue list\"}",
+          "toolCallId": "claude-code:de30da7a-0000-4000-8000-000000000004/toolu_demo20"
+        },
+        {
+          "idx": 0,
+          "kind": "tool_result",
+          "messageId": "claude-code:de30da7a-0000-4000-8000-000000000004/de30da7a-0004-4000-8000-000000000004",
+          "sessionId": "claude-code:de30da7a-0000-4000-8000-000000000004",
+          "text": "rounding, late fee",
+          "toolCallId": "claude-code:de30da7a-0000-4000-8000-000000000004/toolu_demo20"
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:de30da7a-0000-4000-8000-000000000004/de30da7a-0004-4000-8000-000000000005",
+          "sessionId": "claude-code:de30da7a-0000-4000-8000-000000000004",
+          "text": "<command-message>deploy</command-message>\n<command-name>/deploy</command-name>\n<command-args>staging</command-args>",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": null,
+        "endedAt": 1772532610000,
+        "harness": "claude-code",
+        "id": "claude-code:de30da7a-0000-4000-8000-000000000004",
+        "isScripted": true,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/billing",
+        "sourceId": "de30da7a-0000-4000-8000-000000000004",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772532600000,
+        "title": null
+      },
+      "toolCalls": [
+        {
+          "bareName": "Bash",
+          "childSessionId": null,
+          "endedAt": 1772532604000,
+          "family": "shell",
+          "id": "claude-code:de30da7a-0000-4000-8000-000000000004/toolu_demo20",
+          "inputJson": "{\"command\":\"gh issue list\"}",
+          "messageId": "claude-code:de30da7a-0000-4000-8000-000000000004/msg_demo9",
+          "name": "Bash",
+          "server": null,
+          "sessionId": "claude-code:de30da7a-0000-4000-8000-000000000004",
+          "startedAt": 1772532603000,
+          "status": "completed"
+        }
+      ]
+    }
+  ]
+}

@@ -188,7 +188,10 @@ const homeContents = async (home: string, files: readonly string[]): Promise<Rec
 const writtenState = async (trip: IRoundTrip, home: string): Promise<unknown> => {
   const { written, commandFiles, env } = await writeHome(trip.writer, home, trip.scripts, trip.commandFiles)
   const location = await locateFound(trip.adapter, env)
-  const units = await withReader(trip.adapter, location, async (reader) => reader.listUnits())
+  // Only what a listing promises: an adapter's unit may carry more, such as absolute paths.
+  const units = (await withReader(trip.adapter, location, async (reader) => reader.listUnits())).map(
+    ({ locator, fingerprint }) => ({ locator, fingerprint })
+  )
   return {
     expected: goldenText({ sessions: [...written.expected], harnessVersion: null }, home),
     ids: [...written.ids.entries()],

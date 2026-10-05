@@ -1,0 +1,275 @@
+{
+  "harnessVersion": "2.1.286",
+  "sessions": [
+    {
+      "events": [
+        {
+          "at": 1772444105000,
+          "dataJson": "{\"error\":\"Overloaded\",\"retryAttempt\":null}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/5f0c2a1e-0013-4000-8000-000000000004",
+          "kind": "error",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013"
+        }
+      ],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772444100000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/5f0c2a1e-0013-4000-8000-000000000001",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772444102000,
+          "createdAt": 1772444102000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/msg_example56",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772444100000,
+          "seq": 1,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "tool",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772444104000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/5f0c2a1e-0013-4000-8000-000000000003",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 2,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772444108000,
+          "createdAt": 1772444108000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/msg_example57",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772444104000,
+          "seq": 3,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "tool",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772444130000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/5f0c2a1e-0013-4000-8000-000000000006",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 4,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/5f0c2a1e-0013-4000-8000-000000000001",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+          "text": "read the coupon docs, then summarise them in a subagent",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "tool_call",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/msg_example56",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+          "text": "WebFetch {\"url\":\"https://example.com/coupons\"}",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/toolu_example56"
+        },
+        {
+          "idx": 0,
+          "kind": "tool_result",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/5f0c2a1e-0013-4000-8000-000000000003",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+          "text": "Coupons take a code and a percentage.",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/toolu_example56"
+        },
+        {
+          "idx": 0,
+          "kind": "tool_call",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/msg_example57",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+          "text": "Agent {\"prompt\":\"summarise the coupon docs\",\"subagent_type\":\"general-purpose\"}",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/toolu_example57"
+        },
+        {
+          "idx": 0,
+          "kind": "tool_result",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/5f0c2a1e-0013-4000-8000-000000000006",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+          "text": "A code and a percentage.",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/toolu_example57"
+        }
+      ],
+      "session": {
+        "agent": null,
+        "endedAt": 1772444130000,
+        "harness": "claude-code",
+        "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "5f0c2a1e-0000-4000-8000-000000000013",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772444100000,
+        "title": null
+      },
+      "toolCalls": [
+        {
+          "bareName": "WebFetch",
+          "childSessionId": null,
+          "endedAt": 1772444104000,
+          "family": "web",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/toolu_example56",
+          "inputJson": "{\"url\":\"https://example.com/coupons\"}",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/msg_example56",
+          "name": "WebFetch",
+          "server": null,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+          "startedAt": 1772444102000,
+          "status": "completed"
+        },
+        {
+          "bareName": "Agent",
+          "childSessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/agent-a6f00000000000013",
+          "endedAt": 1772444130000,
+          "family": "subagent",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/toolu_example57",
+          "inputJson": "{\"prompt\":\"summarise the coupon docs\",\"subagent_type\":\"general-purpose\"}",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/msg_example57",
+          "name": "Agent",
+          "server": null,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+          "startedAt": 1772444108000,
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772444109000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/agent-a6f00000000000013/5f0c2a1e-0013-4000-8000-000000000020",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/agent-a6f00000000000013",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772444120000,
+          "createdAt": 1772444120000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/agent-a6f00000000000013/msg_example58",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772444109000,
+          "seq": 1,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/agent-a6f00000000000013",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/agent-a6f00000000000013/5f0c2a1e-0013-4000-8000-000000000020",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/agent-a6f00000000000013",
+          "text": "summarise the coupon docs",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/agent-a6f00000000000013/msg_example58",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/agent-a6f00000000000013",
+          "text": "A code and a percentage.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": "general-purpose",
+        "endedAt": 1772444120000,
+        "harness": "claude-code",
+        "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/agent-a6f00000000000013",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "5f0c2a1e-0000-4000-8000-000000000013/agent-a6f00000000000013",
+        "spawnedBySessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013",
+        "spawnedByToolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000013/toolu_example57",
+        "startedAt": 1772444109000,
+        "title": null
+      },
+      "toolCalls": []
+    }
+  ]
+}
