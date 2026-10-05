@@ -1,4 +1,6 @@
 export { createEngine, type IEngine, type IEngineOptions } from './engine.js'
+export type { IReadOperations } from './read/read.js'
+export type { ISessionFilter } from './read/queries.js'
 export type { IUnitProgress } from './sync/import-step.js'
 export type { ISyncAdapterResult, ISyncResult, SyncProgress } from './sync/sync.js'
 export { ITEM_CONTENTS, type IItemPart } from './labels/item-contents.js'

@@ -1,4 +1,5 @@
 import type { IHarnessAdapter } from '@log-book/adapter-api'
+import { readOperations, type IReadOperations } from './read/read.js'
 import { checkRegistrations } from './registration.js'
 import { runSync, type ISyncResult, type SyncProgress } from './sync/sync.js'
 
@@ -9,11 +10,12 @@ export interface IEngineOptions {
   readonly onProgress?: (progress: SyncProgress) => void
 }
 
-// The engine's operations; later tickets add read, labels, forget and compact.
+// The engine's operations; later tickets add labels, forget and compact.
 export interface IEngine {
   readonly adapters: readonly IHarnessAdapter[]
   readonly warehousePath: string
   readonly sync: (options: { signal: AbortSignal }) => Promise<ISyncResult>
+  readonly read: IReadOperations
 }
 
 // The one entry point of @log-book/engine. It does no I/O: it checks the adapter list before anything runs and returns
@@ -26,5 +28,6 @@ export const createEngine = (options: IEngineOptions): IEngine => {
     adapters,
     warehousePath,
     sync: async ({ signal }) => runSync({ adapters, warehousePath, onProgress, signal }),
+    read: readOperations(warehousePath),
   }
 }
