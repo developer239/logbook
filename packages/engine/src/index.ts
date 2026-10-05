@@ -1,6 +1,7 @@
 export type { CompactProgress, ICompactResult } from './rewrite/compact.js'
 export type { ForgetProgress, ForgetState, ForgetTarget, IForgetSessionsResult } from './rewrite/forget.js'
 export { REWRITE_PROCESS_PATH } from './rewrite/rewrite.js'
+export { CLAUDE_MINIMUM_VERSION, type ClaudeDetection, type ClaudeMissing } from './claude/detect.js'
 export { createEngine, type IEngine, type IEngineOptions } from './engine.js'
 export type { IReadOperations } from './read/read.js'
 export type { ISessionFilter } from './read/queries.js'
