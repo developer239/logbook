@@ -8,6 +8,7 @@ import {
   type ISourceReader,
 } from '@log-book/adapter-api'
 import { ERROR_CODES, LogBookError } from '@log-book/core'
+import { prepareCommands } from './commands.js'
 import { listTranscriptSets } from './listing.js'
 import { CONFIG_DIR_VARIABLE, locateProjects } from './locate.js'
 
@@ -50,5 +51,5 @@ export const claudeCode = (): IHarnessAdapter => ({
   descriptor: DESCRIPTOR,
   locate: locateProjects,
   openSource,
-  prepareCommands: () => notImplemented('recognise commands'),
+  prepareCommands: (_location, env, projectDirs) => prepareCommands(env, projectDirs),
 })
