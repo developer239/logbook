@@ -1,4 +1,6 @@
-export { REWRITE_PROCESS_PATH, type CompactProgress, type ICompactResult } from './compact/compact.js'
+export type { CompactProgress, ICompactResult } from './rewrite/compact.js'
+export type { ForgetProgress, ForgetState, ForgetTarget, IForgetSessionsResult } from './rewrite/forget.js'
+export { REWRITE_PROCESS_PATH } from './rewrite/rewrite.js'
 export { createEngine, type IEngine, type IEngineOptions } from './engine.js'
 export type { IReadOperations } from './read/read.js'
 export type { ISessionFilter } from './read/queries.js'

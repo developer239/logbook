@@ -17,6 +17,7 @@ import {
 import { createTestWarehouse, insert, type ITestWarehouse } from '@log-book/warehouse/testing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runSync } from '../sync/sync.js'
+import { typeScriptChildArgs } from '../testing/index.js'
 import { runCompact, type ICompactResult } from './compact.js'
 
 const CHILD_TIMEOUT_MS = 20_000
@@ -93,10 +94,11 @@ describe('runCompact', () => {
     runCompact({ warehousePath: opened().path, signal, onProgress: () => undefined })
 
   // A compaction run by a child script, which SIGINT stops.
-  const compactInChild = (): { pid: number; result: Promise<ICompactResult> } => {
+  const compactInChild = async (): Promise<{ pid: number; result: Promise<ICompactResult> }> => {
+    const loader = await typeScriptChildArgs(home)
     const running = spawn(
       process.execPath,
-      [join(home, 'child.mjs'), new URL('compact.ts', import.meta.url).href, opened().path],
+      [...loader, join(home, 'child.mjs'), new URL('compact.ts', import.meta.url).href, opened().path],
       {
         env: { ...process.env, HOME: home },
         stdio: ['ignore', 'pipe', 'inherit'],
@@ -240,7 +242,7 @@ describe('runCompact', () => {
       const { db, path } = opened()
       // The rewrite process waits at its first write until the test ends this transaction.
       db.exec('BEGIN IMMEDIATE')
-      const child = compactInChild()
+      const child = await compactInChild()
       await vi.waitFor(
         () => {
           expect(
@@ -286,7 +288,7 @@ describe('runCompact', () => {
       db.exec('PRAGMA wal_checkpoint(TRUNCATE)')
       const [fileBefore, rowsBefore] = [sha256(path), await tableRows(path)]
       const { page_count: pagesBefore } = await readOnly<{ page_count: number }>(path, 'PRAGMA page_count')
-      const child = compactInChild()
+      const child = await compactInChild()
       const rewriter = await vi.waitFor(
         () => {
           const [pid] = childrenOf(child.pid)
