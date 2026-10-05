@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { PROJECTS } from '../corpus/projects.js'
-import { WORK } from '../corpus/work.js'
+import { PLAN_CORPUS } from '../corpus/index.js'
+import { MODELS } from '../corpus/models.js'
 import { DAY_MS, dayStart, HOUR_MS } from './calendar.js'
 import { planDataset } from './planner.js'
 import type { IPlan, IPlanInputs, IWriterDeclaration } from './types.js'
@@ -36,6 +36,7 @@ const FIRST_WRITER: IWriterDeclaration = {
     'mcp',
     'other',
   ],
+  models: MODELS['claude-code'],
 }
 const SECOND_WRITER: IWriterDeclaration = {
   capabilities: [
@@ -51,6 +52,7 @@ const SECOND_WRITER: IWriterDeclaration = {
     'tool-reject',
   ],
   families: ['shell', 'read', 'edit', 'search', 'web', 'question', 'wait', 'dispatch', 'other'],
+  models: MODELS.opencode,
 }
 
 const inputs = (fields: Partial<IPlanInputs> = {}): IPlanInputs => ({
@@ -59,7 +61,7 @@ const inputs = (fields: Partial<IPlanInputs> = {}): IPlanInputs => ({
   anchor: DEFAULT_ANCHOR,
   labels: 'all',
   model: 'claude-haiku-4-5',
-  corpus: { projects: PROJECTS, work: WORK },
+  corpus: PLAN_CORPUS,
   writers: [FIRST_WRITER, SECOND_WRITER],
   ...fields,
 })

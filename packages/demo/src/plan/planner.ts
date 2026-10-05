@@ -63,18 +63,11 @@ const turnsFrom = (stream: IRandomStream, start: number, spec: ISessionSpec): IP
   return turns
 }
 
-// The turns of a started session inside its parent's turn, and of the one it starts in turn when it holds one.
-const childTurns = (stream: IRandomStream, start: number, holdsNested: boolean): IPlannedTurn[] => {
-  const count = holdsNested ? 1 : stream.integer(1, 2)
-  const turns: IPlannedTurn[] = []
-  let at = start
-  for (let index = 0; index < count; index += 1) {
-    const end = at + (holdsNested && index === 0 ? minutes(stream, 4, 4) : minutes(stream, 1, 2))
-    turns.push({ start: at, end })
-    at = end + stream.integer(20, 40) * SECOND_MS
-  }
-  return turns
-}
+// The one turn of a started session inside its parent's turn, long enough to hold the one it starts in turn when it
+// holds one.
+const childTurns = (stream: IRandomStream, start: number, holdsNested: boolean): IPlannedTurn[] => [
+  { start, end: start + (holdsNested ? minutes(stream, 6, 6) : minutes(stream, 1, 2)) },
+]
 
 const spanOf = (turns: readonly IPlannedTurn[]): { start: number; end: number } => ({
   start: turns[0]?.start ?? 0,
@@ -84,6 +77,8 @@ const spanOf = (turns: readonly IPlannedTurn[]): { start: number; end: number } 
 class SmallPlanner {
   private readonly inputs: IPlanInputs
   private readonly sessions: IPlannedSession[] = []
+  // The scripted session a host session's shell call runs, where its writer declares `scripted`.
+  private scripted: ISessionSpec | undefined
 
   constructor(inputs: IPlanInputs) {
     this.inputs = inputs
@@ -92,7 +87,15 @@ class SmallPlanner {
   public readonly plan = (): IPlan => {
     const { seed, anchor, labels, model } = this.inputs
     const present = SMALL_SESSIONS.filter((spec) => spec.writer < this.inputs.writers.length)
-    const older = createStream(seed, 'small/order').shuffle(present.filter((spec) => spec.recentEnd === undefined))
+    this.scripted = present.find(
+      (spec) =>
+        spec.isScripted === true &&
+        has(this.inputs.writers[spec.writer], 'scripted') &&
+        present.some((host) => host.runsScripted === true && host.writer === spec.writer)
+    )
+    const older = createStream(seed, 'small/order').shuffle(
+      present.filter((spec) => spec.recentEnd === undefined && spec !== this.scripted)
+    )
     const slots = olderSlots(seed)
     let previousEnd = 0
     for (const [index, spec] of older.entries()) {
@@ -157,6 +160,23 @@ class SmallPlanner {
     if (spec.spawn !== undefined && spawning !== undefined) {
       this.addChild(session, spawning, spec.spawn.isNested && has(writer, 'nested-subagent'), stream)
     }
+    const [first] = turns
+    if (spec.runsScripted === true && this.scripted?.writer === spec.writer && first !== undefined) {
+      this.addScripted(session, this.scripted, first, stream)
+    }
+  }
+
+  // The scripted session the host's shell call starts early in its turn: one short turn, the `claude -p` run.
+  private readonly addScripted = (
+    host: IPlannedSession,
+    spec: ISessionSpec,
+    turn: IPlannedTurn,
+    stream: IRandomStream
+  ): void => {
+    const start = turn.start + stream.integer(20, 30) * SECOND_MS
+    const turns = [{ start, end: start + stream.integer(30, 60) * SECOND_MS }]
+    const session = this.topLevelSession(`${host.key}/run1`, spec, this.inputs.writers[spec.writer], turns, stream)
+    this.sessions.push({ ...session, startedFrom: host.key })
   }
 
   // A field that needs a capability only where the writer declares it, and labels only where they are planned.
@@ -183,6 +203,8 @@ class SmallPlanner {
       gitBranch: has(writer, 'git-branch') ? stream.pick(this.inputs.corpus.projects[spec.project].branches) : null,
       agent: has(writer, 'session-agent') ? TOP_LEVEL_AGENT : null,
       work: item.title,
+      shape: spec.shape,
+      startedFrom: null,
       goal: isLabelled ? item.goal : null,
       outcome: isLabelled ? spec.outcome : null,
       turns,

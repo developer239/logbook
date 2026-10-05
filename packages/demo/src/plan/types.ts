@@ -1,5 +1,12 @@
-import type { SessionGoal, SessionOutcome } from '@log-book/engine'
+import type { ICommandFile, ISessionScript } from '@log-book/adapter-api/source-writer'
+import type { PromptAct, SessionGoal, SessionOutcome } from '@log-book/engine'
+import type { ICommandCorpus } from '../corpus/commands.js'
+import type { IModelRates } from '../corpus/models.js'
 import type { IProject, ProjectName } from '../corpus/projects.js'
+import type { IPromptCorpus } from '../corpus/prompts.js'
+import type { IReplyCorpus } from '../corpus/replies.js'
+import type { IShapeCorpus, ShapeName } from '../corpus/shapes.js'
+import type { IToolCorpus } from '../corpus/tools.js'
 import type { IWorkItem } from '../corpus/work.js'
 
 export type DemoSize = 'small'
@@ -12,11 +19,19 @@ export type LabelsVariant = 'all' | 'none'
 export interface IWriterDeclaration {
   capabilities: readonly string[]
   families: readonly string[]
+  // The model ids its harness records, from models.ts.
+  models: readonly string[]
 }
 
 export interface IPlanCorpus {
   projects: Readonly<Record<ProjectName, IProject>>
   work: Readonly<Record<ProjectName, readonly IWorkItem[]>>
+  shapes: IShapeCorpus
+  prompts: IPromptCorpus
+  replies: IReplyCorpus
+  tools: IToolCorpus
+  commands: ICommandCorpus
+  rates: Readonly<Record<string, IModelRates>>
 }
 
 export interface IPlanInputs {
@@ -52,6 +67,10 @@ export interface IPlannedSession {
   agent: string | null
   // The item of work.ts the session works on; a started session works on its parent's.
   work: string
+  // The shapes.ts shape of its turns; a started session takes its parent's and follows the task it was started with.
+  shape: ShapeName
+  // The session whose shell call started this scripted one; the warehouse records no link for it.
+  startedFrom: string | null
   goal: SessionGoal | null
   outcome: SessionOutcome | null
   turns: IPlannedTurn[]
@@ -68,4 +87,13 @@ export interface IPlan {
   days: number
   // In plan order: each top-level session followed by the sessions it started.
   sessions: IPlannedSession[]
+}
+
+// What one writer is given: its command files and its top-level session scripts, each started session inside the spawn
+// step that starts it.
+export interface IWriterScripts {
+  commandFiles: ICommandFile[]
+  scripts: ISessionScript[]
+  // The act of each prompt step, by its key.
+  acts: Record<string, PromptAct>
 }
