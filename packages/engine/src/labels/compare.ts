@@ -1,6 +1,7 @@
-import { ERROR_CODES, LogBookError, MarkdownBuilder } from '@log-book/core'
+import { MarkdownBuilder } from '@log-book/core'
 import { WarehouseStore, type IWarehouseReader, type LabelRecordType } from '@log-book/warehouse'
-import { LABEL_TASK_NAMES, LABEL_TASKS, type ILabelFieldInfo, type ILabelTaskInfo } from './tasks.js'
+import { labelTaskNamed } from './task-named.js'
+import type { ILabelFieldInfo, ILabelTaskInfo } from './tasks.js'
 
 const DISAGREEMENTS_SHOWN = 8
 const PERCENT = 100
@@ -147,13 +148,7 @@ export const compareLabellers = async (options: {
   first: string
   second: string
 }): Promise<string> => {
-  const info = LABEL_TASKS.find((task) => task.name === options.task)
-  if (info === undefined) {
-    throw new LogBookError(
-      `No label task ${options.task}; pass one of ${LABEL_TASK_NAMES.join(', ')}.`,
-      ERROR_CODES.VALIDATION_ERROR
-    )
-  }
+  const info = labelTaskNamed(options.task)
   const mainType: LabelRecordType | undefined = info.recordTypes[0]
   const codeFields = info.fields.filter((field) => field.kind === 'code' || field.kind === 'codes')
   const labellers = { first: options.first, second: options.second }
