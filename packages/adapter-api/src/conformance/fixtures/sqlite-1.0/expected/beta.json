@@ -1,0 +1,81 @@
+{
+  "harnessVersion": null,
+  "sessions": [
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 5000,
+          "gitBranch": null,
+          "id": "minimal-database:beta/m0",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "minimal-database:beta",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 6000,
+          "gitBranch": null,
+          "id": "minimal-database:beta/m1",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "minimal-database:beta",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "minimal-database:beta/m0",
+          "sessionId": "minimal-database:beta",
+          "text": "fix rounding in invoice totals",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "minimal-database:beta/m1",
+          "sessionId": "minimal-database:beta",
+          "text": "Rounded half up.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": null,
+        "endedAt": 6000,
+        "harness": "minimal-database",
+        "id": "minimal-database:beta",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": null,
+        "sourceId": "beta",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 5000,
+        "title": null
+      },
+      "toolCalls": []
+    }
+  ]
+}

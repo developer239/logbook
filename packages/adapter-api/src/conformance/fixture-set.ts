@@ -10,6 +10,17 @@ export interface IFixtureUnit {
   readonly unknownRecords: readonly unknown[]
 }
 
+// One discovery case of the harness's location rule, laid out in a fresh empty home. Paths in `expected` are relative
+// to the home.
+export interface ILocateVariant {
+  readonly name: string
+  readonly arrange: (home: string) => Promise<void>
+  readonly environment: (home: string) => IAdapterEnvironment
+  readonly expected:
+    | { readonly kind: 'found'; readonly root: string }
+    | { readonly kind: 'not-found'; readonly lookedAt: string | null }
+}
+
 // A committed fixture tree of one tested harness version, with what the suite needs to drive it. Its golden files sit
 // in `<root>/expected/`: `<locator>.json` per unit and `commands.json` with the prompts and their expected answers,
 // project directories relative to the home. `expected/` is never copied into a case's home.
@@ -30,6 +41,13 @@ export interface IFixtureSet {
   readonly change: (home: string, locator: string) => Promise<void>
   // Removes one unit between listing and import.
   readonly remove: (home: string, locator: string) => Promise<void>
+  readonly locateVariants: readonly ILocateVariant[]
+  // For a database harness: builds the fixture database the way a running harness leaves it (journal mode WAL, rows
+  // still only in the `-wal`, a writer connection held open) instead of `prepare`, and returns what closes that
+  // connection. Its units must equal the golden files.
+  readonly prepareLive?: (home: string) => Promise<() => void>
+  // Paths relative to the home the adapter never reads: credentials, settings, instruction files.
+  readonly neverRead: readonly string[]
 }
 
 export interface IConformanceCase {
