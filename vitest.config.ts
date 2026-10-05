@@ -57,8 +57,9 @@ export default defineConfig({
     restoreMocks: true,
     unstubEnvs: true,
     unstubGlobals: true,
-    // Refuses any connection or DNS lookup beyond loopback in every test process, the e2e project's included.
-    setupFiles: ['./test/network-guard.ts'],
+    // Refuses any connection or DNS lookup beyond loopback in every test process, the e2e project's included, and
+    // fails a test that leaves a child process running.
+    setupFiles: ['./test/network-guard.ts', './test/child-process-guard.ts'],
     // Three and a half hours behind UTC in winter, so a test assuming UTC or whole-hour offsets fails everywhere.
     env: { TZ: 'America/St_Johns' },
     sequence: { shuffle: process.env.CI === 'true' ? { files: true, tests: true } : false },
