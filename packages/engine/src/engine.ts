@@ -1,11 +1,12 @@
 import type { IHarnessAdapter } from '@log-book/adapter-api'
 import { checkRegistrations } from './registration.js'
+import type { IUnitProgress } from './sync/import-step.js'
 
 export interface IEngineOptions {
   // The registered adapters, as values; the engine loops over them and never names a harness.
   readonly adapters: readonly IHarnessAdapter[]
   readonly warehousePath: string
-  readonly onProgress?: (line: string) => void
+  readonly onProgress?: (progress: IUnitProgress) => void
 }
 
 // The engine's operations; later tickets add sync, read, labels, forget and compact.

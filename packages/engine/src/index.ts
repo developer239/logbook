@@ -1,4 +1,5 @@
 export { createEngine, type IEngine, type IEngineOptions } from './engine.js'
+export type { IUnitProgress } from './sync/import-step.js'
 export { ITEM_CONTENTS, type IItemPart } from './labels/item-contents.js'
 export { DEFAULT_LABEL_MODEL, isLabelModelId } from './labels/model.js'
 export {
