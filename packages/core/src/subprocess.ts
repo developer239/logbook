@@ -82,13 +82,25 @@ export const runSubprocess = ({
       }
     }
 
+    // A stopped child is killed and the call rejects once it has exited, so no caller goes on while it still runs.
+    // Its exit, not its close: a grandchild that holds the pipes open would delay the close.
+    const killThenReject = (error: LogBookError): void => {
+      if (child.exitCode !== null || child.signalCode !== null) {
+        rejectPromise(error)
+        return
+      }
+      child.once('exit', () => {
+        rejectPromise(error)
+      })
+      child.kill('SIGKILL')
+    }
+
     const abortHandler = (): void => {
       if (hasSettled) {
         return
       }
       settle()
-      child.kill('SIGKILL')
-      rejectPromise(new LogBookError(`${label} was aborted.`, ERROR_CODES.ABORTED))
+      killThenReject(new LogBookError(`${label} was aborted.`, ERROR_CODES.ABORTED))
     }
 
     const timer = setTimeout(() => {
@@ -96,8 +108,7 @@ export const runSubprocess = ({
         return
       }
       settle()
-      child.kill('SIGKILL')
-      rejectPromise(new LogBookError(`${label} timed out after ${timeoutMs / 1000}s.`, ERROR_CODES.TIMEOUT))
+      killThenReject(new LogBookError(`${label} timed out after ${timeoutMs / 1000}s.`, ERROR_CODES.TIMEOUT))
     }, timeoutMs)
     cleanups.push(() => clearTimeout(timer))
 
