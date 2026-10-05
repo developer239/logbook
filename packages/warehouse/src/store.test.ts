@@ -1410,10 +1410,11 @@ describe('WarehouseStore forget', () => {
 
     // Assert
     expect(forgetting).toThrow(
-      new LogBookError(
-        'The warehouse holds no session test-harness:ses_missing.',
-        WAREHOUSE_ERROR_CODES.WAREHOUSE_SESSION_UNKNOWN
-      )
+      expect.objectContaining({
+        message: 'The warehouse holds no session test-harness:ses_missing.',
+        code: WAREHOUSE_ERROR_CODES.WAREHOUSE_SESSION_UNKNOWN,
+        target: { sessions: ['test-harness:ses_missing'] },
+      }) as Error
     )
     expect({ counts: counts(opened), forgotten: opened.all('SELECT session_id FROM forgotten') }).toStrictEqual({
       counts: before,

@@ -2,6 +2,7 @@ import { createLabelDropRunner } from './labels-drop.js'
 import { createLabelReadRunners } from './labels-read.js'
 import { createLabelRunners } from './labels-run.js'
 import { createReadRunners } from './read-commands.js'
+import { createRewriteRunners } from './rewrite-commands.js'
 import type { CommandRunner } from './run-cli.js'
 import { createSyncRunner } from './sync.js'
 
@@ -13,4 +14,5 @@ export const COMMAND_RUNNERS: Readonly<Record<string, CommandRunner>> = {
   ...createLabelRunners(),
   ...createLabelReadRunners(),
   'labels drop': createLabelDropRunner(),
+  ...createRewriteRunners(),
 }

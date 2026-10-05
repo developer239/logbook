@@ -212,7 +212,7 @@ describe('runForget', () => {
     }
     expect({
       result,
-      resolved: progress[0],
+      resolved: progress.slice(0, 2),
       main: await rowsOf(MAIN),
       child: await rowsOf(CHILD),
       kept: (await rowsOf(KEPT)).session,
@@ -228,7 +228,10 @@ describe('runForget', () => {
         sizeAfter: bytesOf(opened().path),
         durationMs: expect.any(Number) as number,
       },
-      resolved: { phase: 'resolved', named: 1, subagents: 1 },
+      resolved: [
+        { phase: 'resolved', named: 1, subagents: 1 },
+        { phase: 'started', sizeBefore: bytesBefore },
+      ],
       main: gone,
       child: gone,
       kept: 1,
@@ -283,19 +286,29 @@ describe('runForget', () => {
     })
   })
 
-  it.each<[string, ForgetTarget, string]>([
-    ['an unknown id', { sessions: [MAIN, 'ses_missing'] }, 'The warehouse holds no session ses_missing.'],
+  it.each<[string, ForgetTarget, string, ForgetTarget]>([
+    [
+      'an unknown id',
+      { sessions: [MAIN, 'ses_missing'] },
+      'The warehouse holds no session ses_missing.',
+      { sessions: ['ses_missing'] },
+    ],
     [
       'a project with no session',
       { project: '/home/example/work/empty' },
       'The warehouse holds no session in the project /home/example/work/empty.',
+      { project: '/home/example/work/empty' },
     ],
-  ])('refuses %s, naming it, with nothing deleted', async (_case, target, message) => {
+  ])('refuses %s, naming it, with nothing deleted', async (_case, target, message, unknown) => {
     // Act
     const forgetting = forget(target)
 
     // Assert
-    await expect(forgetting).rejects.toMatchObject({ code: WAREHOUSE_ERROR_CODES.WAREHOUSE_SESSION_UNKNOWN, message })
+    await expect(forgetting).rejects.toMatchObject({
+      code: WAREHOUSE_ERROR_CODES.WAREHOUSE_SESSION_UNKNOWN,
+      message,
+      target: unknown,
+    })
     expect({
       sessions: await count('SELECT count(*) AS count FROM session'),
       forgotten: await count('SELECT count(*) AS count FROM forgotten'),
