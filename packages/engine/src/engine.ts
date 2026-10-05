@@ -1,6 +1,8 @@
 import type { IHarnessAdapter } from '@log-book/adapter-api'
 import { detectClaude, type ClaudeDetection } from './claude/detect.js'
+import { runLabelling, type LabelPreflight, type LabelProgress, type LabelRunResult } from './labels/label-run.js'
 import { planLabelling, type LabelPlan } from './labels/plan.js'
+import type { LabelTaskName } from './labels/tasks.js'
 import { readOperations, type IReadOperations } from './read/read.js'
 import { checkRegistrations } from './registration.js'
 import { runCompact, type CompactProgress, type ICompactResult } from './rewrite/compact.js'
@@ -12,6 +14,13 @@ export interface IEngineOptions {
   readonly adapters: readonly IHarnessAdapter[]
   readonly warehousePath: string
   readonly onProgress?: (progress: SyncProgress) => void
+}
+
+export interface ILabelCallOptions {
+  model?: string
+  signal: AbortSignal
+  onPreflight?: LabelPreflight
+  onProgress?: LabelProgress
 }
 
 // The engine's operations; later tickets add labelling itself.
@@ -35,6 +44,12 @@ export interface IEngine {
     readonly detect: (options?: { signal?: AbortSignal }) => Promise<ClaudeDetection>
     // What a run would send now, taking no lock, writing nothing and starting no `claude -p`.
     readonly plan: (options?: { model?: string; signal?: AbortSignal }) => Promise<LabelPlan>
+    // Every task in order, under the labelling lock, with its run record.
+    readonly update: (options: ILabelCallOptions) => Promise<LabelRunResult>
+    // One task, only the run's own model's labels counting as done, with a sample or a limit.
+    readonly run: (
+      options: ILabelCallOptions & { task: LabelTaskName; sample?: number; limit?: number }
+    ) => Promise<LabelRunResult>
   }
 }
 
@@ -56,6 +71,18 @@ export const createEngine = (options: IEngineOptions): IEngine => {
     labels: {
       detect: async (options = {}) => detectClaude(options.signal),
       plan: async (options = {}) => planLabelling({ ...options, warehousePath }),
+      update: async (options) => runLabelling({ ...options, warehousePath, scope: { kind: 'update' } }),
+      run: async ({ task, sample, limit, ...options }) =>
+        runLabelling({
+          ...options,
+          warehousePath,
+          scope: {
+            kind: 'run',
+            task,
+            ...(sample === undefined ? {} : { sample }),
+            ...(limit === undefined ? {} : { limit }),
+          },
+        }),
     },
   }
 }

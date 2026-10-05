@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto'
 import { RULES_LABELLER, type ILabelRecord, type IWarehouseReader, type WarehouseStore } from '@log-book/warehouse'
 import { runLabelBatch } from '../../claude/batch-call.js'
-import type { BatchResult } from '../../claude/batch-result.js'
+import type { BatchResult, BatchStopCause } from '../../claude/batch-result.js'
+import type { LabelTaskName } from '../tasks.js'
 import { parseBatchAnswer, type IItemAnswer, type TLabelValues } from './batch-answer.js'
 import { renderBatchPrompt } from './batch-prompt.js'
 import type { ILabelItem, ILabelRunTask } from './label-task.js'
@@ -15,14 +16,18 @@ const NO_TEXT = '-'
 const MS_PER_MINUTE = 60_000
 
 // What ended a task early: a stop from the client, which lets the batches in flight finish, or the run's own abort.
-interface ILabelTaskStop {
+export interface ILabelTaskStop {
   outcome: 'limit' | 'unreachable' | 'failed' | 'stopped'
+  // Why a client stop stopped; `aborted` for the run's own signal.
+  cause: BatchStopCause | 'aborted'
   isMissingPrerequisite: boolean
+  // For a process that ended without a result object.
+  exitCode: number | null
   detail: string | null
 }
 
 export interface ILabelTaskResult {
-  task: string
+  task: LabelTaskName
   // The pending records the task set out to label.
   planned: number
   labelled: number
@@ -248,8 +253,14 @@ class TaskRunner {
     }
     this.result.stop =
       result.type === 'aborted'
-        ? { outcome: 'stopped', isMissingPrerequisite: false, detail: null }
-        : { outcome: result.outcome, isMissingPrerequisite: result.isMissingPrerequisite, detail: result.detail }
+        ? { outcome: 'stopped', cause: 'aborted', isMissingPrerequisite: false, exitCode: null, detail: null }
+        : {
+            outcome: result.outcome,
+            cause: result.cause,
+            isMissingPrerequisite: result.isMissingPrerequisite,
+            exitCode: result.exitCode,
+            detail: result.detail,
+          }
   }
 }
 

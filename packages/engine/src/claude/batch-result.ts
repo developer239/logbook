@@ -16,7 +16,7 @@ interface IBatchUsage {
 }
 
 // Why a stop stops: `authentication` and `binary-missing` are missing prerequisites.
-type BatchStopCause = 'limit' | 'unreachable' | 'authentication' | 'binary-missing' | 'error' | 'no-result'
+export type BatchStopCause = 'limit' | 'unreachable' | 'authentication' | 'binary-missing' | 'error' | 'no-result'
 
 // Every way a batch call ends, as a value: an answer; a batch too long to answer, retried in small batches; a timeout,
 // which leaves the batch unanswered while the run continues; the run's own abort; or a stop after the batches in

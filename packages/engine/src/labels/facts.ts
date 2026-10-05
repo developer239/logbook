@@ -1,7 +1,7 @@
 import type { IWarehouseReader, LabelRecordType } from '@log-book/warehouse'
 import type { ClaudeDetection } from '../claude/detect.js'
 import { LABEL_INPUT_RATES } from './rates.js'
-import { pendingRecords } from './runner/label-runner.js'
+import { pendingRecords, type TPendingSelection } from './runner/label-runner.js'
 import type { ILabelRunTask } from './runner/label-task.js'
 import type { LabelTaskName } from './tasks.js'
 
@@ -39,17 +39,18 @@ const harnessCounts = (reader: IWarehouseReader, task: ILabelRunTask, ids: reado
   return new Map(rows.map((row) => [row.harness, row.records]))
 }
 
-// The facts of a run of the tasks, counted with the pending rule of `labels update`. One function builds them for the
+// The facts of a run of the tasks, counted with the run's own pending rule (`labels update`'s for the plan). One function builds them for the
 // plan and for a run's preflight, so a run started right after a plan on an unchanged warehouse counts the same.
 export const buildLabelFacts = (
   reader: IWarehouseReader,
   tasks: readonly ILabelRunTask[],
-  model: string,
-  claude: TReady
+  claude: TReady,
+  selection: Omit<TPendingSelection, 'task'>
 ): ILabelFacts => {
+  const { model } = selection
   const byHarness = new Map<string, number>()
   const counts = tasks.map((task) => {
-    const pending = pendingRecords(reader, { task, model, doneBy: 'any-model' })
+    const pending = pendingRecords(reader, { ...selection, task })
     for (const [harness, records] of harnessCounts(
       reader,
       task,
