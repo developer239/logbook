@@ -45,6 +45,7 @@ export interface ITranscriptLine {
   error?: unknown
   retryAttempt?: unknown
   sourceToolUseID?: unknown
+  toolUseResult?: unknown
   message?: { id?: unknown; model?: unknown; content?: unknown; usage?: IUsage }
 }
 

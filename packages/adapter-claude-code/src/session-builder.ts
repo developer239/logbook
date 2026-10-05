@@ -44,12 +44,22 @@ const isHarnessText = (text: string | null): boolean => {
   return HARNESS_PREFIXES.some((prefix) => start.startsWith(prefix))
 }
 
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
 // A line's source id: its uuid, else its 1-based line number, which is stable for an append-only file.
 const sourceIdOf = (line: ITranscriptLine, number: number): string => stringOf(line.uuid) ?? `line-${String(number)}`
 
 // The text a user line opens with: its string content, or its first text block.
 const openingText = (content: unknown): string | null =>
   stringOf(content) ?? stringOf(blocksOf(content).find((block) => block.type === 'text')?.text)
+
+// The session and call that started a subagent session, and the agent type the call named.
+export interface ISpawnedBy {
+  sessionId: string
+  toolCallId: string | null
+  agent: string | null
+}
 
 // Maps one line of a known kind; false when the line misses a field its record requires.
 type TLineHandler = (line: ITranscriptLine, at: number, number: number) => boolean
@@ -69,6 +79,10 @@ export class SessionBuilder {
   public readonly parts: IPartRecord[] = []
   // By tool call id, in the order the calls were made.
   public readonly toolCalls = new Map<string, IToolCallRecord>()
+  // The agents this transcript's calls started, by agent id: the call whose result reported it.
+  public readonly spawnedAgents = new Map<string, string>()
+  // A subagent call's agent type, by tool call id.
+  private readonly agentTypes = new Map<string, string>()
   public projectDir: string | null = null
   public isScripted = false
   public harnessVersion: string | null = null
@@ -141,7 +155,16 @@ export class SessionBuilder {
     }
   }
 
-  public readonly build = (sourceId: string): IImportedSession => ({
+  // The session a call of this transcript started: the call's child, and its agent type.
+  public readonly linkChild = (callId: string, childSessionId: string): string | null => {
+    const call = this.toolCalls.get(callId)
+    if (call !== undefined) {
+      call.childSessionId = childSessionId
+    }
+    return this.agentTypes.get(callId) ?? null
+  }
+
+  public readonly build = (sourceId: string, spawnedBy: ISpawnedBy | null = null): IImportedSession => ({
     session: {
       id: this.sessionId,
       harness: ADAPTER_ID,
@@ -150,9 +173,9 @@ export class SessionBuilder {
       isScripted: this.isScripted,
       projectDir: this.projectDir,
       title: this.customTitle ?? this.aiTitle,
-      agent: null,
-      spawnedBySessionId: null,
-      spawnedByToolCallId: null,
+      agent: spawnedBy?.agent ?? null,
+      spawnedBySessionId: spawnedBy?.sessionId ?? null,
+      spawnedByToolCallId: spawnedBy?.toolCallId ?? null,
       ...timeSpan(this.messages),
     },
     messages: this.messages,
@@ -306,16 +329,30 @@ export class SessionBuilder {
       endedAt: null,
     })
     this.addPart(message, 'tool_call', `${name} ${inputJson}`, id)
+    const agentType = isObject(block.input) ? stringOf(block.input.subagent_type) : null
+    if (agentType !== null) {
+      this.agentTypes.set(id, agentType)
+    }
   }
 
   // A result whose call is not in the file (a resumed transcript that starts mid-call) keeps its part; no call is
   // invented. A large output Claude Code saved to `tool-results/` arrives as the preview it gave the model.
-  private readonly addToolResult = (message: IMessageRecord, block: IContentBlock, at: number): void => {
+  // A result whose line reports an agent id says the call started that subagent.
+  private readonly addToolResult = (
+    message: IMessageRecord,
+    block: IContentBlock,
+    at: number,
+    line: ITranscriptLine
+  ): void => {
     const callId = stringOf(block.tool_use_id)
     if (callId === null) {
       return
     }
     const id = childIdOf(this.sessionId, callId)
+    const agentId = isObject(line.toolUseResult) ? stringOf(line.toolUseResult.agentId) : null
+    if (agentId !== null) {
+      this.spawnedAgents.set(agentId, id)
+    }
     this.addResultPart(message, toolResultText(block.content), id)
     const call = this.toolCalls.get(id)
     if (call !== undefined) {
@@ -357,7 +394,7 @@ export class SessionBuilder {
       const record = this.newMessage(sourceId, 'tool', 'user', at, line)
       for (const [index, block] of blocks.entries()) {
         if (block.type === 'tool_result') {
-          this.addToolResult(record, block, at)
+          this.addToolResult(record, block, at, line)
         } else {
           this.addUnknownBlock(line, number, index, block, at)
         }

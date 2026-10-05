@@ -1,0 +1,226 @@
+{
+  "harnessVersion": "2.1.286",
+  "sessions": [
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772445480000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/5f0c2a1e-0009-4000-8000-000000000001",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772445482000,
+          "createdAt": 1772445482000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/msg_example43",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772445480000,
+          "seq": 1,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "tool",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772445502000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/5f0c2a1e-0009-4000-8000-000000000003",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 2,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772445510000,
+          "createdAt": 1772445510000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/msg_example44",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772445502000,
+          "seq": 3,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/5f0c2a1e-0009-4000-8000-000000000001",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009",
+          "text": "find where the cart total is computed",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "tool_call",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/msg_example43",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009",
+          "text": "Agent {\"description\":\"Find the cart total\",\"prompt\":\"find the cart total\",\"subagent_type\":\"Explore\"}",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/toolu_example43"
+        },
+        {
+          "idx": 0,
+          "kind": "tool_result",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/5f0c2a1e-0009-4000-8000-000000000003",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009",
+          "text": "In src/cart/cart-total.ts.",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/toolu_example43"
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/msg_example44",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009",
+          "text": "It is computed in src/cart/cart-total.ts.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": null,
+        "endedAt": 1772445510000,
+        "harness": "claude-code",
+        "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000009",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "5f0c2a1e-0000-4000-8000-000000000009",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772445480000,
+        "title": null
+      },
+      "toolCalls": [
+        {
+          "bareName": "Agent",
+          "childSessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/agent-a1f00000000000009",
+          "endedAt": 1772445502000,
+          "family": "subagent",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/toolu_example43",
+          "inputJson": "{\"description\":\"Find the cart total\",\"prompt\":\"find the cart total\",\"subagent_type\":\"Explore\"}",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/msg_example43",
+          "name": "Agent",
+          "server": null,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009",
+          "startedAt": 1772445482000,
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772445483000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/agent-a1f00000000000009/5f0c2a1e-0009-4000-8000-000000000020",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/agent-a1f00000000000009",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772445490000,
+          "createdAt": 1772445490000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/agent-a1f00000000000009/msg_example45",
+          "model": "claude-haiku-4-5",
+          "reportedCost": null,
+          "requestedAt": 1772445483000,
+          "seq": 1,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/agent-a1f00000000000009",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/agent-a1f00000000000009/5f0c2a1e-0009-4000-8000-000000000020",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/agent-a1f00000000000009",
+          "text": "find the cart total",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/agent-a1f00000000000009/msg_example45",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/agent-a1f00000000000009",
+          "text": "In src/cart/cart-total.ts.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": "Explore",
+        "endedAt": 1772445490000,
+        "harness": "claude-code",
+        "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/agent-a1f00000000000009",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "5f0c2a1e-0000-4000-8000-000000000009/agent-a1f00000000000009",
+        "spawnedBySessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009",
+        "spawnedByToolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000009/toolu_example43",
+        "startedAt": 1772445483000,
+        "title": null
+      },
+      "toolCalls": []
+    }
+  ]
+}
