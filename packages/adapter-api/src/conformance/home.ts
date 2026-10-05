@@ -15,9 +15,9 @@ const withTemporaryDirectory = async <TResult>(work: (directory: string) => Prom
   }
 }
 
+// A fixture set's harness files sit in `<root>/home`, beside its golden files in `<root>/expected`.
 const copyTree = async (fixture: IFixtureSet, home: string): Promise<void> => {
-  const expected = expectedDirectory(fixture)
-  await cp(fixture.root, home, { recursive: true, filter: (source) => source !== expected })
+  await cp(join(fixture.root, 'home'), home, { recursive: true })
 }
 
 // Runs one case on a fresh copy of the fixture tree, prepared and deleted afterwards, so no case can change a

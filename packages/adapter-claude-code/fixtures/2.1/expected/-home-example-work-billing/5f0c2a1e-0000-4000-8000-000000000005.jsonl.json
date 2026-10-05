@@ -1,0 +1,25 @@
+{
+  "harnessVersion": null,
+  "sessions": [
+    {
+      "events": [],
+      "messages": [],
+      "parts": [],
+      "session": {
+        "agent": null,
+        "endedAt": null,
+        "harness": "claude-code",
+        "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000005",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": null,
+        "sourceId": "5f0c2a1e-0000-4000-8000-000000000005",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": null,
+        "title": null
+      },
+      "toolCalls": []
+    }
+  ]
+}
