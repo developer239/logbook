@@ -179,3 +179,12 @@ export interface ILabelPlan {
   labels: IPlannedLabel[]
   runs: IPlannedRun[]
 }
+
+// The plan as a build returns it and plan.json holds it: the sessions, each writer's scripts, the labels and their
+// runs, and every plan key's record id, which the writers give when the home is written.
+export interface IDemoPlan {
+  plan: IPlan
+  writers: IWriterScripts[]
+  labels: ILabelPlan
+  ids: Record<string, string>
+}

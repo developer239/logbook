@@ -25,6 +25,7 @@
   "dependencies": {
     "@log-book/adapter-api": "workspace:*",
     "@log-book/core": "workspace:*",
-    "@log-book/engine": "workspace:*"
+    "@log-book/engine": "workspace:*",
+    "@log-book/warehouse": "workspace:*"
   }
 }

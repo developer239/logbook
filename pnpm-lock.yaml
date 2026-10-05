@@ -124,6 +124,9 @@ importers:
       '@log-book/engine':
         specifier: workspace:*
         version: link:../engine
+      '@log-book/warehouse':
+        specifier: workspace:*
+        version: link:../warehouse
     devDependencies:
       '@log-book/adapter-claude-code':
         specifier: workspace:*
