@@ -20,18 +20,31 @@ const manifest = (name: string, fields: Readonly<Record<string, readonly string[
     ),
   })
 
+// Source lines built at run time, so this file's own text holds no import specifier for the check to find when it
+// scans the repository.
+const quoted = (specifier: string): string => `'${specifier}'`
+const importFrom = (clause: string, specifier: string): string => `import ${clause} from ${quoted(specifier)}`
+const exportFrom = (specifier: string): string => `export * from ${quoted(specifier)}`
+const sideEffect = (specifier: string): string => `import ${quoted(specifier)}`
+const dynamicImport = (specifier: string): string => `const loaded = await import(${quoted(specifier)})`
+const requireCall = (specifier: string): string => `const loaded = require(${quoted(specifier)})`
+const source = (...lines: string[]): string => `${lines.join('\n')}\n`
+
 // A workspace that follows the dependency rule, each package declaring and importing what its row allows.
 const FOLLOWING: TFiles = {
   'packages/core/package.json': manifest('@log-book/core'),
   'packages/core/src/index.ts': "export const core = 'example'\n",
   'packages/warehouse/package.json': manifest('@log-book/warehouse', { dependencies: ['@log-book/core'] }),
-  'packages/warehouse/src/index.ts': "import { core } from '@log-book/core'\nexport { core }\n",
+  'packages/warehouse/src/index.ts': source(importFrom('{ core }', '@log-book/core'), 'export { core }'),
   'packages/engine/package.json': manifest('@log-book/engine', {
     dependencies: ['@log-book/core', '@log-book/warehouse'],
   }),
-  'packages/engine/src/index.ts': "export * from '@log-book/warehouse'\nimport './helper.js'\n",
+  'packages/engine/src/index.ts': source(exportFrom('@log-book/warehouse'), sideEffect('./helper.js')),
   'packages/engine/src/helper.ts': 'export {}\n',
-  'packages/engine/src/sync.test.ts': "import { core } from '@log-book/warehouse/testing'\nimport './helper.js'\n",
+  'packages/engine/src/sync.test.ts': source(
+    importFrom('{ core }', '@log-book/warehouse/testing'),
+    sideEffect('./helper.js')
+  ),
   'packages/adapter-opencode/package.json': manifest('@log-book/adapter-opencode', {
     dependencies: ['@log-book/core'],
   }),
@@ -39,15 +52,17 @@ const FOLLOWING: TFiles = {
     dependencies: ['@log-book/engine'],
     devDependencies: ['@log-book/adapter-opencode'],
   }),
-  'packages/demo/src/index.ts': "import { openCodeSourceWriter } from '@log-book/adapter-opencode/source-writer'\n",
+  'packages/demo/src/index.ts': source(
+    importFrom('{ openCodeSourceWriter }', '@log-book/adapter-opencode/source-writer')
+  ),
   'apps/web/package.json': manifest('@log-book/web', {
     dependencies: ['@log-book/core'],
     devDependencies: ['@log-book/demo'],
   }),
-  'apps/web/test/pages.test.ts': "import { buildDemo } from '@log-book/demo'\n",
+  'apps/web/test/pages.test.ts': source(importFrom('{ buildDemo }', '@log-book/demo')),
   'apps/cli/package.json': manifest('@log-book/cli', { dependencies: ['@log-book/engine', '@log-book/web'] }),
   'apps/docs/package.json': manifest('@log-book/docs', { devDependencies: ['@log-book/cli', '@log-book/engine'] }),
-  'apps/docs/reference.ts': "import { COMMANDS } from '@log-book/cli/grammar'\n",
+  'apps/docs/reference.ts': source(importFrom('{ COMMANDS }', '@log-book/cli/grammar')),
   'packages/ci/package.json': manifest('@log-book/ci'),
 }
 
@@ -129,43 +144,43 @@ describe('the dependency rule check', () => {
     [
       'demo imported from web source',
       'apps/web/src/lib/example.ts',
-      "import { buildDemo } from '@log-book/demo'",
+      source(importFrom('{ buildDemo }', '@log-book/demo')),
       'apps/web/src/lib/example.ts:1: @log-book/demo is not allowed in @log-book/web [dependency-rule]',
     ],
     [
       'demo importing an adapter at its root',
       'packages/demo/src/import.ts',
-      "import openCode from '@log-book/adapter-opencode'",
+      source(importFrom('openCode', '@log-book/adapter-opencode')),
       'packages/demo/src/import.ts:1: @log-book/adapter-opencode is not allowed in @log-book/demo [dependency-rule]',
     ],
     [
       'docs importing the cli at its root',
       'apps/docs/cli.ts',
-      "import { runCli } from '@log-book/cli'",
+      source(importFrom('{ runCli }', '@log-book/cli')),
       'apps/docs/cli.ts:1: @log-book/cli is not allowed in @log-book/docs [dependency-rule]',
     ],
     [
       'a relative import into another package',
       'packages/engine/src/sync.test.ts',
-      "import { store } from './helper.js'\nimport '../../warehouse/src/store.js'",
+      source(importFrom('{ store }', './helper.js'), sideEffect('../../warehouse/src/store.js')),
       'packages/engine/src/sync.test.ts:2: ../../warehouse/src/store.js reaches outside @log-book/engine ' +
         '[dependency-rule]',
     ],
     [
       'a dynamic import into another package',
       'packages/engine/src/sync.test.ts',
-      "const core = await import('../../core/src/index.js')",
+      source(dynamicImport('../../core/src/index.js')),
       'packages/engine/src/sync.test.ts:1: ../../core/src/index.js reaches outside @log-book/engine [dependency-rule]',
     ],
     [
       'a require into another package',
       'packages/engine/src/sync.test.ts',
-      "const core = require('../../core/src/index.js')",
+      source(requireCall('../../core/src/index.js')),
       'packages/engine/src/sync.test.ts:1: ../../core/src/index.js reaches outside @log-book/engine [dependency-rule]',
     ],
   ])('refuses %s, naming the file, the line and the specifier', async (_case, file, text, finding) => {
     // Act
-    const found = await findings({ ...FOLLOWING, [file]: `${text}\n` })
+    const found = await findings({ ...FOLLOWING, [file]: text })
 
     // Assert
     expect(found).toStrictEqual([finding])
