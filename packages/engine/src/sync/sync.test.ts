@@ -3,32 +3,17 @@ import { existsSync } from 'node:fs'
 import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import type { IHarnessAdapter, IHarnessDescriptor } from '@log-book/adapter-api'
 import { inventedAdapter, type IInventedAdapterOptions } from '@log-book/adapter-api/testing'
 import { openSqlite } from '@log-book/core'
 import { readSyncLock, takeSyncLock, WarehouseLockHeldError } from '@log-book/warehouse'
 import { createTestWarehouse, type ITestWarehouse } from '@log-book/warehouse/testing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { installFakeClaude } from '../testing/index.js'
+import { installFakeClaude, typeScriptChildArgs } from '../testing/index.js'
 import { runSync, type ISyncResult, type SyncProgress } from './sync.js'
 
 const CHILD_TIMEOUT_MS = 10_000
 const DRIFT = { seen: '20261001120000_example_change', testedUpTo: '20260923013825_example_tested' }
-
-// Lets a child process import the TypeScript sources: Node strips the types, and this maps an import of `./x.js` to
-// `./x.ts` when no `./x.js` exists.
-const RESOLVE_TYPESCRIPT_HOOK = `export const resolve = async (specifier, context, nextResolve) => {
-  try {
-    return await nextResolve(specifier, context)
-  } catch (error) {
-    if (specifier.startsWith('.') && specifier.endsWith('.js')) {
-      return nextResolve(specifier.slice(0, -3) + '.ts', context)
-    }
-    throw error
-  }
-}
-`
 
 // Runs a sync whose listing waits for the signal, after writing the ready file, and prints the outcome.
 const SYNCING_CHILD = `import { writeFileSync } from 'node:fs'
@@ -250,21 +235,14 @@ describe('runSync', () => {
     'leaves the record and the lock as they must be after %s',
     async (signal, expected) => {
       // Arrange
-      const hook = join(home, 'hook.mjs')
-      const register = join(home, 'register.mjs')
       const child = join(home, 'child.mjs')
       const readyFile = join(home, 'ready')
-      await writeFile(hook, RESOLVE_TYPESCRIPT_HOOK)
-      await writeFile(
-        register,
-        `import { register } from 'node:module'\nregister(${JSON.stringify(pathToFileURL(hook).href)})\n`
-      )
+      const loader = await typeScriptChildArgs(home)
       await writeFile(child, SYNCING_CHILD)
       const running = spawn(
         process.execPath,
         [
-          '--import',
-          register,
+          ...loader,
           child,
           new URL('sync.ts', import.meta.url).href,
           import.meta.resolve('@log-book/adapter-api/testing'),

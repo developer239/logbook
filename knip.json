@@ -13,7 +13,7 @@
       "project": ["src/**/*.ts", "fixtures/**/*.ts"]
     },
     "packages/engine": {
-      "entry": ["src/compact/rewrite-process.ts"],
+      "entry": ["src/rewrite/rewrite-process.ts"],
       "project": ["src/**/*.ts"]
     },
     "packages/demo": {

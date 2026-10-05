@@ -492,7 +492,7 @@ export class WarehouseStore implements IWarehouseReader {
   }
 
   // The sessions and their subagent children, their children's children, and so on.
-  private readonly withSubagentDescendants = (sessionIds: readonly string[]): string[] =>
+  public readonly withSubagentDescendants = (sessionIds: readonly string[]): string[] =>
     (
       this.db
         .prepare(

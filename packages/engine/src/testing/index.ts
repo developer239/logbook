@@ -6,3 +6,4 @@ export {
   type IFakeClaudeRecord,
   type IFakeClaudeScenario,
 } from './fake-claude.js'
+export { typeScriptChildArgs } from './typescript-child.js'
