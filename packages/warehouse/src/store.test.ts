@@ -1043,3 +1043,64 @@ describe('WarehouseStore derived tables and labels', () => {
     expect(opened.all('SELECT message_id FROM turn')).toStrictEqual([{ message_id: 'test-harness:s1/m1' }])
   })
 })
+
+describe('WarehouseStore compaction', () => {
+  let directory = ''
+  let store: WarehouseStore | null = null
+
+  beforeEach(async () => {
+    directory = await realpath(await mkdtemp(join(tmpdir(), 'log-book-compact-')))
+    vi.stubEnv('XDG_DATA_HOME', join(directory, 'data'))
+  })
+
+  afterEach(async () => {
+    store?.close()
+    store = null
+    await rm(directory, { recursive: true, force: true })
+  })
+
+  it('still finds a remaining part and none of a deleted one after the full-text index is rewritten', async () => {
+    // Arrange
+    store = await WarehouseStore.open(join(directory, 'warehouse.db'))
+    store.writeImportedUnit(
+      [
+        importedSession('test-harness:s1', 'the build is green'),
+        importedSession('test-harness:s2', 'invoices round up'),
+      ],
+      sourceState('f1')
+    )
+    store.writeImportedUnit([importedSession('test-harness:s1', 'the build is red')], sourceState('f2'))
+
+    // Act
+    store.optimizeFullText()
+
+    // Assert
+    expect({
+      remaining: search(store, 'invoices round up'),
+      replaced: search(store, 'the build is red'),
+      deleted: search(store, 'the build is green'),
+    }).toStrictEqual({ remaining: ['test-harness:s2'], replaced: ['test-harness:s1'], deleted: [] })
+  })
+
+  it('leaves a 0-byte write-ahead log after the checkpoint that ends the compaction', async () => {
+    // Arrange
+    const path = join(directory, 'warehouse.db')
+    store = await WarehouseStore.open(path)
+    store.writeImportedUnit([importedSession('test-harness:s1', 'the build is green')], sourceState('f1'))
+    store.writeImportedUnit([importedSession('test-harness:s1', 'the build is red')], sourceState('f2'))
+    store.optimizeFullText()
+    store.vacuum()
+
+    const pageSize = store.get<{ page_size: number }>('PRAGMA page_size')?.page_size
+
+    // Act
+    const isTruncated = store.truncateWal()
+
+    // Assert
+    expect({ isTruncated, wal: statSync(`${path}-wal`).size, bytes: store.readFileBytes() }).toStrictEqual({
+      isTruncated: true,
+      wal: 0,
+      bytes: store.readPageCount() * (pageSize ?? Number.NaN),
+    })
+  })
+})
