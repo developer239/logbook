@@ -1,0 +1,89 @@
+{
+  "harnessVersion": "1.0.3",
+  "sessions": [
+    {
+      "events": [
+        {
+          "at": 2500,
+          "dataJson": "{\"what\":\"record\",\"type\":\"mystery\",\"harnessVersion\":\"1.0.3\",\"raw\":{\"type\":\"mystery\",\"note\":\"a record this harness version added\",\"at\":2500}}",
+          "id": "minimal-harness:alpha/line-4",
+          "kind": "unknown",
+          "sessionId": "minimal-harness:alpha"
+        }
+      ],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1000,
+          "gitBranch": null,
+          "id": "minimal-harness:alpha/m1",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "minimal-harness:alpha",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 2000,
+          "gitBranch": null,
+          "id": "minimal-harness:alpha/m2",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "minimal-harness:alpha",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "minimal-harness:alpha/m1",
+          "sessionId": "minimal-harness:alpha",
+          "text": "/release the discount code field",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "minimal-harness:alpha/m2",
+          "sessionId": "minimal-harness:alpha",
+          "text": "Released it.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": null,
+        "endedAt": 2000,
+        "harness": "minimal-harness",
+        "id": "minimal-harness:alpha",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "alpha",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1000,
+        "title": null
+      },
+      "toolCalls": []
+    }
+  ]
+}

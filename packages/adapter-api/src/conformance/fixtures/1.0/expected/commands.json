@@ -1,0 +1,18 @@
+[
+  {
+    "prompt": {
+      "actor": "user",
+      "text": "/release the discount code field",
+      "projectDir": "work/shop"
+    },
+    "expected": { "command": "release", "source": "typed", "hasFile": true }
+  },
+  {
+    "prompt": { "actor": "user", "text": "/deploy now", "projectDir": null },
+    "expected": null
+  },
+  {
+    "prompt": { "actor": "harness", "text": "/release from the harness", "projectDir": null },
+    "expected": null
+  }
+]
