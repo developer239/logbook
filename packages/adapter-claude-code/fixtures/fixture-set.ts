@@ -88,6 +88,7 @@ export const fixtureSet21: IFixtureSet = {
     { locator: session(SHOP, 9), harnessVersion: '2.1.286', unknownRecords: [] },
     { locator: session(SHOP, 10), harnessVersion: '2.1.286', unknownRecords: [] },
     { locator: session(SHOP, 11), harnessVersion: '2.1.286', unknownRecords: [] },
+    { locator: session(SHOP, 12), harnessVersion: '2.1.286', unknownRecords: [] },
     {
       locator: session(SHOP, 8),
       harnessVersion: '2.1.286',

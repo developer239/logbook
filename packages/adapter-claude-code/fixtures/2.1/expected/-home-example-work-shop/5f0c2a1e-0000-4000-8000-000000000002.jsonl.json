@@ -2,7 +2,15 @@
   "harnessVersion": "2.1.286",
   "sessions": [
     {
-      "events": [],
+      "events": [
+        {
+          "at": 1772442722000,
+          "dataJson": "{\"messageId\":\"claude-code:5f0c2a1e-0000-4000-8000-000000000002/5f0c2a1e-0002-4000-8000-000000000007\"}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000002/5f0c2a1e-0002-4000-8000-000000000007:interrupted",
+          "kind": "interrupted",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000002"
+        }
+      ],
       "messages": [
         {
           "actor": "harness",

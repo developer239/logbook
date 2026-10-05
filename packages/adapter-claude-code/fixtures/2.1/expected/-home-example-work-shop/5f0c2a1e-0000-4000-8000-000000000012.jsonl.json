@@ -1,0 +1,459 @@
+{
+  "harnessVersion": "2.1.286",
+  "sessions": [
+    {
+      "events": [
+        {
+          "at": 1772443809000,
+          "dataJson": "{\"toolCallId\":\"claude-code:5f0c2a1e-0000-4000-8000-000000000012/toolu_example52\"}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/toolu_example52:rejected",
+          "kind": "tool-rejected",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012"
+        },
+        {
+          "at": 1772443809000,
+          "dataJson": "{\"messageId\":\"claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000004\"}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000004:interrupted",
+          "kind": "interrupted",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012"
+        },
+        {
+          "at": 1772443825000,
+          "dataJson": "{\"messageId\":\"claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000007\"}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000007:interrupted",
+          "kind": "interrupted",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012"
+        }
+      ],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772443800000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000001",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772443802000,
+          "createdAt": 1772443802000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/msg_example52",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772443800000,
+          "seq": 1,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "tool",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772443809000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000003",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 2,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "harness",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772443809000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000004",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 3,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772443820000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000005",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 4,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772443822000,
+          "createdAt": 1772443822000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/msg_example53",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772443820000,
+          "seq": 5,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "harness",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772443825000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000007",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 6,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772443860000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000008",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 7,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772443861000,
+          "createdAt": 1772443861000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/msg_example54",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772443860000,
+          "seq": 8,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "tool",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772443881000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000010",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 9,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000001",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "text": "push the release branch",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "tool_call",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/msg_example52",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "text": "Bash {\"command\":\"git push origin release\"}",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/toolu_example52"
+        },
+        {
+          "idx": 0,
+          "kind": "tool_result",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000003",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "text": "The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). STOP what you are doing and wait for the user to tell you how to proceed.",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/toolu_example52"
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000004",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "text": "[Request interrupted by user for tool use]",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000005",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "text": "do not push until I ask",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/msg_example53",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "text": "Understood, I will wait. Writing the release notes instead.",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000007",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "text": "[Request interrupted by user]",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000008",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "text": "check the changelog in a subagent",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "tool_call",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/msg_example54",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "text": "Agent {\"description\":\"Check the changelog\",\"prompt\":\"check the changelog\",\"subagent_type\":\"Explore\"}",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/toolu_example54"
+        },
+        {
+          "idx": 0,
+          "kind": "tool_result",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/5f0c2a1e-0012-4000-8000-000000000010",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "text": "Stopped.",
+          "toolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/toolu_example54"
+        }
+      ],
+      "session": {
+        "agent": null,
+        "endedAt": 1772443881000,
+        "harness": "claude-code",
+        "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "5f0c2a1e-0000-4000-8000-000000000012",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772443800000,
+        "title": null
+      },
+      "toolCalls": [
+        {
+          "bareName": "Bash",
+          "childSessionId": null,
+          "endedAt": 1772443809000,
+          "family": "shell",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/toolu_example52",
+          "inputJson": "{\"command\":\"git push origin release\"}",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/msg_example52",
+          "name": "Bash",
+          "server": null,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "startedAt": 1772443802000,
+          "status": "error"
+        },
+        {
+          "bareName": "Agent",
+          "childSessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012",
+          "endedAt": 1772443881000,
+          "family": "subagent",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/toolu_example54",
+          "inputJson": "{\"description\":\"Check the changelog\",\"prompt\":\"check the changelog\",\"subagent_type\":\"Explore\"}",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/msg_example54",
+          "name": "Agent",
+          "server": null,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+          "startedAt": 1772443861000,
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "events": [
+        {
+          "at": 1772443866000,
+          "dataJson": "{\"messageId\":\"claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012/5f0c2a1e-0012-4000-8000-000000000022\"}",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012/5f0c2a1e-0012-4000-8000-000000000022:interrupted",
+          "kind": "interrupted",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012"
+        }
+      ],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772443862000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012/5f0c2a1e-0012-4000-8000-000000000020",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 0,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": null,
+          "completedAt": 1772443864000,
+          "createdAt": 1772443864000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012/msg_example55",
+          "model": "claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772443862000,
+          "seq": 1,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012",
+          "sourceRole": "assistant",
+          "tokensCacheRead": 900,
+          "tokensCacheWrite": 0,
+          "tokensInput": 12,
+          "tokensOutput": 40,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "harness",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772443866000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012/5f0c2a1e-0012-4000-8000-000000000022",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 2,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012/5f0c2a1e-0012-4000-8000-000000000020",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012",
+          "text": "check the changelog",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012/msg_example55",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012",
+          "text": "Reading CHANGELOG.md.",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012/5f0c2a1e-0012-4000-8000-000000000022",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012",
+          "text": "[Request interrupted by user]",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": "Explore",
+        "endedAt": 1772443866000,
+        "harness": "claude-code",
+        "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "5f0c2a1e-0000-4000-8000-000000000012/agent-a5f00000000000012",
+        "spawnedBySessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012",
+        "spawnedByToolCallId": "claude-code:5f0c2a1e-0000-4000-8000-000000000012/toolu_example54",
+        "startedAt": 1772443862000,
+        "title": null
+      },
+      "toolCalls": []
+    }
+  ]
+}

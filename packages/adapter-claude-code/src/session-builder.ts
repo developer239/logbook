@@ -38,6 +38,10 @@ const SYNTHETIC_MODEL = '<synthetic>'
 // Text Claude Code writes in the user's name without marking it.
 const HARNESS_PREFIXES = ['<command-name>', '<command-message>', '<local-command-', '[Request interrupted']
 const LOCAL_COMMAND_ROLE = 'system/local_command'
+// What Claude Code writes when the human stops the agent: `[Request interrupted by user]`, or `... for tool use]`.
+const INTERRUPT_MARKER = '[Request interrupted by user'
+// The result Claude Code writes for a tool call the human refused.
+const REJECTION_TEXT = "The user doesn't want to proceed with this tool use"
 
 const isHarnessText = (text: string | null): boolean => {
   const start = text?.trimStart() ?? ''
@@ -46,6 +50,12 @@ const isHarnessText = (text: string | null): boolean => {
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
+
+// A user line whose string content or a text block starts, after leading whitespace, with the interrupt marker.
+const isInterruptMarker = (content: unknown): boolean =>
+  [stringOf(content), ...blocksOf(content).map((block) => (block.type === 'text' ? stringOf(block.text) : null))].some(
+    (text) => text?.trimStart().startsWith(INTERRUPT_MARKER) === true
+  )
 
 // A line's source id: its uuid, else its 1-based line number, which is stable for an append-only file.
 const sourceIdOf = (line: ITranscriptLine, number: number): string => stringOf(line.uuid) ?? `line-${String(number)}`
@@ -353,7 +363,11 @@ export class SessionBuilder {
     if (agentId !== null) {
       this.spawnedAgents.set(agentId, id)
     }
-    this.addResultPart(message, toolResultText(block.content), id)
+    const text = toolResultText(block.content)
+    this.addResultPart(message, text, id)
+    if (text.startsWith(REJECTION_TEXT)) {
+      this.addMarkerEvent(`${callId}:rejected`, 'tool-rejected', { toolCallId: id }, at)
+    }
     const call = this.toolCalls.get(id)
     if (call !== undefined) {
       call.status = block.is_error === true ? 'error' : 'completed'
@@ -408,6 +422,9 @@ export class SessionBuilder {
       this.addUserBlock(record, kind, block, () => this.addUnknownBlock(line, number, index, block, at))
     }
     this.addSkillLoaded(line, sourceId, at)
+    if (isInterruptMarker(content)) {
+      this.addMarkerEvent(`${sourceId}:interrupted`, 'interrupted', { messageId: record.id }, at)
+    }
     return true
   }
 
@@ -424,6 +441,24 @@ export class SessionBuilder {
     } else {
       keepUnknown()
     }
+  }
+
+  // An event Claude Code's own record says happened; its data points at the record and copies none of its text.
+  private readonly addMarkerEvent = (
+    sourceId: string,
+    kind: 'interrupted' | 'tool-rejected',
+    data: Record<string, string>,
+    at: number
+  ): void => {
+    this.events.push({
+      event: {
+        id: childIdOf(this.sessionId, sourceId),
+        sessionId: this.sessionId,
+        kind,
+        dataJson: JSON.stringify(data),
+      },
+      at,
+    })
   }
 
   // A meta line that loads a skill is also a `skill-loaded` event, tied to the Skill call that loaded it when the line
