@@ -9,9 +9,17 @@ import type {
 import type { PromptAct } from '@log-book/engine'
 import type { IReactionTag } from '../corpus/prompts.js'
 import type { ClosingKind } from '../corpus/replies.js'
-import type { ISubagentTask, ITurnShape, TurnEvent, UseName } from '../corpus/shapes.js'
+import {
+  SUBAGENT_TASK_NAMES,
+  type ISubagentTask,
+  type ITurnShape,
+  type SubagentTaskName,
+  type TurnEvent,
+  type UseName,
+} from '../corpus/shapes.js'
 import type { IToolEntry } from '../corpus/tools.js'
 import { createStream, type IRandomStream } from '../random.js'
+import { humanTurns } from './human-turns.js'
 import type {
   ICallLabels,
   IPlan,
@@ -113,6 +121,7 @@ class WriterScripter {
   public readonly calls: Record<string, ICallLabels> = {}
   public readonly reactions: Record<string, IPlannedReaction[]> = {}
   public readonly replies: Record<string, IPlannedReply> = {}
+  public readonly subagents: Record<string, SubagentTaskName> = {}
   // The first top-level interactive session of the plan, in either writer.
   public readonly firstSession: string | null
   private readonly plan: IPlan
@@ -147,6 +156,7 @@ class WriterScripter {
     reactions: this.reactions,
     replies: this.replies,
     calls: this.calls,
+    subagents: this.subagents,
   })
 
   public readonly has = (capability: string): boolean => this.declaration.capabilities.includes(capability)
@@ -202,9 +212,10 @@ class SessionScripter {
   private count = 0
   private isTurnStart = false
   private model: string
-  // The calls of the turn being written and of the one before it, and whether that one was stopped.
-  private turnCalls: string[] = []
-  private previousCalls: string[] = []
+  // The calls since the last human prompt and between the two before it, null before the session's first; and whether
+  // the turn before was stopped.
+  private callsSincePrompt: string[] | null = null
+  private previousCalls: string[] | null = null
   private wasStopped = false
 
   constructor(
@@ -226,6 +237,7 @@ class SessionScripter {
     this.session.turns.forEach((turn, index) => {
       this.turn(turn, this.turnPlan(index))
     })
+    this.keepSelectedReplies()
     return {
       key: this.session.key,
       projectDir: this.writer.corpus.projects[this.session.project].directory,
@@ -235,6 +247,17 @@ class SessionScripter {
       isScripted: this.session.origin === 'scripted',
       harnessVersion: null,
       steps: this.steps,
+    }
+  }
+
+  // Reply codes stay only on the agent's last text before each next human prompt, the replies the engine labels: a
+  // turn a typed command opens has no human prompt of its own.
+  private readonly keepSelectedReplies = (): void => {
+    const selected = new Set(humanTurns(this.steps).flatMap((turn) => (turn.reply === null ? [] : [turn.reply.key])))
+    for (const step of this.steps) {
+      if (step.kind === 'reply' && !selected.has(step.key)) {
+        Reflect.deleteProperty(this.writer.replies, step.key)
+      }
     }
   }
 
@@ -309,8 +332,6 @@ class SessionScripter {
   // developer stopping the agent at its last use.
   private readonly turn = (turn: IPlannedTurn, plan: ITurnPlan): void => {
     const { shape } = plan
-    this.previousCalls = this.turnCalls
-    this.turnCalls = []
     const from = this.openTurn(turn.start, plan)
     const stop = shape.stop === undefined || !this.writer.has(STOP_CAPABILITIES[shape.stop]) ? null : shape.stop
     const names = shape.stop === undefined ? shape.uses : shape.uses.slice(0, -1)
@@ -350,21 +371,38 @@ class SessionScripter {
       })
       at += TYPING_MS
     }
-    const command = shape.command === undefined ? null : this.commandStep(shape.command, at)
-    if (command === null) {
-      const key = this.key('p')
-      this.steps.push({ kind: 'prompt', key, at, text: plan.prompt, images: 0 })
-      this.writer.acts[key] = shape.act
-      this.addReactions(key, plan.reactions)
-    } else {
-      this.steps.push(command)
-    }
+    this.openWith(plan, at)
     this.event(shape, 'failed-request', at)
     this.isTurnStart = true
     return at
   }
 
-  // Numbered from 1; a reaction with steps points at the last call of the turn before.
+  // The turn's command where the writer records it, else its prompt; a template command's body is the human's prompt.
+  private readonly openWith = (plan: ITurnPlan, at: number): void => {
+    const { shape } = plan
+    const command = shape.command === undefined ? null : this.commandStep(shape.command, at)
+    if (command === null) {
+      const key = this.key('p')
+      this.steps.push({ kind: 'prompt', key, at, text: plan.prompt, images: 0 })
+      this.humanPrompt(key, shape.act)
+      this.addReactions(key, plan.reactions)
+      return
+    }
+    this.steps.push(command)
+    if (command.body !== null && shape.command !== undefined) {
+      this.humanPrompt(command.key, this.writer.corpus.commands.files[shape.command.name].act)
+    }
+  }
+
+  // A prompt or a template command: what the human typed as the warehouse records it, with its act.
+  private readonly humanPrompt = (key: string, act: PromptAct): void => {
+    this.writer.acts[key] = act
+    this.previousCalls = this.callsSincePrompt
+    this.callsSincePrompt = []
+  }
+
+  // Numbered from 1; a reaction with steps points at the last call between the human prompt before and this one, and
+  // has none at the session's first human prompt.
   private readonly addReactions = (key: string, tags: readonly IReactionTag[]): void => {
     if (tags.length === 0) {
       return
@@ -372,7 +410,7 @@ class SessionScripter {
     this.writer.reactions[key] = tags.map(({ hasSteps, ...tag }, index) => ({
       number: index + 1,
       ...tag,
-      steps: hasSteps ? this.previousCalls.slice(-1) : [],
+      steps: hasSteps && this.previousCalls !== null ? this.previousCalls.slice(-1) : [],
     }))
   }
 
@@ -506,10 +544,9 @@ class SessionScripter {
     if (name === 'run-scripted') {
       return this.scriptedRun()
     }
-    const { subagents } = this.writer.corpus.shapes
-    const task = Object.entries(subagents).find(([taskName]) => name === `spawn:${taskName}`)
+    const task = SUBAGENT_TASK_NAMES.find((taskName) => name === `spawn:${taskName}`)
     if (task !== undefined) {
-      return this.spawn(task[1])
+      return this.spawn(task, this.writer.corpus.shapes.subagents[task])
     }
     const skill = Object.entries(this.writer.corpus.tools.skills).find(([skillName]) => name === `skill:${skillName}`)
     if (skill !== undefined) {
@@ -563,7 +600,7 @@ class SessionScripter {
   // A stopped call keeps no result: a running one has no end yet, a refused one ends when it was refused.
   private readonly callStep = (entry: IToolEntry, startAt: number, stop: TStop | null): ScriptStep => {
     const key = this.key('c')
-    this.turnCalls.push(key)
+    this.callsSincePrompt?.push(key)
     const status = stop === null ? entry.status : STOP_STATUSES[stop]
     this.writer.calls[key] = { shell: entry.shell, failure: status === 'error' ? entry.failure : null }
     return {
@@ -589,11 +626,12 @@ class SessionScripter {
   })
 
   // The next session the plan starts in this one, at its own times.
-  private readonly spawn = (task: ISubagentTask): IUse | null => {
+  private readonly spawn = (name: SubagentTaskName, task: ISubagentTask): IUse | null => {
     const child = this.children.shift()
     if (child === undefined) {
       return null
     }
+    this.writer.subagents[child.key] = name
     return {
       at: child.start,
       durationMs: child.end - child.start,

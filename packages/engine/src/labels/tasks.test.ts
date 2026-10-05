@@ -47,6 +47,16 @@ describe('tasks/versions.json', () => {
 })
 
 describe('LABEL_TASKS', () => {
+  it('marks only the fields a model may leave out as optional: steps and replyQuote', () => {
+    // Act
+    const optional = LABEL_TASKS.flatMap((task) =>
+      task.fields.filter((field) => field.isOptional).map((field) => field.name)
+    )
+
+    // Assert
+    expect(optional).toStrictEqual(['steps', 'replyQuote'])
+  })
+
   it('follows the task table', () => {
     // Arrange
     const tasks = LABEL_TASKS.map(({ name, recordTypes, batchSize, fields }) => ({

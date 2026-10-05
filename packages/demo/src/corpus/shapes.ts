@@ -1,10 +1,11 @@
-import type { PromptAct, SessionGoal } from '@log-book/engine'
+import type { PromptAct, SessionGoal, SessionOutcome } from '@log-book/engine'
 import type { CommandName } from './commands.js'
 import type { ReactionName } from './prompts.js'
 import type { ClosingKind } from './replies.js'
 import type { ProjectToolName, SharedToolName, SkillName } from './tools.js'
 
-type SubagentTaskName = 'find-tests' | 'check-discount' | 'review-form' | 'check-fix'
+export const SUBAGENT_TASK_NAMES = ['find-tests', 'check-discount', 'review-form', 'check-fix'] as const
+export type SubagentTaskName = (typeof SUBAGENT_TASK_NAMES)[number]
 
 // A tool call of tools.ts, a skill load, the start of a session this one starts, or the `claude -p` shell call that
 // starts the scripted session this one runs.
@@ -59,6 +60,10 @@ export interface ISubagentTask {
   prompt: string
   uses: readonly UseName[]
   result: string
+  // The started session's session and outcome labels; the summary at most 200 characters.
+  goal: SessionGoal
+  outcome: SessionOutcome
+  summary: string
 }
 
 export type ShapeName =
@@ -302,6 +307,9 @@ export const SHAPES: IShapeCorpus = {
       prompt: 'find the tests that cover {file}',
       uses: ['find-files', 'read-test'],
       result: 'One test file covers {file}; it checks a single case.',
+      goal: 'explore the codebase',
+      outcome: 'done',
+      summary: 'Finds the tests that cover a source file.',
     },
     'check-discount': {
       agentType: 'general',
@@ -309,6 +317,9 @@ export const SHAPES: IShapeCorpus = {
       prompt: 'check that the discount code change keeps the cart total right',
       uses: ['read-test', 'spawn:find-tests', 'run-tests'],
       result: 'The cart total stays right with and without a code, and the tests pass.',
+      goal: 'verify behaviour',
+      outcome: 'done',
+      summary: 'Checks that a discount code keeps the cart total right.',
     },
     'review-form': {
       agentType: 'reviewer',
@@ -316,6 +327,9 @@ export const SHAPES: IShapeCorpus = {
       prompt: 'review {file} for missing tests and unclear names',
       uses: ['read-source', 'search-text'],
       result: 'One case has no test: an empty code. The names read clearly.',
+      goal: 'review',
+      outcome: 'done',
+      summary: 'Reviews a source file for missing tests and unclear names.',
     },
     'check-fix': {
       agentType: 'general',
@@ -323,6 +337,9 @@ export const SHAPES: IShapeCorpus = {
       prompt: 'run the invoice tests and report any failure',
       uses: ['read-test', 'run-tests'],
       result: 'Every invoice test passes.',
+      goal: 'verify behaviour',
+      outcome: 'done',
+      summary: 'Runs the invoice tests and reports any failure.',
     },
   },
 }

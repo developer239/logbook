@@ -1,4 +1,5 @@
 import type { SourceCapability } from '@log-book/adapter-api/source-writer'
+import type { PromptAct } from '@log-book/engine'
 
 export type CommandName = 'review' | 'release-notes'
 
@@ -7,6 +8,8 @@ interface ICommandEntry {
   // its body.
   capabilities: readonly SourceCapability[]
   commandFile: string
+  // The act of the prompt a template command's body becomes; a command typed by its name is the harness's, no prompt.
+  act: PromptAct
 }
 
 export interface ICommandCorpus {
@@ -20,11 +23,13 @@ export const COMMANDS: ICommandCorpus = {
   files: {
     'review': {
       capabilities: ['typed-command'],
+      act: 'task',
       commandFile:
         '---\ndescription: Review the current branch\n---\nReview the changes on this branch against main. List missing tests, unclear names and unhandled errors, then give a verdict. Focus on $ARGUMENTS.\n',
     },
     'release-notes': {
       capabilities: ['typed-command', 'template-command'],
+      act: 'task',
       commandFile:
         '---\ndescription: Draft release notes\n---\nDraft the release notes for the next version from the merged changes since the last tag, one line per change, newest first. The version is $1.\n',
     },

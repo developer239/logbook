@@ -29,6 +29,8 @@ export interface ILabelFieldInfo {
   kind: LabelFieldKind
   // The field's vocabulary tuple itself for a code or codes field, null otherwise.
   values: readonly string[] | null
+  // True for a field the model may leave out, so a labelled record can lack it.
+  isOptional: boolean
 }
 
 export interface ILabelTaskInfo {
@@ -45,8 +47,9 @@ const field = (
   name: string,
   recordType: LabelRecordType,
   kind: LabelFieldKind,
-  values: readonly string[] | null = null
-): ILabelFieldInfo => ({ name, recordType, kind, values })
+  values: readonly string[] | null = null,
+  isOptional = false
+): ILabelFieldInfo => ({ name, recordType, kind, values, isOptional })
 
 export const LABEL_TASKS: readonly ILabelTaskInfo[] = [
   {
@@ -93,7 +96,7 @@ export const LABEL_TASKS: readonly ILabelTaskInfo[] = [
       field('about', 'reaction', 'code', REACTION_ABOUT),
       field('target', 'reaction', 'code', REACTION_TARGETS),
       field('reach', 'reaction', 'code', REACTION_REACH),
-      field('steps', 'reaction', 'refs'),
+      field('steps', 'reaction', 'refs', null, true),
     ],
     batchSize: 8,
     version: versions.prompt,
@@ -101,7 +104,7 @@ export const LABEL_TASKS: readonly ILabelTaskInfo[] = [
   {
     name: 'reply',
     recordTypes: ['message'],
-    fields: [field('reply', 'message', 'codes', REPLY_CODES), field('replyQuote', 'message', 'text')],
+    fields: [field('reply', 'message', 'codes', REPLY_CODES), field('replyQuote', 'message', 'text', null, true)],
     batchSize: 8,
     version: versions.reply,
   },
