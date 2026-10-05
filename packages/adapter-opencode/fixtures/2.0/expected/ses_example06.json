@@ -1,0 +1,81 @@
+{
+  "harnessVersion": "2.0.21",
+  "sessions": [
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532400000,
+          "gitBranch": null,
+          "id": "opencode:ses_example06/msg_example17",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "opencode:ses_example06",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "build",
+          "completedAt": 1772532406000,
+          "createdAt": 1772532401000,
+          "gitBranch": null,
+          "id": "opencode:ses_example06/msg_example18",
+          "model": "openai/gpt-5.5",
+          "reportedCost": null,
+          "requestedAt": 1772532401000,
+          "seq": 2,
+          "sessionId": "opencode:ses_example06",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example06/msg_example17",
+          "sessionId": "opencode:ses_example06",
+          "text": "(image)",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example06/msg_example18",
+          "sessionId": "opencode:ses_example06",
+          "text": "The total is rounded down.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": "build",
+        "endedAt": 1772532406000,
+        "harness": "opencode",
+        "id": "opencode:ses_example06",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/billing",
+        "sourceId": "ses_example06",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772532400000,
+        "title": "Invoice screenshot"
+      },
+      "toolCalls": []
+    }
+  ]
+}

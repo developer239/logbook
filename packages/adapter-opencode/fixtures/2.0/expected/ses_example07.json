@@ -1,0 +1,81 @@
+{
+  "harnessVersion": "2.0.21",
+  "sessions": [
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532500000,
+          "gitBranch": null,
+          "id": "opencode:ses_example07/msg_example19",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "opencode:ses_example07",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "build",
+          "completedAt": 1772532505000,
+          "createdAt": 1772532501000,
+          "gitBranch": null,
+          "id": "opencode:ses_example07/msg_example20",
+          "model": "anthropic/claude-sonnet-5-5",
+          "reportedCost": null,
+          "requestedAt": 1772532501000,
+          "seq": 2,
+          "sessionId": "opencode:ses_example07",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example07/msg_example19",
+          "sessionId": "opencode:ses_example07",
+          "text": "\"check the invoice rounding\"",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example07/msg_example20",
+          "sessionId": "opencode:ses_example07",
+          "text": "Rounding is half up.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": "build",
+        "endedAt": 1772532505000,
+        "harness": "opencode",
+        "id": "opencode:ses_example07",
+        "isScripted": true,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/billing",
+        "sourceId": "ses_example07",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772532500000,
+        "title": "Rounding check"
+      },
+      "toolCalls": []
+    }
+  ]
+}

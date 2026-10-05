@@ -1,0 +1,81 @@
+{
+  "harnessVersion": "1.18.34",
+  "sessions": [
+    {
+      "events": [],
+      "messages": [
+        {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772532100000,
+          "gitBranch": null,
+          "id": "opencode:ses_example02/msg_example11",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 1,
+          "sessionId": "opencode:ses_example02",
+          "sourceRole": "user",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
+          "actor": "assistant",
+          "agent": "build",
+          "completedAt": 1772532110000,
+          "createdAt": 1772532101000,
+          "gitBranch": null,
+          "id": "opencode:ses_example02/msg_example12",
+          "model": "anthropic/claude-haiku-4-5",
+          "reportedCost": null,
+          "requestedAt": 1772532101000,
+          "seq": 2,
+          "sessionId": "opencode:ses_example02",
+          "sourceRole": "assistant",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        }
+      ],
+      "parts": [
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example02/msg_example11",
+          "sessionId": "opencode:ses_example02",
+          "text": "what does the cart total include",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "opencode:ses_example02/msg_example12",
+          "sessionId": "opencode:ses_example02",
+          "text": "The item prices times their quantities.",
+          "toolCallId": null
+        }
+      ],
+      "session": {
+        "agent": "build",
+        "endedAt": 1772532110000,
+        "harness": "opencode",
+        "id": "opencode:ses_example02",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/shop",
+        "sourceId": "ses_example02",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772532100000,
+        "title": "Cart total"
+      },
+      "toolCalls": []
+    }
+  ]
+}

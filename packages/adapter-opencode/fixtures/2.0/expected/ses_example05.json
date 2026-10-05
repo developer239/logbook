@@ -1,0 +1,25 @@
+{
+  "harnessVersion": "2.0.21",
+  "sessions": [
+    {
+      "events": [],
+      "messages": [],
+      "parts": [],
+      "session": {
+        "agent": "build",
+        "endedAt": null,
+        "harness": "opencode",
+        "id": "opencode:ses_example05",
+        "isScripted": false,
+        "origin": "interactive",
+        "projectDir": "/home/example/work/billing",
+        "sourceId": "ses_example05",
+        "spawnedBySessionId": null,
+        "spawnedByToolCallId": null,
+        "startedAt": 1772532300000,
+        "title": null
+      },
+      "toolCalls": []
+    }
+  ]
+}
