@@ -6,7 +6,7 @@ import Plugins from './Plugins.astro'
 
 interface Props {
   plugins: ICalledPlugin[]
-  definitions: 'recorded' | 'today'
+  definitions: 'recorded' | 'unrecorded'
 }
 
 const { plugins, definitions } = Astro.props
@@ -40,8 +40,8 @@ const toolCount = sumBy(plugins, (plugin) => plugin.tools.length)
   }
   <p class="plugins__note">
     {
-      definitions === 'today'
-        ? "OpenCode records neither which tools it offered nor their definitions; it sends every tool the agent's permissions allow in full on every request. Sizes are the cookbook's definitions today; unknown for a tool the cookbook no longer has."
+      definitions === 'unrecorded'
+        ? "OpenCode records neither which tools it offered nor their definitions; it sends every tool the agent's permissions allow in full on every request, so their sizes are unknown."
         : 'This transcript is from before Claude Code recorded the tools it offered. Sizes are the definitions it recorded loading; unknown where it recorded none.'
     }
   </p>

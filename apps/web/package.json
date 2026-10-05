@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@astrojs/node": "catalog:",
+    "@log-book/core": "workspace:*",
+    "@log-book/warehouse": "workspace:*",
     "astro": "catalog:"
   },
   "devDependencies": {

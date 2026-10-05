@@ -4,7 +4,6 @@ import { offeredPlugins } from './offered-plugins'
 
 const tool = (name: string, fields: Partial<IPluginTool> = {}): IPluginTool => ({
   name,
-  cookbookModule: null,
   calls: 0,
   nameTokens: 10,
   definitionTokens: null,
@@ -34,18 +33,15 @@ describe('offeredPlugins', () => {
     expect(view.quiet).toEqual([{ name: 'quiet', tools: 2, tokens: 20 }])
   })
 
-  it('should give a block to a server that did not connect, and group the names of its other tools by plugin', () => {
+  it('should give a block to a server that did not connect, and count the names of its other tools', () => {
     const view = offeredPlugins([
-      server('down', [tool('a', { cookbookModule: 'jira' }), tool('b', { cookbookModule: 'jira' }), tool('c')], {
+      server('down', [tool('a'), tool('b'), tool('c')], {
         startState: 'failed',
         error: 'timed out',
       }),
     ])
 
-    expect(view.blocks[0]?.names).toEqual([
-      { cookbookModule: 'jira', tools: 2, tokens: 20 },
-      { cookbookModule: null, tools: 1, tokens: 10 },
-    ])
+    expect(view.blocks[0]?.names).toEqual({ tools: 3, tokens: 30 })
     expect(view.failedCount).toBe(1)
   })
 

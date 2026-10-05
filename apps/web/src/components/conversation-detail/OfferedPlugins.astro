@@ -66,17 +66,15 @@ const plugins = offeredPlugins(servers)
             </li>
           ))}
         </ul>
-        {server.names.length > 0 && (
+        {server.names !== null && (
           <ul class="plugins__list plugins__list--names">
-            {server.names.map((group) => (
-              <li class="plugins__item">
-                <span class="plugins__label">
-                  {group.cookbookModule ?? 'the rest'}
-                  <span class="plugins__by-name">{count(group.tools)} by name only</span>
-                </span>
-                <span class="plugins__size">{tokensCompact(group.tokens)}</span>
-              </li>
-            ))}
+            <li class="plugins__item">
+              <span class="plugins__label">
+                the rest
+                <span class="plugins__by-name">{count(server.names.tools)} by name only</span>
+              </span>
+              <span class="plugins__size">{tokensCompact(server.names.tokens)}</span>
+            </li>
           </ul>
         )}
       </div>

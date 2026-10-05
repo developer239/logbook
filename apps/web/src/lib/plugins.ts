@@ -22,7 +22,6 @@ export type ServerState = 'connected' | 'needs-sign-in' | 'failed' | 'connecting
 
 export interface IPluginTool {
   name: string
-  cookbookModule: string | null
   calls: number
   nameTokens: number
   // Null where the harness recorded none: never loaded, or a transcript from before it did.
@@ -49,7 +48,6 @@ export interface IPluginInputs {
   loadedInTurn: ReadonlyMap<string, number>
   callsOf: (full: string) => number
   definitionOf: (full: string) => number | null
-  moduleOf: (full: string) => string | null
 }
 
 // Claude Code offers a server that needs a sign-in these two tools in place of
@@ -186,7 +184,6 @@ export const pluginServers = (inputs: IPluginInputs): IPluginServer[] | null => 
     const loadTurn = inputs.loadedInTurn.get(full)
     serverOf(tool.server).tools.push({
       name: tool.name,
-      cookbookModule: inputs.moduleOf(full),
       calls: inputs.callsOf(full),
       // The list holds the full name on a line of its own.
       nameTokens: tokensOf(full.length + 1),
@@ -211,7 +208,7 @@ export interface ICalledTool {
 }
 
 export interface ICalledPlugin {
-  // Null for a tool the cookbook no longer has.
+  // Null for a tool outside every MCP server.
   plugin: string | null
   tools: ICalledTool[]
 }

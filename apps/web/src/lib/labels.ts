@@ -155,21 +155,6 @@ export const reactionStatus = (reaction: string): string =>
 
 const pressureRank = (reaction: string): number => REACTION_STATUS.findIndex(([kind]) => kind === reaction)
 
-const COVERAGE_STATUS: Readonly<Record<string, string>> = {
-  contradicted: 'problem',
-  missing: 'problem',
-  partly: 'slow',
-  covered: 'good',
-}
-
-export const NOT_JUDGED = 'not judged'
-
-export const coverageStatus = (coverage: string | null): string =>
-  coverage === null ? 'hollow' : (COVERAGE_STATUS[coverage] ?? 'hollow')
-
-// What a human says of a model's label on the Check page.
-export const VERDICTS = ['right', 'wrong'] as const
-
 export const byPressure = (reactions: readonly string[]): string[] =>
   [...new Set(reactions)].toSorted((left, right) => pressureRank(left) - pressureRank(right))
 

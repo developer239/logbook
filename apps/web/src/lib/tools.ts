@@ -1,5 +1,3 @@
-import type { IOfferedTool } from './queries/tools'
-
 const MCP_NAME = /^mcp__(.+?)__(.+)$/u
 
 export const parseMcpName = (full: string): { server: string; tool: string } | null => {
@@ -11,24 +9,6 @@ export const toolName = (name: string): string => parseMcpName(name)?.tool ?? na
 
 // The shell is Bash in one harness and bash in another.
 export const normalName = (name: string): string => toolName(name).toLowerCase()
-
-// Claude Code calls the cookbook's tools mcp__opencode__<tool>.
-const COOKBOOK_SERVER = 'opencode'
-
-// OpenCode calls the cookbook's tools by their own names.
-export const cookbookTool = (
-  offered: ReadonlyMap<string, IOfferedTool>,
-  harness: string,
-  full: string
-): IOfferedTool | undefined => {
-  if (harness !== 'claude-code') {
-    return offered.get(normalName(full))
-  }
-
-  const mcp = parseMcpName(full)
-
-  return mcp?.server === COOKBOOK_SERVER ? offered.get(mcp.tool.toLowerCase()) : undefined
-}
 
 // The cookbook files its tools under cookbook:<first word of the name>, and
 // its tools that start agents under dispatch.

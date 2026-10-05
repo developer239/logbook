@@ -1,7 +1,0 @@
-.praise-list__rows {
-  --rows-columns: minmax(0, 1fr) 7.5rem minmax(0, 16.25rem) 6.875rem;
-}
-
-.praise-list__title {
-  color: var(--text-2);
-}

@@ -8,12 +8,12 @@ let warehouse: ITestWarehouse
 let queries: typeof Interaction
 
 beforeAll(async () => {
-  warehouse = seedWarehouse(seedRows)
+  warehouse = await seedWarehouse(seedRows)
   queries = await import('./interaction')
 })
 
-afterAll(() => {
-  warehouse.remove()
+afterAll(async () => {
+  await warehouse.remove()
 })
 
 describe('agentReactions', () => {

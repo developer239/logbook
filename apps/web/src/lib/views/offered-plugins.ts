@@ -7,20 +7,18 @@ const isTouched = (tool: IPluginTool): boolean => tool.calls > 0 || tool.loaded 
 const offerOf = (tools: readonly IPluginTool[]): number => sumBy(tools, (tool) => tool.nameTokens)
 
 interface INameOnly {
-  cookbookModule: string | null
   tools: number
   tokens: number
 }
 
-const nameOnly = (tools: readonly IPluginTool[]): INameOnly[] =>
-  [...Map.groupBy(tools, (tool) => tool.cookbookModule)]
-    .map(([cookbookModule, ofPlugin]) => ({ cookbookModule, tools: ofPlugin.length, tokens: offerOf(ofPlugin) }))
-    .toSorted((left, right) => right.tokens - left.tokens)
+// Null where every tool of the server was called or loaded.
+const nameOnly = (tools: readonly IPluginTool[]): INameOnly | null =>
+  tools.length === 0 ? null : { tools: tools.length, tokens: offerOf(tools) }
 
 interface IServerBlock extends IPluginServer {
   used: number
   touched: IPluginTool[]
-  names: INameOnly[]
+  names: INameOnly | null
   later: number[]
 }
 

@@ -1,7 +1,7 @@
 import { chmodSync, existsSync, mkdirSync, statSync } from 'node:fs'
 import { dirname, isAbsolute, relative } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
-import { LogBookError, openSqlite, type ISqliteDb } from '@log-book/core'
+import { LogBookError, openSqlite, openSqliteSync, type ISqliteDb } from '@log-book/core'
 import { WAREHOUSE_ERROR_CODES, WarehouseSessionUnknownError, WarehouseVersionError } from './errors.js'
 import { applyMigrations, readUserVersion, SCHEMA_VERSION } from './migrations.js'
 import { resolveDataDirectory } from './paths.js'
@@ -136,11 +136,12 @@ export class WarehouseStore implements IWarehouseReader {
 
   // Opens for reading only, and only a warehouse at this build's version: under the host, the host has migrated it
   // before a reader opens it. A reader re-checks the version per request, because a newer build can migrate the file.
-  public static readonly openReadOnly = async (path: string): Promise<IWarehouseReader> => {
+  // Synchronous, for the web app, whose reads are synchronous.
+  public static readonly openReadOnlySync = (path: string): IWarehouseReader => {
     if (!existsSync(path)) {
       throw new LogBookError(`No warehouse at ${path}.`, WAREHOUSE_ERROR_CODES.WAREHOUSE_NOT_FOUND)
     }
-    const db = await openSqlite(path, { isReadOnly: true })
+    const db = openSqliteSync(path, { isReadOnly: true })
     const version = readUserVersion(db)
     if (version !== SCHEMA_VERSION) {
       db.close()
@@ -153,6 +154,10 @@ export class WarehouseStore implements IWarehouseReader {
     }
     return new WarehouseStore(db, path, version, version)
   }
+
+  // The same open, its refusal a rejection.
+  public static readonly openReadOnly = async (path: string): Promise<IWarehouseReader> =>
+    Promise.resolve().then(() => WarehouseStore.openReadOnlySync(path))
 
   // node:sqlite returns rows without a prototype; readers get plain objects.
   public readonly all = <TRow>(sql: string, ...params: TSqlParam[]): TRow[] =>

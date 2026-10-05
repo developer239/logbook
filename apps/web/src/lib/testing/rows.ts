@@ -1,6 +1,7 @@
-import type { DatabaseSync } from 'node:sqlite'
+import type { ISqliteDb } from '@log-book/core'
 import { parseRange, type IRange } from '../range'
 import { DAY, MINUTE, SECOND } from '../time'
+import { parseMcpName, toolName } from '../tools'
 import { insert } from './warehouse'
 
 // A small, invented set of conversations that exercises every query: one
@@ -14,7 +15,7 @@ const NOW = START + 2 * DAY
 export const everything = (): IRange => parseRange(new URLSearchParams('range=all'), NOW)
 
 interface ILabel {
-  recordType: 'session' | 'tool_call' | 'message' | 'reaction' | 'rule'
+  recordType: 'session' | 'tool_call' | 'message' | 'reaction'
   recordId: string
   labeller: string
   name: string
@@ -23,7 +24,7 @@ interface ILabel {
   version?: number
 }
 
-const label = (db: DatabaseSync, row: ILabel): void => {
+const label = (db: ISqliteDb, row: ILabel): void => {
   insert(db, 'label', {
     record_type: row.recordType,
     record_id: row.recordId,
@@ -46,12 +47,13 @@ interface ISessionRow {
   endedAt: number
 }
 
-const session = (db: DatabaseSync, row: ISessionRow): void => {
+const session = (db: ISqliteDb, row: ISessionRow): void => {
   insert(db, 'session', {
     id: row.id,
     harness: row.harness,
     source_id: `source-${row.id}`,
     origin: row.origin,
+    is_scripted: row.origin === 'headless' ? 1 : 0,
     title: row.title,
     agent: row.agent ?? null,
     project_dir: row.projectDir ?? null,
@@ -74,7 +76,7 @@ interface IMessageRow {
   tokens?: [number, number, number, number]
 }
 
-const message = (db: DatabaseSync, row: IMessageRow): void => {
+const message = (db: ISqliteDb, row: IMessageRow): void => {
   insert(db, 'message', {
     id: row.id,
     session_id: row.sessionId,
@@ -94,7 +96,7 @@ const message = (db: DatabaseSync, row: IMessageRow): void => {
 }
 
 const part = (
-  db: DatabaseSync,
+  db: ISqliteDb,
   messageId: string,
   sessionId: string,
   idx: number,
@@ -127,7 +129,7 @@ interface ITurnRow {
   parentToolCallId?: string
 }
 
-const turn = (db: DatabaseSync, row: ITurnRow): void => {
+const turn = (db: ISqliteDb, row: ITurnRow): void => {
   insert(db, 'turn', {
     session_id: row.sessionId,
     message_id: row.messageId,
@@ -161,12 +163,14 @@ interface IToolCallRow {
   result?: string
 }
 
-const toolCall = (db: DatabaseSync, row: IToolCallRow): void => {
+const toolCall = (db: ISqliteDb, row: IToolCallRow): void => {
   insert(db, 'tool_call', {
     id: row.id,
     session_id: row.sessionId,
     message_id: row.messageId,
     name: row.name,
+    bare_name: toolName(row.name),
+    server: parseMcpName(row.name)?.server ?? null,
     family: row.family,
     input_json: row.input ?? '{}',
     status: row.status ?? 'completed',
@@ -181,7 +185,7 @@ const toolCall = (db: DatabaseSync, row: IToolCallRow): void => {
 
 const SHELL_TEST = 'check a change (format, lint, typecheck, build)'
 
-export const seedRows = (db: DatabaseSync): void => {
+export const seedRows = (db: ISqliteDb): void => {
   session(db, {
     id: 'ses-me',
     harness: 'claude-code',
@@ -449,20 +453,6 @@ export const seedRows = (db: DatabaseSync): void => {
     at: START + 2 * MINUTE,
     data_json: '{"tools":[{"name":"mcp__opencode__notes_add","chars":400}]}',
   })
-  insert(db, 'tool', {
-    module: 'notes',
-    name: 'notes_add',
-    description: 'Add a note',
-    input_schema: '{"type":"object"}',
-    is_in_claude_code: 1,
-  })
-  insert(db, 'tool', {
-    module: 'notes',
-    name: 'notes_list',
-    description: 'List the notes',
-    input_schema: '{"type":"object"}',
-    is_in_claude_code: 1,
-  })
 
   // An older label of the same name loses to the newer one.
   label(db, {
@@ -542,22 +532,7 @@ export const seedRows = (db: DatabaseSync): void => {
   label(db, { recordType: 'message', recordId: 'm-me-4', labeller: 'sonnet', name: 'act', value: 'task' })
   label(db, { recordType: 'reaction', recordId: 'm-me-4#1', labeller: 'sonnet', name: 'reaction', value: 'teaching' })
   label(db, { recordType: 'reaction', recordId: 'm-me-4#2', labeller: 'sonnet', name: 'reaction', value: 'correction' })
-  label(db, {
-    recordType: 'reaction',
-    recordId: 'm-me-4#2',
-    labeller: 'sonnet',
-    name: 'quote',
-    value: 'use the other widget',
-  })
   label(db, { recordType: 'reaction', recordId: 'm-me-4#3', labeller: 'sonnet', name: 'reaction', value: 'praise' })
-  label(db, { recordType: 'reaction', recordId: 'm-me-4#3', labeller: 'sonnet', name: 'target', value: 'design' })
-  label(db, { recordType: 'reaction', recordId: 'm-me-4#3', labeller: 'sonnet', name: 'quote', value: 'nice layout' })
-
-  // The human judged the correction right, and the teaching wrong when an older labelling numbered it.
-  label(db, { recordType: 'reaction', recordId: 'm-me-4#2', labeller: 'human', name: 'verdict', value: 'right' })
-  label(db, { recordType: 'reaction', recordId: 'm-me-4#2', labeller: 'human', name: 'verdictOn', value: 'sonnet v1' })
-  label(db, { recordType: 'reaction', recordId: 'm-me-4#1', labeller: 'human', name: 'verdict', value: 'wrong' })
-  label(db, { recordType: 'reaction', recordId: 'm-me-4#1', labeller: 'human', name: 'verdictOn', value: 'haiku v1' })
 
   // The first prompt has no reaction. The replies' codes: a newer labelling overrules an older one.
   label(db, { recordType: 'message', recordId: 'm-me-1', labeller: 'sonnet', name: 'act', value: 'task' })
@@ -578,22 +553,4 @@ export const seedRows = (db: DatabaseSync): void => {
   })
   label(db, { recordType: 'message', recordId: 'm-ag-2', labeller: 'sonnet', name: 'reply', value: 'permission' })
   label(db, { recordType: 'message', recordId: 'm-me-5', labeller: 'sonnet', name: 'reply', value: 'none' })
-
-  // The cookbook grouped the correction's rule with others and found no instruction that says it.
-  label(db, { recordType: 'reaction', recordId: 'm-me-4#2', labeller: 'sonnet', name: 'ruleGroup', value: 'rule:1' })
-  label(db, {
-    recordType: 'rule',
-    recordId: 'rule:1',
-    labeller: 'sonnet',
-    name: 'text',
-    value: 'Use the widget the user names.',
-  })
-  label(db, { recordType: 'rule', recordId: 'rule:1', labeller: 'sonnet', name: 'coverage', value: 'missing' })
-  label(db, {
-    recordType: 'rule',
-    recordId: 'rule:2',
-    labeller: 'sonnet',
-    name: 'text',
-    value: 'A rule said only before the range.',
-  })
 }

@@ -12,19 +12,14 @@ const tool = (name: string, source: IToolSource, fields: Partial<IToolTokens> = 
   typicalTokens: 10,
   totalTokens: 10,
   definitionTokens: null,
-  isRetired: false,
   ...fields,
 })
 
 describe('cardTools', () => {
-  it('should leave out the tools nobody called, and scale the bars by the largest called', () => {
-    const rows = [
-      tool('read', BUILT_IN, { totalTokens: 900 }),
-      tool('unused', plugin('oc'), { calls: 0, totalTokens: 0 }),
-    ]
+  it('should scale the bars by the tool that cost the most', () => {
+    const rows = [tool('read', BUILT_IN, { totalTokens: 900 }), tool('oc_run', plugin('oc'), { totalTokens: 50 })]
 
-    expect(cardTools(rows)).toMatchObject({ called: 1, most: 900 })
-    expect(cardTools(rows).shown.map((row) => row.name)).toEqual(['read'])
+    expect(cardTools(rows)).toMatchObject({ called: 2, most: 900 })
   })
 
   it('should show the first ten tools while counting all that were called', () => {
@@ -61,14 +56,14 @@ describe('pluginGroups', () => {
 })
 
 describe('toolGroups', () => {
-  it('should total the calls and tokens of a plugin, count its unused and removed tools and add up its definitions', () => {
+  it('should total the calls and tokens of a plugin and add up its definitions', () => {
     const [group] = toolGroups([
       tool('oc_run', plugin('oc'), { calls: 4, totalTokens: 400, definitionTokens: 50 }),
-      tool('oc_old', plugin('oc'), { calls: 2, totalTokens: 60, isRetired: true }),
-      tool('oc_idle', plugin('oc'), { calls: 0, typicalTokens: null, totalTokens: 0, definitionTokens: 30 }),
+      tool('oc_old', plugin('oc'), { calls: 2, totalTokens: 60 }),
+      tool('oc_idle', plugin('oc'), { calls: 1, totalTokens: 5, definitionTokens: 30 }),
     ])
 
-    expect(group).toMatchObject({ calls: 6, totalTokens: 460, unusedTools: 1, retiredTools: 1, definitionTokens: 80 })
+    expect(group).toMatchObject({ calls: 7, totalTokens: 465, definitionTokens: 80 })
     expect(group?.tools).toHaveLength(3)
   })
 

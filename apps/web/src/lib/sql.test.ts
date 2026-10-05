@@ -1,12 +1,21 @@
-import type { DatabaseSync } from 'node:sqlite'
-import { beforeEach, describe, expect, it } from 'vitest'
+import type { ISqliteDb } from '@log-book/core'
+import { createTestWarehouse, type ITestWarehouse } from '@log-book/warehouse/testing'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { failureLabel, literal, purposeLabel, retryLoop, titleOf, toolIs } from './sql'
-import { insert, openSchema } from './testing/warehouse'
+import { insert } from './testing/warehouse'
 
-let db: DatabaseSync
+type TRow = Record<string, unknown>
 
-beforeEach(() => {
-  db = openSchema()
+let warehouse: ITestWarehouse
+let db: ISqliteDb
+
+beforeEach(async () => {
+  warehouse = await createTestWarehouse({ isInMemory: true })
+  ;({ db } = warehouse)
+})
+
+afterEach(async () => {
+  await warehouse.remove()
 })
 
 const call = (id: string, name: string, extra: Record<string, string | number> = {}): void => {
@@ -15,6 +24,7 @@ const call = (id: string, name: string, extra: Record<string, string | number> =
     session_id: 's1',
     message_id: 'm1',
     name,
+    bare_name: name,
     family: 'file',
     input_json: '{}',
     status: 'completed',
@@ -35,13 +45,15 @@ const label = (recordId: string, labeller: string, name: string, value: string):
 }
 
 const isMatched = (text: string, said: string): boolean =>
-  db.prepare(`SELECT ? LIKE '%' || ${literal('?')} || '%' ESCAPE '\\' AS hit`).get(text, said)?.['hit'] === 1
+  (db.prepare(`SELECT ? LIKE '%' || ${literal('?')} || '%' ESCAPE '\\' AS hit`).get(text, said) as TRow | undefined)?.[
+    'hit'
+  ] === 1
 
 const toolsNamed = (name: string): string[] =>
   db
     .prepare(`SELECT tc.name FROM tool_call tc WHERE ${toolIs('tc.name')} ORDER BY tc.name`)
     .all(name, name)
-    .map((row) => String(row['name']))
+    .map((row) => String((row as TRow)['name']))
 
 const loopNames = (): string[] =>
   db
@@ -50,15 +62,15 @@ const loopNames = (): string[] =>
        HAVING ${retryLoop('tc')} ORDER BY tc.name`
     )
     .all()
-    .map((row) => String(row['name']))
+    .map((row) => String((row as TRow)['name']))
 
 const failureOf = (id: string): string | null =>
-  (db.prepare(`SELECT ${failureLabel('tc')} AS label FROM tool_call tc WHERE tc.id = ?`).get(id)?.['label'] ?? null) as
-    | string
-    | null
+  ((
+    db.prepare(`SELECT ${failureLabel('tc')} AS label FROM tool_call tc WHERE tc.id = ?`).get(id) as TRow | undefined
+  )?.['label'] ?? null) as string | null
 
 const addSession = (id: string, title: string | null): void => {
-  insert(db, 'session', { id, harness: 'claude-code', source_id: id, origin: 'interactive', title })
+  insert(db, 'session', { id, harness: 'claude-code', source_id: id, origin: 'interactive', is_scripted: 0, title })
 }
 
 const addPrompt = (sessionId: string, seq: number, text: string, actor = 'user'): void => {
@@ -74,7 +86,9 @@ const addPrompt = (sessionId: string, seq: number, text: string, actor = 'user')
 }
 
 const titleFor = (sessionId: string): string | null =>
-  (db.prepare(`SELECT ${titleOf(`'${sessionId}'`)} AS title`).get()?.['title'] ?? null) as string | null
+  ((db.prepare(`SELECT ${titleOf(`'${sessionId}'`)} AS title`).get() as TRow | undefined)?.['title'] ?? null) as
+    | string
+    | null
 
 describe('literal', () => {
   it('should match text as written, not as a pattern', () => {
@@ -177,7 +191,7 @@ describe('purposeLabel', () => {
 
     const purposes = db.prepare(`SELECT tc.id, ${purposeLabel('tc')} AS purpose FROM tool_call tc ORDER BY tc.id`).all()
 
-    expect(purposes.map((row) => row['purpose'])).toEqual(['read files', null])
+    expect(purposes.map((row) => (row as TRow)['purpose'])).toEqual(['read files', null])
   })
 })
 

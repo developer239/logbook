@@ -1,9 +1,8 @@
-import type { SQLInputValue } from 'node:sqlite'
 import { all, get } from '../warehouse'
 
 export interface ISqlCondition {
   sql: string
-  params: SQLInputValue[]
+  params: (string | number | null)[]
 }
 
 export const allOf = (conditions: readonly ISqlCondition[]): ISqlCondition => ({

@@ -9,7 +9,7 @@ import Status from './ui/Status.astro'
 import './TopBar.css'
 
 interface Props {
-  current: 'dashboard' | 'conversations' | 'rules' | 'check' | null
+  current: 'dashboard' | 'conversations' | null
   range: IRange | null
   conversation?: { title: string; href: string } | undefined
   syncedAt: number | null
@@ -41,8 +41,6 @@ const days = range === null || range.key === 'all' ? null : { from: isoDay(range
   <nav class="top-bar__nav">
     <a class="top-bar__tab" href="/" aria-current={current === 'dashboard' ? 'page' : undefined}>Dashboard</a>
     <a class="top-bar__tab" href="/conversations" aria-current={current === 'conversations' ? 'page' : undefined}>Conversations</a>
-    <a class="top-bar__tab" href="/rules" aria-current={current === 'rules' ? 'page' : undefined}>Rules</a>
-    <a class="top-bar__tab" href="/check" aria-current={current === 'check' ? 'page' : undefined}>Check</a>
     {
       conversation !== undefined && (
         <a class="top-bar__tab top-bar__tab--title" href={conversation.href} aria-current="page">

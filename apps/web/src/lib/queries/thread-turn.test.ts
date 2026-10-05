@@ -14,15 +14,15 @@ let turn: typeof Turn
 let plugins: typeof Plugins
 
 beforeAll(async () => {
-  warehouse = seedWarehouse(seedRows)
+  warehouse = await seedWarehouse(seedRows)
   session = await import('./session')
   thread = await import('./thread')
   turn = await import('./turn')
   plugins = await import('./plugins-view')
 })
 
-afterAll(() => {
-  warehouse.remove()
+afterAll(async () => {
+  await warehouse.remove()
 })
 
 describe('sessionOf', () => {
@@ -201,7 +201,7 @@ describe('sessionPlugins', () => {
     expect(view).toEqual({
       offers: 'unknown',
       definitions: 'recorded',
-      plugins: [{ plugin: 'notes', tools: [{ name: 'notes_add', calls: 1, definitionTokens: 100 }] }],
+      plugins: [{ plugin: 'opencode', tools: [{ name: 'notes_add', calls: 1, definitionTokens: 100 }] }],
     })
   })
 })

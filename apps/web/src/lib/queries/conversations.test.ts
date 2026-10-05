@@ -11,13 +11,13 @@ let list: typeof Conversations
 let one: typeof Conversation
 
 beforeAll(async () => {
-  warehouse = seedWarehouse(seedRows)
+  warehouse = await seedWarehouse(seedRows)
   list = await import('./conversations')
   one = await import('./conversation')
 })
 
-afterAll(() => {
-  warehouse.remove()
+afterAll(async () => {
+  await warehouse.remove()
 })
 
 const idsOf = (query: string): string[] =>
