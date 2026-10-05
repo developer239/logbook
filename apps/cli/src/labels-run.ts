@@ -6,20 +6,13 @@ import {
   type ILabelRunTaskCounts,
   type LabelRunResult,
   type LabelTaskName,
-  LABEL_TASK_NAMES,
 } from '@log-book/engine'
 import { resolveWarehousePath } from '@log-book/warehouse'
 import { exitCodeOf, type IErrorReport } from './errors.js'
 import { formatCount, formatDuration } from './format.js'
-import { ADAPTERS, type OptionValue } from './grammar.js'
-import {
-  isSubscription,
-  missingPrerequisite,
-  missingText,
-  providerName,
-  signInText,
-  taskNoun,
-} from './labelling-lines.js'
+import { ADAPTERS } from './grammar.js'
+import { isSubscription, missingReport, missingText, providerName, signInText, taskNoun } from './labelling-lines.js'
+import { integerOf, taskOf, textOf, type OptionValues } from './option-values.js'
 import type { CommandRunner, ICliIo } from './run-cli.js'
 
 // The engine's labelling operations over the warehouse at that path.
@@ -28,7 +21,6 @@ export type LabelOperations = (warehousePath: string) => IEngine['labels']
 type TCallOptions = Parameters<IEngine['labels']['update']>[0]
 type TProgress = NonNullable<TCallOptions['onProgress']>
 type TProgressEvent = Parameters<TProgress>[0]
-type Values = Readonly<Record<string, OptionValue>>
 
 // A task's word padded so its counts line up: `shell calls    1,200 of 2,140`.
 const TASK_COLUMN = 14
@@ -193,34 +185,10 @@ const SUMMARIES: Readonly<Record<ILabelRunReport['outcome'], (report: ILabelRunR
 // The summary a run ends with on stdout, and its exit code.
 const labelSummary = (report: ILabelRunReport): IErrorReport => SUMMARIES[report.outcome](report)
 
-const textOf = (values: Values, name: string): string | undefined => {
-  const value = values[name]
-  if (value !== undefined && typeof value !== 'string') {
-    throw new TypeError(`--${name} was parsed as ${typeof value}, not as text`)
-  }
-  return value
-}
+type TStart = (labels: IEngine['labels'], call: TCallOptions, values: OptionValues) => Promise<LabelRunResult>
 
-const integerOf = (values: Values, name: string): number | undefined => {
-  const value = values[name]
-  if (value !== undefined && typeof value !== 'number') {
-    throw new TypeError(`--${name} was parsed as ${typeof value}, not as a number`)
-  }
-  return value
-}
-
-const taskOf = (values: Values): LabelTaskName => {
-  const given = textOf(values, 'task')
-  const task = LABEL_TASK_NAMES.find((name) => name === given)
-  if (task === undefined) {
-    throw new TypeError(`The parser let labels run through with --task ${String(given)}`)
-  }
-  return task
-}
-
-type TStart = (labels: IEngine['labels'], call: TCallOptions, values: Values) => Promise<LabelRunResult>
-
-const engineLabels: LabelOperations = (warehousePath) => createEngine({ adapters: ADAPTERS, warehousePath }).labels
+export const engineLabels: LabelOperations = (warehousePath) =>
+  createEngine({ adapters: ADAPTERS, warehousePath }).labels
 
 // A labelling command: detection, the labelling lock, the preflight and progress on stderr, then one summary on
 // stdout. A held lock is thrown by the engine and ends the command through its error line.
@@ -241,10 +209,7 @@ const labellingRunner =
     }
     const result = await start(labelsOf(resolveWarehousePath()), call, values)
     if (result.status === 'missing') {
-      const missing = missingPrerequisite({ status: 'missing', missing: result.missing })
-      if (missing === null) {
-        throw new Error('A missing prerequisite was worded as ready')
-      }
+      const missing = missingReport(result.missing)
       io.stderr(line(missing.line))
       return missing.code
     }
