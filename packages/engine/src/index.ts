@@ -65,3 +65,4 @@ export {
   type ToolRecovery,
 } from './labels/vocabularies.js'
 export type { LabelRecordType } from '@log-book/warehouse'
+import '../../warehouse/src/index.js'
