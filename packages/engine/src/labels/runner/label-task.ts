@@ -1,4 +1,5 @@
 import type { IWarehouseReader, LabelRecordType } from '@log-book/warehouse'
+import type { LabelTaskName } from '../tasks.js'
 
 // A field the model answers with a code: the index of its value in `values`. A multiple field takes several codes
 // joined by commas (`3,5`) and stores their values joined the same way.
@@ -38,7 +39,7 @@ export interface ILabelItem {
 
 // A task as the runner sees it. The first field decides whether a record is labelled.
 export interface ILabelRunTask {
-  name: string
+  name: LabelTaskName
   recordType: LabelRecordType
   // The task's version in versions.json.
   version: number
