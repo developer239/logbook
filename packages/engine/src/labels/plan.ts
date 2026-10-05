@@ -10,7 +10,7 @@ export type LabelPlan =
   | { readonly status: 'missing'; readonly missing: ClaudeMissing }
 
 // The labelling run's model, refused as a usage error before anything else runs when it fails the model id check.
-const labelModelOf = (model: string | undefined): string => {
+export const labelModelOf = (model: string | undefined): string => {
   const chosen = model ?? DEFAULT_LABEL_MODEL
   if (!isLabelModelId(chosen)) {
     throw new LogBookError(`${chosen} is not a model id.`, ERROR_CODES.VALIDATION_ERROR)
@@ -33,7 +33,10 @@ export const planLabelling = async (options: {
   }
   const reader = await WarehouseStore.openReadOnly(options.warehousePath)
   try {
-    return { status: 'ready', facts: buildLabelFacts(reader, labelRunTasks(), model, detection) }
+    return {
+      status: 'ready',
+      facts: buildLabelFacts(reader, labelRunTasks(), detection, { model, doneBy: 'any-model' }),
+    }
   } finally {
     reader.close()
   }

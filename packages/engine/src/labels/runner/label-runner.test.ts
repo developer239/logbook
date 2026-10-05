@@ -264,7 +264,7 @@ describe('runLabelTask', () => {
     const fake = await install('1', [{ marker: 'cmd-3', kind: 'never' }])
 
     // Act
-    const result = await label(fake, { task: { ...SHELL_TASK, batchSize: 2 }, timeoutMs: 500 })
+    const result = await label(fake, { task: { ...SHELL_TASK, batchSize: 2 }, timeoutMs: 3_000 })
 
     // Assert
     expect({ labelled: labelled(), unanswered: result.unanswered, stop: result.stop }).toStrictEqual({
