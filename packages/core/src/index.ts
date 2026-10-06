@@ -1,5 +1,6 @@
 export { clipChars } from './clip-chars.js'
 export { ERROR_CODES, isErrnoCode, LogBookError } from './errors.js'
+export { isLabelModelId, LABEL_MODEL_RULE } from './label-model.js'
 export { MarkdownBuilder } from './markdown-builder.js'
 export { PromptLoaderService } from './prompt-loader.js'
 export { openSqlite, openSqliteSync, type ISqliteDb, type ISqlStatement } from './sqlite.js'
