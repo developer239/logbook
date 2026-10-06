@@ -276,6 +276,44 @@ describe('runCompact', () => {
   )
 
   it(
+    'counts a rewrite process that SIGINT ended before its parent saw any signal as stopped',
+    async () => {
+      // Arrange
+      const { path } = opened()
+      const fileBefore = sha256(path)
+      const { page_count: pagesBefore } = await readOnly<{ page_count: number }>(path, 'PRAGMA page_count')
+      const child = await compactInChild()
+      const rewriter = await vi.waitFor(
+        () => {
+          const [pid] = childrenOf(child.pid)
+          if (pid === undefined) {
+            throw new Error('The rewrite process has not started yet.')
+          }
+          return pid
+        },
+        { timeout: CHILD_TIMEOUT_MS, interval: 5 }
+      )
+      // Held still, so the SIGINT ends it before it can finish, as Ctrl+C reaches it when its group gets SIGINT.
+      process.kill(rewriter, 'SIGSTOP')
+      expect(await readOnly(path, 'PRAGMA page_count')).toStrictEqual({ page_count: pagesBefore })
+
+      // Act
+      process.kill(rewriter, 'SIGINT')
+      process.kill(rewriter, 'SIGCONT')
+      const result = await child.result
+
+      // Assert
+      expect({
+        outcome: result.outcome,
+        isRewritten: result.isRewritten,
+        file: sha256(path),
+        lockFiles: lockFiles(path),
+      }).toStrictEqual({ outcome: 'stopped', isRewritten: false, file: fileBefore, lockFiles: [false, false] })
+    },
+    CHILD_TIMEOUT_MS
+  )
+
+  it(
     'leaves the file as it was after a stop inside VACUUM',
     async () => {
       // Arrange: 64 MB with half its pages free.

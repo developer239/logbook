@@ -61,6 +61,10 @@ const record = (end: IRewriteEnd, message: RewriteMessage, onStep: (step: Rewrit
   }
 }
 
+// The signals of a stop the user sent: Ctrl+C sends SIGINT to the whole group, the rewrite process included, which
+// installs no handler, so it can end before this process sees its own; this process sends only SIGKILL.
+const STOP_SIGNALS: ReadonlySet<string> = new Set(['SIGINT', 'SIGTERM'])
+
 // Runs the rewrite process to its end. The signal kills it at once: `VACUUM` runs synchronously and cannot be
 // interrupted, while SQLite rolls back a transaction whose process ended before it committed.
 export const runRewriteProcess = async (
@@ -92,6 +96,7 @@ export const runRewriteProcess = async (
     child.on('error', reject)
     child.on('close', (code, exitSignal) => {
       signal.removeEventListener('abort', stop)
+      end.isStopped ||= exitSignal !== null && STOP_SIGNALS.has(exitSignal)
       end.exit = exitSignal ?? `code ${String(code)}`
       resolve(end)
     })
