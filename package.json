@@ -39,7 +39,8 @@
     "docs:check": "pnpm --silent --filter @log-book/docs check",
     "docs:sync-readme": "pnpm --silent --filter @log-book/docs sync-readme",
     "docs:capture": "pnpm --silent --filter @log-book/docs capture",
-    "docs:text-changes": "pnpm --silent --filter @log-book/docs text-changes"
+    "docs:text-changes": "pnpm --silent --filter @log-book/docs text-changes",
+    "check:literals": "pnpm ci:build && node packages/ci/dist/index.js literals"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",

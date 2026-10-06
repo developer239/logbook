@@ -4,7 +4,7 @@ import { isToolFamily, mcpFamily, TOOL_FAMILIES } from './tool-families.js'
 describe('isToolFamily', () => {
   it('accepts every fixed family and refuses an empty server, an unknown prefix and another case', () => {
     // Arrange
-    const refused = ['mcp:', 'cookbook:oc', 'Shell']
+    const refused = ['mcp:', 'tracker:oc', 'Shell']
 
     // Act
     const results = { fixed: TOOL_FAMILIES.map((family) => isToolFamily(family)), refused: refused.map(isToolFamily) }

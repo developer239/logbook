@@ -63,9 +63,9 @@ afterEach(async () => {
 })
 
 describe('cliManifest', () => {
-  it('holds exactly the published fields, takes bin, engines and os from the workspace and no scripts', () => {
+  it('holds exactly the published fields, bin, engines and os from the workspace, keywords led by the harness ids', () => {
     // Act
-    const manifest = cliManifest(WORKSPACE_MANIFEST)
+    const manifest = cliManifest(WORKSPACE_MANIFEST, ['claude-code', 'opencode'])
 
     // Assert
     expect(manifest).toStrictEqual({
@@ -86,7 +86,7 @@ describe('cliManifest', () => {
 
   it('follows a raised Node floor', () => {
     // Act
-    const manifest = cliManifest({ ...WORKSPACE_MANIFEST, engines: { node: '>=24.3' } })
+    const manifest = cliManifest({ ...WORKSPACE_MANIFEST, engines: { node: '>=24.3' } }, [])
 
     // Assert
     expect(manifest).toMatchObject({ engines: { node: '>=24.3' } })

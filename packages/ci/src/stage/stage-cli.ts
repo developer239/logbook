@@ -1,6 +1,7 @@
-import { cp, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { build, stop, type BuildResult, type Plugin } from 'esbuild'
+import { harnessIdsIn } from '../checks/literals.js'
 
 // Where the stage reads and writes, relative to the repository root. It reads the workspace's builds as files and
 // imports no workspace package.
@@ -41,9 +42,10 @@ const workspaceManifestOf = (text: string): IWorkspaceManifest => {
   return { bin, engines, os: os.map(String) }
 }
 
-// The published manifest, exactly these fields. No dependency field and no scripts: nothing is installed beside the
-// bundle and no install-time code runs. The publish job writes the release version.
-export const cliManifest = (workspace: IWorkspaceManifest): Record<string, unknown> => ({
+// The published manifest, exactly these fields, its keywords led by the harness ids the adapters bring. No dependency
+// field and no scripts: nothing is installed beside the bundle and no install-time code runs. The publish job writes
+// the release version.
+export const cliManifest = (workspace: IWorkspaceManifest, harnessIds: readonly string[]): Record<string, unknown> => ({
   name: '@log-book/cli',
   version: '0.0.0-development',
   license: 'PolyForm-Noncommercial-1.0.0',
@@ -54,7 +56,7 @@ export const cliManifest = (workspace: IWorkspaceManifest): Record<string, unkno
   files: ['bin/', 'dist/', 'THIRD-PARTY-NOTICES.md'],
   repository: { type: 'git', url: 'git+https://github.com/developer239/logbook.git', directory: 'apps/cli' },
   bugs: 'https://github.com/developer239/logbook/issues',
-  keywords: ['claude-code', 'opencode', 'coding-agent', 'transcripts', 'analytics', 'local-first'],
+  keywords: [...harnessIds, 'coding-agent', 'transcripts', 'analytics', 'local-first'],
   publishConfig: { access: 'public' },
 })
 
@@ -123,5 +125,6 @@ export const stageCli = async (givenRoot: string): Promise<void> => {
     cp(at(SHIM), at(join(PACKAGE, 'bin/logbook.cjs'))),
     cp(at(LICENSE), at(join(PACKAGE, 'LICENSE.md'))),
   ])
-  await writeFile(at(join(PACKAGE, 'package.json')), `${JSON.stringify(cliManifest(manifest), null, 2)}\n`)
+  const harnessIds = harnessIdsIn((await readdir(at('packages'))).map((name) => `packages/${name}/`))
+  await writeFile(at(join(PACKAGE, 'package.json')), `${JSON.stringify(cliManifest(manifest, harnessIds), null, 2)}\n`)
 }

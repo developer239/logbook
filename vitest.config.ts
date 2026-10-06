@@ -30,12 +30,9 @@ interface IProjectSpec {
 
 // Three and a half hours behind UTC in winter, so a test assuming UTC or whole-hour offsets fails everywhere.
 const ROOT_ENV = { TZ: 'America/St_Johns' }
-// The web app falls back to the user's own warehouse when LOGBOOK_DB is unset, and its cookbook client to the
-// cookbook's when TELEMETRY_DB is; a test that lost its stub must fail on a missing file, never read either.
-const NO_USER_WAREHOUSE = {
-  LOGBOOK_DB: '/nonexistent/log-book-tests/warehouse.db',
-  TELEMETRY_DB: '/nonexistent/log-book-tests/telemetry.db',
-}
+// The web app falls back to the user's own warehouse when LOGBOOK_DB is unset; a test that lost its stub must fail on a
+// missing file, never read it.
+const NO_USER_WAREHOUSE = { LOGBOOK_DB: '/nonexistent/log-book-tests/warehouse.db' }
 
 const BUILT_CLI_CHECK = './test/cli-build-check.ts'
 

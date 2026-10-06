@@ -47,6 +47,10 @@ jobs:
         run: pnpm format:check
       - name: 3. Dependency rule
         run: pnpm check:deps
+      - name: 4. Harness-id literal check
+        run: pnpm check:literals --harness
+      - name: 5. Owner-specific literals and tracked files
+        run: pnpm check:literals --owner
       - name: 6. Fixture and test conventions
         run: |
           pnpm check:fixtures

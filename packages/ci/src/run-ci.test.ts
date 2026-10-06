@@ -24,7 +24,19 @@ describe('the ci command dispatcher', () => {
     expect(result).toStrictEqual({
       code: 2,
       stdout: '',
-      stderr: 'No command named nope; the commands are deps, fixtures, release, tests, stage-cli.\n',
+      stderr: 'No command named nope; the commands are deps, fixtures, release, literals, tests, stage-cli.\n',
+    })
+  })
+
+  it('exits 2 when the literals command gets neither --harness nor --owner', async () => {
+    // Act
+    const result = await run(['literals'])
+
+    // Assert
+    expect(result).toStrictEqual({
+      code: 2,
+      stdout: '',
+      stderr: 'This command takes --harness or --owner; got none.\n',
     })
   })
 
@@ -36,7 +48,7 @@ describe('the ci command dispatcher', () => {
     expect(result).toStrictEqual({
       code: 2,
       stdout: '',
-      stderr: 'No command given; the commands are deps, fixtures, release, tests, stage-cli.\n',
+      stderr: 'No command given; the commands are deps, fixtures, release, literals, tests, stage-cli.\n',
     })
   })
 })

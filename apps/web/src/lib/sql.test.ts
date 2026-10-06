@@ -108,20 +108,20 @@ describe('toolIs', () => {
   it('should match a tool by its name without its server, in any case and under any server', () => {
     call('c1', 'Read')
     call('c2', 'read')
-    call('c3', 'mcp__opencode__read', { bare_name: 'read', server: 'opencode' })
+    call('c3', 'mcp__worklist__read', { bare_name: 'read', server: 'worklist' })
     call('c4', 'mcp__claude_ai_Docs__READ', { bare_name: 'READ', server: 'claude_ai_Docs' })
     call('c5', 'Reader')
-    call('c6', 'mcp__opencode__reader', { bare_name: 'reader', server: 'opencode' })
+    call('c6', 'mcp__worklist__reader', { bare_name: 'reader', server: 'worklist' })
     call('c7', 'unread')
 
-    expect(toolsNamed('read')).toEqual(['Read', 'mcp__claude_ai_Docs__READ', 'mcp__opencode__read', 'read'])
+    expect(toolsNamed('read')).toEqual(['Read', 'mcp__claude_ai_Docs__READ', 'mcp__worklist__read', 'read'])
   })
 
   it('should match an underscore in the name as an underscore', () => {
-    call('c1', 'mcp__opencode__launch', { bare_name: 'launch', server: 'opencode' })
-    call('c2', 'mcp__opencode__ocXrun', { bare_name: 'ocXrun', server: 'opencode' })
+    call('c1', 'mcp__worklist__launch', { bare_name: 'launch', server: 'worklist' })
+    call('c2', 'mcp__worklist__ocXrun', { bare_name: 'ocXrun', server: 'worklist' })
 
-    expect(toolsNamed('launch')).toEqual(['mcp__opencode__launch'])
+    expect(toolsNamed('launch')).toEqual(['mcp__worklist__launch'])
   })
 })
 

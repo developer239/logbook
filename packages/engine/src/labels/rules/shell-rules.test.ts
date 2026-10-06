@@ -54,9 +54,9 @@ describe('shellRulePurpose', () => {
     expect(purpose).toBe('run tests')
   })
 
-  it('reads a file under /tmp/orchestration as code, and has no orchestration purpose', () => {
+  it('reads a plan under /tmp as code, and has no orchestration purpose', () => {
     // Arrange
-    const command = 'cat /tmp/orchestration/plan.md'
+    const command = 'cat /tmp/plans/plan.md'
 
     // Act
     const purpose = shellRulePurpose(command)

@@ -34,7 +34,7 @@ const DESCRIPTORS: Harnesses = new Map([
 
 describe('labels', () => {
   it('should name a failed call by its cause, a shell call by its failure', () => {
-    expect(causeOf('cookbook:oc', 'rate limited')).toBe('Rate limited')
+    expect(causeOf('tracker:oc', 'rate limited')).toBe('Rate limited')
     expect(causeOf('shell', 'timeout')).toBe('Timed out')
     expect(causeOf('shell', 'command mistake')).toBe('Called the tool wrong')
   })
@@ -42,7 +42,7 @@ describe('labels', () => {
   it('should call a real result no cause, and a label it does not know or lacks not labelled', () => {
     expect(causeOf('shell', 'real result')).toBeNull()
     expect(causeOf('shell', 'none')).toBeNull()
-    expect(causeOf('cookbook:oc', 'something new')).toBe(UNLABELLED)
+    expect(causeOf('tracker:oc', 'something new')).toBe(UNLABELLED)
     expect(causeOf('shell', null)).toBe(UNLABELLED)
   })
 

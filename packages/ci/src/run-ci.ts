@@ -1,5 +1,6 @@
 import { dependencyFindings } from './checks/deps.js'
 import { fixtureFindings } from './checks/fixtures.js'
+import { harnessFindings, ownerFindings } from './checks/literals.js'
 import { releaseFindings } from './checks/release.js'
 import { checkTests } from './checks/tests.js'
 import { stageCli } from './stage/stage-cli.js'
@@ -30,11 +31,26 @@ const check =
     return findings.length === 0 ? 0 : 1
   }
 
+// The two literal checks, by the one option that picks it.
+const LITERAL_CHECKS: Readonly<Record<string, (root: string) => Promise<string[]>>> = {
+  '--harness': harnessFindings,
+  '--owner': ownerFindings,
+}
+
 // Every rule CI enforces, by the name its root script passes; each check's ticket adds its command here.
 const COMMANDS: Readonly<Record<string, CiCommand>> = {
   'deps': check(dependencyFindings),
   'fixtures': check(fixtureFindings),
   'release': check(releaseFindings),
+  'literals': async (args, io) => {
+    const [option] = args
+    const findingsOf = args.length === 1 && option !== undefined ? LITERAL_CHECKS[option] : undefined
+    if (findingsOf === undefined) {
+      io.stderr(`This command takes --harness or --owner; got ${args.length === 0 ? 'none' : args.join(' ')}.\n`)
+      return WRONG_ARGUMENTS
+    }
+    return check(findingsOf)([], io)
+  },
   'tests': async (args, io) => {
     if (args.length > 0) {
       io.stderr(`This command takes no arguments; got ${args.join(' ')}.\n`)
