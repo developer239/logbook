@@ -19,7 +19,7 @@ const most = Math.max(1, ...causes.map((cause) => cause.calls))
 const HEADS = [{ label: 'Cause' }, { label: 'Calls', isEnd: true }, { label: '' }, { label: 'Last 7 days' }]
 ---
 
-<Card title="Tool trouble">
+<Card title="Tool problems">
   <Fragment slot="meta">
     <Link href={stepsHref({ failed: '1' }, range)}>{plural(failed, 'failed call')}</Link> by cause, shell included
   </Fragment>
