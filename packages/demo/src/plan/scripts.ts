@@ -19,6 +19,7 @@ import {
 } from '../corpus/shapes.js'
 import type { IToolEntry } from '../corpus/tools.js'
 import { createStream, type IRandomStream } from '../random.js'
+import { DAY_MS, dayStart } from './calendar.js'
 import { humanTurns } from './human-turns.js'
 import type {
   ICallLabels,
@@ -80,6 +81,15 @@ const EVENT_CAPABILITIES: Readonly<Record<TurnEvent, string | null>> = {
   'idle': 'idle-event',
 }
 const OPENING_EVENTS: readonly TurnEvent[] = ['compaction', 'agent-switch', 'model-switch']
+// The rich set's story, in percent of the turns it may touch: in the first half of its weeks the developer often
+// corrects a "done" said without running the tests and seldom praises; in the second half, asking for the tests in the
+// task itself, they correct seldom and praise often. A model's habit ends a plainly ending turn its own way.
+const STORY_PERCENT = {
+  earlier: { correction: 30, praise: 8, testsInTask: 0 },
+  later: { correction: 6, praise: 30, testsInTask: 60 },
+} as const
+const WEEK_DAYS = 7
+const PLAIN_CLOSINGS: ReadonlySet<ClosingKind> = new Set(['progress', 'done'])
 const SLOT = /\{(?<name>[a-z]+)\}/gu
 const QUOTE = /\[\[(?<quote>.+?)\]\]/u
 const QUOTE_MARKS = /\[\[|\]\]/gu
@@ -160,6 +170,15 @@ class WriterScripter {
   })
 
   public readonly has = (capability: string): boolean => this.declaration.capabilities.includes(capability)
+
+  public readonly isRich = (): boolean => this.plan.size === 'rich'
+
+  // Whether a time falls in the second half of the plan's weeks, where the story's developer asks for the tests first.
+  public readonly isLaterHalf = (at: number): boolean => {
+    const weeks = this.plan.days / WEEK_DAYS
+    const week = Math.floor((at - dayStart(this.plan.anchor, 0, this.plan.days)) / (WEEK_DAYS * DAY_MS))
+    return week >= weeks / 2
+  }
 
   public readonly hasFamily = (family: string): boolean => this.declaration.families.includes(family)
 
@@ -278,28 +297,72 @@ class SessionScripter {
       const closing = { text: fill(this.task.result, this.slots), reply: null }
       return { shape, prompt: fill(this.task.prompt, this.slots), reactions: [], closing }
     }
-    const shape = shapes.shapes[this.session.shape].turns[index] ?? shapes.followUp
+    const shape = shapes.shapes[this.session.shape].turns[index] ?? this.followUp()
     const isInteractive = this.task === null && this.session.origin === 'interactive'
-    const reaction = isInteractive && index > 0 ? this.reactionOf(index, shape) : undefined
+    const at = this.session.turns[index]?.start ?? this.session.start
+    const reaction = isInteractive && index > 0 ? this.turnReaction(index, shape, at) : undefined
     if (reaction !== undefined) {
       const template = this.stream.pick(prompts.reactions[reaction].filter((candidate) => candidate.act === shape.act))
       return {
         shape,
         prompt: fill(template.prompt, this.slots),
         reactions: template.reactions,
-        closing: this.closingOf(shape.closing, isInteractive),
+        closing: this.closingOf(this.habitOf(shape.closing, isInteractive), isInteractive),
       }
     }
-    const prompt =
-      this.session.origin === 'scripted' && index === 0
-        ? this.stream.pick(prompts.opening).openingPrompt
-        : this.stream.pick(prompts.byAct[shape.act]).prompt
     return {
       shape,
-      prompt: fill(prompt, this.slots),
+      prompt: fill(this.promptOf(index, shape, isInteractive, at), this.slots),
       reactions: [],
-      closing: this.closingOf(shape.closing, isInteractive),
+      closing: this.closingOf(this.habitOf(shape.closing, isInteractive), isInteractive),
     }
+  }
+
+  // The small set's one follow-up turn, or one of the rich set's longer ones.
+  private readonly followUp = (): ITurnShape => {
+    const { shapes } = this.writer.corpus
+    return this.writer.isRich() ? this.stream.pick(shapes.richFollowUps) : shapes.followUp
+  }
+
+  private readonly isRolled = (percent: number): boolean => this.stream.integer(1, 100) <= percent
+
+  // A turn's own reaction, or the rich set's story where it has none.
+  private readonly turnReaction = (index: number, shape: ITurnShape, at: number): ITurnShape['reaction'] =>
+    this.reactionOf(index, shape) ?? this.storyReaction(shape, at)
+
+  // A scripted session opens with its opening prompt; a task of the rich set's later weeks often asks for the tests in
+  // the task itself.
+  private readonly promptOf = (index: number, shape: ITurnShape, isInteractive: boolean, at: number): string => {
+    const { prompts } = this.writer.corpus
+    if (this.session.origin === 'scripted' && index === 0) {
+      return this.stream.pick(prompts.opening).openingPrompt
+    }
+    const story = this.writer.isLaterHalf(at) ? STORY_PERCENT.later : STORY_PERCENT.earlier
+    const isWithTests =
+      this.writer.isRich() && isInteractive && shape.act === 'task' && this.isRolled(story.testsInTask)
+    return isWithTests ? this.stream.pick(prompts.withTests).prompt : this.stream.pick(prompts.byAct[shape.act]).prompt
+  }
+
+  // The rich set's story on a turn that goes on with the work and has no reaction of its own.
+  private readonly storyReaction = (shape: ITurnShape, at: number): ITurnShape['reaction'] => {
+    if (!this.writer.isRich() || shape.act !== 'continue') {
+      return undefined
+    }
+    const story = this.writer.isLaterHalf(at) ? STORY_PERCENT.later : STORY_PERCENT.earlier
+    const roll = this.stream.integer(1, 100)
+    if (roll <= story.correction) {
+      return 'claimed-untested'
+    }
+    return roll <= story.correction + story.praise ? 'small-and-clean' : undefined
+  }
+
+  // In the rich set, a model's habit ends a plainly ending turn of an interactive session its own way.
+  private readonly habitOf = (closing: ClosingKind, isInteractive: boolean): ClosingKind => {
+    const habit = this.writer.corpus.habits[this.model]
+    if (!this.writer.isRich() || !isInteractive || habit === undefined || !PLAIN_CLOSINGS.has(closing)) {
+      return closing
+    }
+    return this.isRolled(habit.percent) ? habit.closing : closing
   }
 
   // The second turn of the plan's first session takes the first-week reactions; a turn after a stop, its shape's

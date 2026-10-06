@@ -1,4 +1,4 @@
-export type ProjectName = 'shop' | 'billing'
+export type ProjectName = 'shop' | 'billing' | 'field-guide'
 
 interface ISourceFile {
   // Relative to the project directory.
@@ -17,7 +17,7 @@ export interface IProject {
 export const CAST = ['Mira', 'Tomas', 'Priya', 'Jonah'] as const
 
 export const PROJECTS: Record<ProjectName, IProject> = {
-  shop: {
+  'shop': {
     directory: '/home/example/work/shop',
     files: [
       {
@@ -52,7 +52,7 @@ export const PROJECTS: Record<ProjectName, IProject> = {
     ],
     branches: ['main', 'feature/discount-codes', 'fix/cart-badge'],
   },
-  billing: {
+  'billing': {
     directory: '/home/example/work/billing',
     files: [
       {
@@ -85,5 +85,33 @@ export const PROJECTS: Record<ProjectName, IProject> = {
       },
     ],
     branches: ['main', 'fix/invoice-rounding', 'chore/update-dependencies'],
+  },
+  'field-guide': {
+    directory: '/home/example/work/field-guide',
+    files: [
+      {
+        path: 'book.toml',
+        content: '[book]\ntitle = "Field guide"\nsrc = "chapters"\n\n[build]\ncreate-missing = false\n',
+      },
+      {
+        path: 'chapters/trail-safety.md',
+        content:
+          '# Trail safety\n\nCarry water for the whole walk. Turn back when the weather turns, not when it is too late.\n',
+      },
+      {
+        path: 'chapters/ferns.md',
+        content: '# Ferns\n\nMost ferns grow in shade below the tree line. A few grow in open scree.\n',
+      },
+      {
+        path: 'chapters/glossary.md',
+        content:
+          '# Glossary\n\n- **Scree**: loose stones on a slope.\n- **Tree line**: the height above which trees do not grow.\n',
+      },
+      {
+        path: 'scripts/check-links.sh',
+        content: 'set -e\ngrep -o "](chapters/[^)]*)" chapters/*.md | sort -u\n',
+      },
+    ],
+    branches: ['main', 'docs/trail-safety', 'docs/fern-chapter'],
   },
 }

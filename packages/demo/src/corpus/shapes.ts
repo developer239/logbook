@@ -80,10 +80,16 @@ export type ShapeName =
   | 'fix through a subagent'
   | 'debug with a helper'
   | 'release with a command'
+  | 'write a chapter'
+  | 'explore the code'
+  | 'research a question'
+  | 'verify with tests'
 
 export interface IShapeCorpus {
   shapes: Readonly<Record<ShapeName, ISessionShape>>
   followUp: ITurnShape
+  // The rich set's turns after a shape's own, one picked per turn: longer work than the small set's follow-up.
+  richFollowUps: readonly ITurnShape[]
   subagents: Readonly<Record<SubagentTaskName, ISubagentTask>>
 }
 
@@ -298,8 +304,67 @@ export const SHAPES: IShapeCorpus = {
         },
       ],
     },
+    'write a chapter': {
+      goals: ['writing'],
+      rows: [11, 15, 16],
+      turns: [
+        { act: 'task', uses: ['read-source', 'find-files', 'write-doc', 'run-tests'], closing: 'progress' },
+        { act: 'continue', uses: ['edit-source', 'run-tests-slow', 'git-diff'], closing: 'done' },
+      ],
+    },
+    'explore the code': {
+      goals: ['explore the codebase'],
+      rows: [7, 15, 16],
+      turns: [
+        { act: 'task', uses: ['find-files', 'search-text', 'read-test'], closing: 'answer' },
+        { act: 'question', uses: ['read-source'], closing: 'answer' },
+      ],
+    },
+    'research a question': {
+      goals: ['research outside the codebase'],
+      rows: [7, 15, 16],
+      turns: [
+        { act: 'task', uses: ['web-search', 'web-fetch', 'read-source'], closing: 'asks' },
+        { act: 'answer', uses: ['edit-source', 'run-tests'], closing: 'done' },
+      ],
+    },
+    'verify with tests': {
+      goals: ['verify behaviour'],
+      rows: [11, 15, 16],
+      turns: [
+        { act: 'task', uses: ['read-test', 'run-tests', 'git-status'], closing: 'done' },
+        { act: 'question', uses: ['read-source'], closing: 'answer' },
+      ],
+    },
   },
   followUp: { act: 'continue', uses: ['git-status', 'run-tests'], closing: 'progress' },
+  richFollowUps: [
+    {
+      act: 'continue',
+      uses: ['read-source', 'search-text', 'edit-source', 'run-tests', 'git-status'],
+      closing: 'progress',
+    },
+    {
+      act: 'continue',
+      uses: ['find-files', 'read-test', 'write-test', 'run-tests', 'edit-source', 'run-tests', 'git-diff'],
+      closing: 'done',
+    },
+    {
+      act: 'continue',
+      uses: ['git-status', 'read-source', 'edit-source', 'edit-source', 'run-tests', 'git-diff'],
+      closing: 'progress',
+    },
+    {
+      act: 'continue',
+      uses: ['search-text', 'read-source', 'edit-source', 'run-tests-failing', 'edit-source', 'run-tests'],
+      closing: 'done',
+    },
+    {
+      act: 'continue',
+      uses: ['web-search', 'read-source', 'edit-source', 'run-tests', 'git-status', 'git-diff'],
+      closing: 'progress',
+    },
+  ],
   subagents: {
     'find-tests': {
       agentType: 'explore',

@@ -43,9 +43,11 @@ export interface IBuiltDemo {
   plan: IDemoPlan
 }
 
-// The small set's fixed anchor, so tests pass the same `now` to range parsing.
+// The small set's fixed anchor, so tests pass the same `now` to range parsing; the rich set's is the current hour.
 const ANCHORS: Readonly<Record<DemoSize, (now: number) => number>> = {
   small: () => Date.UTC(2026, 8, 28, 18),
+  // The hour it was built, which only its manifest still knows.
+  rich: (now) => now,
 }
 
 // The writers of the two harnesses, and what the planner may ask of each.

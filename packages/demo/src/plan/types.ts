@@ -12,7 +12,7 @@ import type {
   SessionOutcome,
 } from '@log-book/engine'
 import type { ICommandCorpus } from '../corpus/commands.js'
-import type { IModelRates } from '../corpus/models.js'
+import type { IModelRates, IReplyHabit } from '../corpus/models.js'
 import type { IProject, ProjectName } from '../corpus/projects.js'
 import type { IPromptCorpus } from '../corpus/prompts.js'
 import type { IReplyCorpus } from '../corpus/replies.js'
@@ -20,7 +20,7 @@ import type { IShapeCorpus, ShapeName, SubagentTaskName } from '../corpus/shapes
 import type { IFailureLabels, IShellLabels, IToolCorpus } from '../corpus/tools.js'
 import type { IWorkItem } from '../corpus/work.js'
 
-export type DemoSize = 'small'
+export type DemoSize = 'small' | 'rich'
 
 // `none` plans no model labels: every "not labelled yet" state.
 export type LabelsVariant = 'all' | 'none'
@@ -44,6 +44,7 @@ export interface IPlanCorpus {
   tools: IToolCorpus
   commands: ICommandCorpus
   rates: Readonly<Record<string, IModelRates>>
+  habits: Readonly<Record<string, IReplyHabit>>
 }
 
 export interface IPlanInputs {

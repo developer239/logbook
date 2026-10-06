@@ -16,6 +16,7 @@ import type {
   IPlannedLabel,
   IPlannedRun,
   IPlannedRunTask,
+  DemoSize,
   IWriterScripts,
 } from './types.js'
 
@@ -53,15 +54,18 @@ interface IRunPart {
 const SECOND_MS = 1000
 const COVERED_BEFORE_ANCHOR_MS = 48 * HOUR_MS
 const FIRST_RUN_BEFORE_ANCHOR_MS = 47 * HOUR_MS
-const FIRST_RUN_MS = 30 * MINUTE_MS
 const SAMPLE_GAP_MS = HOUR_MS
 const SAMPLE_RUN_MS = 5 * MINUTE_MS
 // Each batch of a task is written this long after the one before it.
 const BATCH_MS = 15 * SECOND_MS
 // A run's pid is this plus its number: a real pid is a fact of the build machine.
 const PID_BASE = 40_000
-const SAMPLE_SHELL_CALLS = 20
-const SAMPLE_PROMPTS = 2
+// By size: how long the first run takes, long enough for every batch of its biggest task, and how many shell calls and
+// prompts the second model's sample holds.
+const SIZES: Readonly<Record<DemoSize, { firstRunMs: number; shellCalls: number; prompts: number }>> = {
+  small: { firstRunMs: 30 * MINUTE_MS, shellCalls: 20, prompts: 2 },
+  rich: { firstRunMs: 8 * HOUR_MS, shellCalls: 200, prompts: 20 },
+}
 // The tasks the second model labels again, in run order.
 const SAMPLE_TASKS: readonly LabelTaskName[] = ['shell', 'prompt', 'reply']
 
@@ -268,10 +272,10 @@ const sampleParts = (context: ILabelContext, first: ReadonlyMap<LabelTaskName, r
     const reply = context.index.prompts.get(record.key)?.reply
     return record.entries.length > 0 && reply !== null && reply !== undefined && replyKeys.has(reply)
   })
-  const prompts = sampleOf(context.plan, 'prompt', replied, SAMPLE_PROMPTS)
+  const prompts = sampleOf(context.plan, 'prompt', replied, SIZES[context.plan.size].prompts)
   const sampledReplies = new Set(prompts.map((record) => context.index.prompts.get(record.key)?.reply))
   const records: Readonly<Record<string, readonly ITaskRecord[]>> = {
-    shell: sampleOf(context.plan, 'shell', first.get('shell') ?? [], SAMPLE_SHELL_CALLS),
+    shell: sampleOf(context.plan, 'shell', first.get('shell') ?? [], SIZES[context.plan.size].shellCalls),
     prompt: prompts,
     reply: replies.filter((record) => sampledReplies.has(record.key)),
   }
@@ -305,7 +309,13 @@ export const planLabels = (plan: IPlan, scripts: readonly IWriterScripts[], corp
   )
   const context: ILabelContext = { plan, scripts, corpus, index, covered }
   const firstParts = LABEL_TASKS.map((task) => ({ task, records: TASK_RECORDS[task.name](context) }))
-  const first = run(1, 'logbook labels update', plan.labelModel, plan.anchor - FIRST_RUN_BEFORE_ANCHOR_MS, FIRST_RUN_MS)
+  const first = run(
+    1,
+    'logbook labels update',
+    plan.labelModel,
+    plan.anchor - FIRST_RUN_BEFORE_ANCHOR_MS,
+    SIZES[plan.size].firstRunMs
+  )
   const second = secondLabelModel(plan.labelModel)
   const sample = sampleParts(context, new Map(firstParts.map((part) => [part.task.name, part.records])))
   const sampleRuns = sample.map((part, sampleIndex) =>

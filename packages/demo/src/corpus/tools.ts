@@ -54,6 +54,7 @@ export type ProjectToolName =
   | 'search-text'
   | 'run-tests'
   | 'run-tests-slow'
+  | 'run-tests-failing'
   | 'git-status'
   | 'git-diff'
   | 'web-search'
@@ -210,7 +211,7 @@ const GIT_CHANGE = {
 
 export const TOOLS: IToolCorpus = {
   project: {
-    shop: {
+    'shop': {
       'read-source': read('shop', 'src/checkout/discount.ts'),
       'read-test': read('shop', 'test/checkout/discount.test.ts'),
       'edit-source': edit(
@@ -251,6 +252,14 @@ export const TOOLS: IToolCorpus = {
           ' ✓ test/checkout/discount.test.ts (1 test) 3ms\n\n Test Files  1 passed (1)\n % Coverage report from v8\n All files | 91.4 | 88.2',
         durationMs: 78 * SECOND_MS,
       }),
+      'run-tests-failing': shell({
+        ...RULE_TESTS,
+        failure: 'real result',
+        command: 'pnpm test',
+        result:
+          ' FAIL  test/checkout/discount.test.ts > applies a ten percent code\nAssertionError: expected 45.01 to be 45\n\n Test Files  1 failed (1)',
+        durationMs: 4 * SECOND_MS,
+      }),
       'git-status': shell({
         ...GIT_STATE,
         command: 'git status --short',
@@ -272,7 +281,7 @@ export const TOOLS: IToolCorpus = {
         2 * SECOND_MS
       ),
     },
-    billing: {
+    'billing': {
       'read-source': read('billing', 'billing/rounding.py'),
       'read-test': read('billing', 'tests/test_invoice.py'),
       'edit-source': edit(
@@ -311,6 +320,14 @@ export const TOOLS: IToolCorpus = {
         result: '..........\n10 passed in 81.40s (0:01:21)',
         durationMs: 82 * SECOND_MS,
       }),
+      'run-tests-failing': shell({
+        ...MODEL_TESTS,
+        failure: 'real result',
+        command: 'pytest -q',
+        result:
+          "F\nFAILED tests/test_invoice.py::test_rounds_half_up - assert Decimal('0.12') == Decimal('0.13')\n1 failed in 0.13s",
+        durationMs: 3 * SECOND_MS,
+      }),
       'git-status': shell({
         ...GIT_STATE,
         command: 'git status --short',
@@ -328,6 +345,83 @@ export const TOOLS: IToolCorpus = {
         'search',
         { query: 'python decimal quantize round half up cents' },
         '1. Rounding money with decimal - https://example.com/python/decimal-rounding\n2. Half up or half even - https://example.org/money/rounding',
+        2 * SECOND_MS
+      ),
+    },
+    'field-guide': {
+      'read-source': read('field-guide', 'chapters/trail-safety.md'),
+      'read-test': read('field-guide', 'scripts/check-links.sh'),
+      'edit-source': edit(
+        'field-guide',
+        'chapters/ferns.md',
+        'A few grow in open scree.',
+        'A few, such as the parsley fern, grow in open scree above it.'
+      ),
+      'write-test': write(
+        'field-guide',
+        'scripts/check-headings.sh',
+        'set -e\nfor file in chapters/*.md; do head -n 1 "$file" | grep -q "^# " || echo "$file"; done\n'
+      ),
+      'write-doc': write(
+        'field-guide',
+        'chapters/trail-safety.md',
+        '# Trail safety\n\nCarry water for the whole walk.\n\n## Weather\n\nTurn back when the weather turns, not when it is too late.\n'
+      ),
+      'find-files': call(
+        'search',
+        'files',
+        { pattern: 'chapters/*.md' },
+        'chapters/ferns.md\nchapters/glossary.md\nchapters/trail-safety.md',
+        300
+      ),
+      'search-text': call(
+        'search',
+        'text',
+        { pattern: 'tree line', path: PROJECTS['field-guide'].directory },
+        'chapters/ferns.md:3:Most ferns grow in shade below the tree line. A few grow in open scree.\nchapters/glossary.md:4:- **Tree line**: the height above which trees do not grow.',
+        400
+      ),
+      'run-tests': shell({
+        purpose: 'run tests',
+        isRuleSettled: false,
+        failure: 'none',
+        command: 'mdbook test',
+        result: '2026-09-14 10:02:11 [INFO] (mdbook::book): Book building has started\nAll chapters passed.',
+        durationMs: 5 * SECOND_MS,
+      }),
+      'run-tests-slow': shell({
+        purpose: 'run tests',
+        isRuleSettled: false,
+        failure: 'none',
+        command: 'sh scripts/check-links.sh && mdbook build',
+        result: '](chapters/ferns.md)\n](chapters/glossary.md)\nBook building has finished in 74.2s',
+        durationMs: 75 * SECOND_MS,
+      }),
+      'run-tests-failing': shell({
+        purpose: 'run tests',
+        isRuleSettled: false,
+        failure: 'real result',
+        command: 'mdbook test',
+        result: '[ERROR] (mdbook::book): chapters/ferns.md: a link points to chapters/scree.md, which does not exist',
+        durationMs: 5 * SECOND_MS,
+      }),
+      'git-status': shell({
+        ...GIT_STATE,
+        command: 'git status --short',
+        result: ' M chapters/ferns.md',
+        durationMs: 300,
+      }),
+      'git-diff': shell({
+        ...GIT_STATE,
+        command: 'git diff --stat main',
+        result: ' chapters/trail-safety.md | 6 ++++--\n 1 file changed, 4 insertions(+), 2 deletions(-)',
+        durationMs: 300,
+      }),
+      'web-search': call(
+        'web',
+        'search',
+        { query: 'ferns that grow above the tree line' },
+        '1. Mountain ferns of open scree - https://example.com/plants/mountain-ferns\n2. Parsley fern - https://example.org/ferns/parsley-fern',
         2 * SECOND_MS
       ),
     },

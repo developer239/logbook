@@ -40,12 +40,17 @@ export type ReactionName =
   | 'fix-in-code'
   | 'tests-first'
   | 'rates-in-repo'
+  // The rich set's story: the developer corrects a "done" said without running the tests, and praises a small change.
+  | 'claimed-untested'
+  | 'small-and-clean'
 
 export interface IPromptCorpus {
   // By act; a turn takes one of its act's templates.
   byAct: Readonly<Record<PromptAct, readonly IPromptTemplate[]>>
   // What a scripted session is started with, through `claude -p "..."` in another session.
   opening: readonly IOpeningPromptTemplate[]
+  // The rich set's later tasks, which ask for the tests in the task itself.
+  withTests: readonly IPromptTemplate[]
   // The developer's reactions to the agent, by name; a turn takes the template of its act.
   reactions: Readonly<Record<ReactionName, readonly IReactionTemplate[]>>
 }
@@ -103,11 +108,45 @@ export const PROMPTS: IPromptCorpus = {
       { act: 'other', prompt: 'ok, noted' },
     ],
   },
+  withTests: [
+    { act: 'task', prompt: "{work}. run the tests before you tell me it's done" },
+    { act: 'task', prompt: 'please {work}, the code is in {file}. run the tests first, then tell me' },
+    { act: 'task', prompt: "can you {work}? keep it small and run the tests before you say it's done" },
+  ],
   opening: [
     { act: 'question', openingPrompt: 'explain in one paragraph what the cart badge counts' },
     { act: 'question', openingPrompt: 'say in two sentences whether the cart badge counts items or lines' },
   ],
   reactions: {
+    'claimed-untested': [
+      {
+        act: 'continue',
+        reactions: [UNTESTED_CLAIM],
+        prompt: "you said it was done, but the tests never ran. run the tests before you tell me it's done",
+      },
+      {
+        act: 'continue',
+        reactions: [UNTESTED_CLAIM],
+        prompt: "that is not done until the tests pass. run them before you tell me it's done, then go on",
+      },
+      {
+        act: 'continue',
+        reactions: [UNTESTED_CLAIM],
+        prompt: "nothing ran before you called it finished. run the tests before you tell me it's done",
+      },
+    ],
+    'small-and-clean': [
+      {
+        act: 'continue',
+        reactions: [{ reaction: 'praise', about: 'last turn', target: 'scope', reach: 'once', hasSteps: false }],
+        prompt: 'small and clean, exactly what I wanted. go on',
+      },
+      {
+        act: 'continue',
+        reactions: [{ reaction: 'praise', about: 'last turn', target: 'scope', reach: 'once', hasSteps: false }],
+        prompt: 'nice, a small change with the tests run first. carry on',
+      },
+    ],
     // The second turn of the first session, whatever its act: with the two recent sessions it puts a correction, a
     // pushback and praise in two weeks for every seed. Its first reaction also suits a turn after a stop.
     'first-week': [
