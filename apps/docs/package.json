@@ -8,7 +8,6 @@
     "typecheck": "tsc --noEmit",
     "generate": "tsc -p tsconfig.build.json && node dist/scripts/run-generate.js",
     "check": "tsc -p tsconfig.build.json && node dist/scripts/check.js",
-    "sync-readme": "tsc -p tsconfig.build.json && node dist/scripts/sync-readme.js",
     "capture": "tsc -p tsconfig.build.json && node capture/bin/capture.mjs",
     "text-changes": "tsc -p tsconfig.build.json && node dist/scripts/run-text-changes.js"
   },

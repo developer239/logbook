@@ -62,8 +62,6 @@ const check = async (): Promise<number> => {
       repository: REPOSITORY,
       callSites,
       built: BUILT,
-      readme: README,
-      siteUrl: SITE_URL,
     })),
     ...(await checkK7({
       docs: DOCS,

@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { checkK6 } from './k6.js'
 import { findingLine } from './k7.js'
 import type { ICallSite } from './privacy.js'
-import { syncedReadme } from './readme.js'
 
 const STATEMENT = [
   'Log Book runs on your computer.',
@@ -22,16 +21,12 @@ const SITES: readonly ICallSite[] = [
   { file: 'packages/engine/src/claude/claude-process.ts', calls: 'starts claude', case: 'labelling' },
   { file: 'apps/cli/src/host-server.ts', calls: 'listens on 127.0.0.1', case: 'local' },
 ]
-const SITE_URL = 'https://developer239.github.io/logbook/'
-const README_TEMPLATE = 'Log Book in one sentence.\n\n<!-- statement:start -->\n<!-- statement:end -->\n\n## License\n'
-const README = syncedReadme(README_TEMPLATE, STATEMENT, SITE_URL)
 const directories: string[] = []
 
-// A temporary repository with a README and a documentation package holding these files.
-const siteWith = async (files: Readonly<Record<string, string>>, readme = README): Promise<string> => {
+// A temporary repository with a documentation package holding these files.
+const siteWith = async (files: Readonly<Record<string, string>>): Promise<string> => {
   const repository = await mkdtemp(join(tmpdir(), 'docs-k6-'))
   directories.push(repository)
-  await writeFile(join(repository, 'README.md'), readme)
   const all = {
     'src/privacy/statement.md': STATEMENT,
     'src/privacy/summary.md': SUMMARY,
@@ -50,8 +45,7 @@ const siteWith = async (files: Readonly<Record<string, string>>, readme = README
 
 const linesOf = async (repository: string, callSites: readonly ICallSite[] = SITES): Promise<string[]> => {
   const docs = join(repository, 'apps', 'docs')
-  const inputs = { docs, repository, callSites, built: join(docs, 'dist'), readme: join(repository, 'README.md') }
-  return (await checkK6({ ...inputs, siteUrl: SITE_URL })).map(findingLine)
+  return (await checkK6({ docs, repository, callSites, built: join(docs, 'dist') })).map(findingLine)
 }
 
 afterEach(async () => {
@@ -89,13 +83,10 @@ describe('checkK6', () => {
   it('refuses a marker in the statement or the summary for a case no call site has', async () => {
     // Arrange
     const statement = `${STATEMENT}<!-- data-flow-case: telemetry -->\nWe count visits.\n`
-    const repository = await siteWith(
-      {
-        'src/privacy/statement.md': statement,
-        'src/privacy/summary.md': `${SUMMARY}<!-- data-flow-case: updates -->\n`,
-      },
-      syncedReadme(README_TEMPLATE, statement, SITE_URL)
-    )
+    const repository = await siteWith({
+      'src/privacy/statement.md': statement,
+      'src/privacy/summary.md': `${SUMMARY}<!-- data-flow-case: updates -->\n`,
+    })
 
     // Act
     const lines = await linesOf(repository)
@@ -120,28 +111,5 @@ describe('checkK6', () => {
     expect(lines).toStrictEqual([
       'K6 apps/docs/src/privacy/statement.md:3 the link to /labelling/what-it-sends#what-each-request-contains reaches no such heading in the built site',
     ])
-  })
-  it('refuses a README whose statement block has one word changed', async () => {
-    // Arrange
-    const repository = await siteWith({}, README.replace('Nothing else leaves.', 'Nothing more leaves.'))
-
-    // Act
-    const lines = await linesOf(repository)
-
-    // Assert
-    expect(lines).toStrictEqual([
-      "K6 README.md:1 README.md's statement differs from statement.md; run pnpm docs:sync-readme",
-    ])
-  })
-
-  it('refuses a README without the end marker', async () => {
-    // Arrange
-    const repository = await siteWith({}, README.replace('<!-- statement:end -->', ''))
-
-    // Act
-    const lines = await linesOf(repository)
-
-    // Assert
-    expect(lines).toStrictEqual(['K6 README.md:1 README.md lacks <!-- statement:end --> around the statement'])
   })
 })
