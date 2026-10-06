@@ -1,7 +1,7 @@
 import { execFile, spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { tmpdir, userInfo } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { type IPublicPackage, publicPackagesIn, PUBLISH_ORDER, STAGED } from '../stage/stage-libraries.js'
@@ -151,9 +151,81 @@ const runEndToEnd = async (root: string, bin: string, seed: number): Promise<num
   return code
 }
 
+const OFFLINE_TEST = 'apps/cli/test/e2e/offline.e2e.test.ts'
+const OFFLINE_BUDGET_MS = 60_000
+// Run as root inside the new namespace: brings loopback up, then runs the rest of its arguments as the user it is
+// given, with the environment it was given.
+const NAMESPACE_SCRIPT =
+  'ip link set lo up && uid="$1" && gid="$2" && shift 2 && exec setpriv --reuid="$uid" --regid="$gid" --init-groups -- "$@"'
+
+// Step 5, on Linux only: the offline test file again, alone, against the installed binary, inside a new network
+// namespace whose only interface is loopback, so its logbook processes really have no network; with
+// LOGBOOK_E2E_OFFLINE=1 the test fails when it sees any other interface. The namespace is made with sudo, since
+// GitHub's Ubuntu images may restrict unprivileged user namespaces, and the test runs in it as this process's user.
+// Resolves with the failure to report, or null.
+const runOffline = async (root: string, bin: string, seed: number): Promise<string | null> => {
+  const { uid, gid, homedir } = userInfo()
+  const child = spawn(
+    'sudo',
+    [
+      '--preserve-env',
+      `PATH=${process.env.PATH ?? ''}`,
+      `HOME=${homedir}`,
+      'unshare',
+      '--net',
+      '--',
+      'sh',
+      '-c',
+      NAMESPACE_SCRIPT,
+      'sh',
+      String(uid),
+      String(gid),
+      'pnpm',
+      'test:e2e',
+      OFFLINE_TEST,
+      `--sequence.seed=${String(seed)}`,
+    ],
+    {
+      cwd: root,
+      env: { ...process.env, LOGBOOK_E2E_BIN: bin, LOGBOOK_E2E_OFFLINE: '1' },
+      stdio: 'inherit',
+      timeout: OFFLINE_BUDGET_MS,
+    }
+  )
+  const [code] = (await once(child, 'close')) as [number | null]
+  if (child.killed) {
+    return `step 5: the offline run in a network namespace took over ${String(OFFLINE_BUDGET_MS / 1000)} s`
+  }
+  return code === 0 ? null : `step 5: the offline run in a network namespace exited ${String(code)}`
+}
+
+// Steps 4 and 5 against the installed binary; resolves with the failure to report, or null.
+const runAgainst = async (
+  root: string,
+  bin: string,
+  seed: number,
+  report: (line: string) => void
+): Promise<string | null> => {
+  const code = await runEndToEnd(root, bin, seed)
+  if (code !== 0) {
+    return `step 4: the end-to-end run against ${bin} exited ${String(code)}`
+  }
+  report(`The end-to-end run against ${bin} passed.`)
+  if (process.platform !== 'linux') {
+    report(`Step 5, the offline run in a network namespace, runs on Linux only; skipped on ${process.platform}.`)
+    return null
+  }
+  const offline = await runOffline(root, bin, seed)
+  if (offline === null) {
+    report(`The offline run against ${bin} in a network namespace passed.`)
+  }
+  return offline
+}
+
 // `pnpm check:installed --seed <n>`: what users install, not the workspace. Packs every staged package, installs the
 // CLI's tarball globally and the libraries into an empty project with no fetch allowed, imports each public entry,
-// then runs the end-to-end suite against the installed logbook. The temporary directory goes, also after a failure.
+// runs the end-to-end suite against the installed logbook, then, on Linux, its offline test file inside a network
+// namespace. The temporary directory goes, also after a failure.
 export const checkInstalled = async (
   root: string,
   seed: number,
@@ -161,15 +233,15 @@ export const checkInstalled = async (
 ): Promise<number> => {
   const directory = await mkdtemp(join(tmpdir(), 'check-installed-'))
   try {
-    const bin = await installPackages(root, directory, (line) => {
+    const report = (line: string): void => {
       io.stdout(`${line}\n`)
-    })
-    const code = await runEndToEnd(root, bin, seed)
-    if (code !== 0) {
-      io.stderr(`step 4: the end-to-end run against ${bin} exited ${String(code)}\n`)
+    }
+    const bin = await installPackages(root, directory, report)
+    const failed = await runAgainst(root, bin, seed, report)
+    if (failed !== null) {
+      io.stderr(`${failed}\n`)
       return 1
     }
-    io.stdout(`The end-to-end run against ${bin} passed.\n`)
     return 0
   } catch (error) {
     if (error instanceof InstalledFailure) {
