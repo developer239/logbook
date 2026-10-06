@@ -32,7 +32,7 @@ describe('pluginServers', () => {
       inputs(
         [
           announce(50, {
-            added: ['WebFetch', 'mcp__claude_ai_Docs__batch', 'mcp__opencode__jira_get_issue', 'mcp__opencode__oc_run'],
+            added: ['WebFetch', 'mcp__claude_ai_Docs__batch', 'mcp__opencode__jira_get_issue', 'mcp__opencode__launch'],
             surfaced: ['mcp__claude_ai_Docs__batch'],
             pendingServers: [],
             needsAuthServers: [],
@@ -40,8 +40,8 @@ describe('pluginServers', () => {
           }),
         ],
         {
-          loadedInTurn: new Map([['mcp__opencode__oc_run', 2]]),
-          callsOf: (full) => (full === 'mcp__opencode__oc_run' ? 3 : 0),
+          loadedInTurn: new Map([['mcp__opencode__launch', 2]]),
+          callsOf: (full) => (full === 'mcp__opencode__launch' ? 3 : 0),
           definitionOf: (full) => (full.startsWith('mcp__opencode__') ? 400 : null),
         }
       )
@@ -81,7 +81,7 @@ describe('pluginServers', () => {
             removedInTurn: null,
           },
           {
-            name: 'oc_run',
+            name: 'launch',
             calls: 3,
             nameTokens: 6,
             definitionTokens: 400,
@@ -102,7 +102,7 @@ describe('pluginServers', () => {
           needsAuthServers: ['claude.ai Slack'],
           failedServers: [{ name: 'opencode', error: 'timed out after 30000ms' }],
         }),
-        announce(2000, { added: ['mcp__opencode__oc_run'], failedServers: [] }),
+        announce(2000, { added: ['mcp__opencode__launch'], failedServers: [] }),
       ])
     )
 
@@ -129,7 +129,7 @@ describe('pluginServers', () => {
         'timed out after 30000ms',
         [
           {
-            name: 'oc_run',
+            name: 'launch',
             calls: 0,
             nameTokens: 6,
             definitionTokens: null,
@@ -143,17 +143,17 @@ describe('pluginServers', () => {
   })
 
   it('should take a re-announcement after a compaction as nothing new and a drop as a removal', () => {
-    const all = ['mcp__opencode__oc_run', 'mcp__opencode__jira_get_issue']
+    const all = ['mcp__opencode__launch', 'mcp__opencode__jira_get_issue']
     const servers = pluginServers(
       inputs([
         announce(50, { added: all }),
         announce(500, { removed: ['mcp__opencode__jira_get_issue'] }),
-        announce(1500, { added: ['mcp__opencode__oc_run'] }),
+        announce(1500, { added: ['mcp__opencode__launch'] }),
       ])
     )
 
     expect(servers?.[0]?.tools.map((tool) => [tool.name, tool.addedInTurn, tool.removedInTurn])).toEqual([
-      ['oc_run', null, null],
+      ['launch', null, null],
       ['jira_get_issue', null, 1],
     ])
   })
@@ -194,12 +194,12 @@ describe('calledPlugins', () => {
   it('should count each plugin tool a session called, by plugin, the most called first', () => {
     const plugins = calledPlugins([
       { name: 'jira_get_issue', plugin: 'jira', calls: 1, definitionTokens: null },
-      { name: 'oc_run', plugin: 'opencode', calls: 1, definitionTokens: 1200 },
-      { name: 'oc_run', plugin: 'opencode', calls: 1, definitionTokens: 1200 },
+      { name: 'launch', plugin: 'opencode', calls: 1, definitionTokens: 1200 },
+      { name: 'launch', plugin: 'opencode', calls: 1, definitionTokens: 1200 },
     ])
 
     expect(plugins).toEqual([
-      { plugin: 'opencode', tools: [{ name: 'oc_run', calls: 2, definitionTokens: 1200 }] },
+      { plugin: 'opencode', tools: [{ name: 'launch', calls: 2, definitionTokens: 1200 }] },
       { plugin: 'jira', tools: [{ name: 'jira_get_issue', calls: 1, definitionTokens: null }] },
     ])
   })

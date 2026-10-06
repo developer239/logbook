@@ -118,10 +118,10 @@ describe('toolIs', () => {
   })
 
   it('should match an underscore in the name as an underscore', () => {
-    call('c1', 'mcp__opencode__oc_run', { bare_name: 'oc_run', server: 'opencode' })
+    call('c1', 'mcp__opencode__launch', { bare_name: 'launch', server: 'opencode' })
     call('c2', 'mcp__opencode__ocXrun', { bare_name: 'ocXrun', server: 'opencode' })
 
-    expect(toolsNamed('oc_run')).toEqual(['mcp__opencode__oc_run'])
+    expect(toolsNamed('launch')).toEqual(['mcp__opencode__launch'])
   })
 })
 

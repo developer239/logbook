@@ -2,34 +2,63 @@ import type { ISqliteDb } from '@log-book/core'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { parseFilter } from '../filter'
 import type * as Labels from '../labels'
-import { everything, harness, message, session, START } from '../testing/rows'
-import { seedWarehouse, type ITestWarehouse } from '../testing/warehouse'
+import { parseRange } from '../range'
+import { emptyWarehouse, insert, type ITestWarehouse } from '../testing/warehouse'
 import { MINUTE } from '../time'
 import type * as Conversations from './conversations'
 import type * as HarnessQueries from './harnesses'
 import type * as Session from './session'
 import type * as Thread from './thread'
 
+const START = Date.UTC(2026, 8, 14, 10)
+
 // Two invented harnesses, a session of each, and one of a harness no sync described.
 const seed = (db: ISqliteDb): void => {
-  harness(db, { id: 'example', name: 'Example Harness', defaultAgent: 'helper', filterAlias: 'ex' })
-  harness(db, { id: 'sample', name: 'Sample Harness', defaultAgent: 'worker', filterAlias: 'sa' })
+  for (const [id, name, agent, alias] of [
+    ['example', 'Example Harness', 'helper', 'ex'],
+    ['sample', 'Sample Harness', 'worker', 'sa'],
+  ] as const) {
+    insert(db, 'harness', {
+      id,
+      name,
+      default_agent: agent,
+      filter_alias: alias,
+      is_found: 1,
+      checked_at: START,
+      location_variables: '[]',
+    })
+  }
   for (const [id, of, agent] of [
     ['example:demo-0001', 'example', null],
     ['sample:demo-0001', 'sample', 'reviewer'],
     ['ghost:demo-0001', 'ghost', null],
   ] as const) {
-    session(db, {
+    insert(db, 'session', {
       id,
       harness: of,
+      source_id: 'demo-0001',
       origin: 'interactive',
+      is_scripted: 0,
       title: `Work in ${of}`,
-      ...(agent === null ? {} : { agent }),
-      startedAt: START,
-      endedAt: START + MINUTE,
+      agent,
+      started_at: START,
+      ended_at: START + MINUTE,
     })
-    message(db, { id: `${id}/m1`, sessionId: id, seq: 0, actor: 'user', at: START, text: 'Rename the release script' })
-    message(db, { id: `${id}/m2`, sessionId: id, seq: 1, actor: 'assistant', at: START + 1000, text: 'Done.' })
+    for (const [seq, actor, text] of [
+      [0, 'user', 'Rename the release script'],
+      [1, 'assistant', 'Done.'],
+    ] as const) {
+      const messageId = `${id}/m${String(seq + 1)}`
+      insert(db, 'message', {
+        id: messageId,
+        session_id: id,
+        seq,
+        actor,
+        source_role: actor,
+        created_at: START + seq * 1000,
+      })
+      insert(db, 'part', { message_id: messageId, session_id: id, idx: 0, kind: 'text', text })
+    }
   }
 }
 
@@ -41,7 +70,8 @@ let threads: typeof Thread
 let labels: typeof Labels
 
 beforeAll(async () => {
-  warehouse = await seedWarehouse(seed)
+  warehouse = await emptyWarehouse()
+  seed(warehouse.db)
   harnesses = await import('./harnesses')
   list = await import('./conversations')
   sessions = await import('./session')
@@ -55,7 +85,7 @@ afterAll(async () => {
 
 const idsOf = (query: string): string[] =>
   list
-    .conversations(parseFilter(query), everything(), 0, harnesses.harnessesOf())
+    .conversations(parseFilter(query), parseRange(new URLSearchParams('range=all'), START), 0, harnesses.harnessesOf())
     .rows.map((row) => row.id)
     .toSorted()
 

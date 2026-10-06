@@ -15,7 +15,7 @@ describe('stepsHeading', () => {
   })
 
   it('should name the tool the list is narrowed to', () => {
-    expect(heading('cause=Tool+bug&tool=oc_run')).toBe('Failed: Tool bug · oc_run')
+    expect(heading('cause=Tool+bug&tool=launch')).toBe('Failed: Tool bug · launch')
   })
 
   it('should read a cause before a slow call, and either before a plain failure', () => {

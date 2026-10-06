@@ -4,41 +4,29 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { openSqlite, type ISqliteDb } from '@log-book/core'
 import { createTestWarehouse, insert } from '@log-book/warehouse/testing'
-import { vi } from 'vitest'
+import { inject, vi } from 'vitest'
 
 export { insert }
 
+// A warehouse of the test's own, which LOGBOOK_DB names, open for the odd row a test adds with `insert`. The app opens
+// its warehouse once per module, so a test imports the modules it exercises after taking one.
 export interface ITestWarehouse {
   path: string
+  db: ISqliteDb
   remove: () => Promise<void>
 }
 
-// The app opens its warehouse once per module, so a test imports the modules it
-// exercises after this call.
-export const seedWarehouse = async (seed: (db: ISqliteDb) => void): Promise<ITestWarehouse> => {
-  const warehouse = await createTestWarehouse()
-  seed(warehouse.db)
+// The demo sets the web project's setup builds once per run.
+export type DemoSet = 'demoSmall' | 'demoSmallNoLabels'
 
-  vi.stubEnv('LOGBOOK_DB', warehouse.path)
+const useWarehouse = (path: string): void => {
+  vi.stubEnv('LOGBOOK_DB', path)
   vi.resetModules()
-
-  return {
-    path: warehouse.path,
-    remove: async () => {
-      vi.unstubAllEnvs()
-      await warehouse.remove()
-    },
-  }
-}
-
-export interface ICopiedWarehouse extends ITestWarehouse {
-  // The copy, open for the odd row a test adds on top of it with `insert`.
-  db: ISqliteDb
 }
 
 // A built warehouse (a demo set's) copied into the test's own directory, with the write-ahead log beside it, so no two
-// tests share a file. LOGBOOK_DB names the copy for the test, and the app's modules are reset so they open it.
-export const copyWarehouse = async (path: string): Promise<ICopiedWarehouse> => {
+// tests share a file.
+export const copyWarehouse = async (path: string): Promise<ITestWarehouse> => {
   const directory = await mkdtemp(join(tmpdir(), 'web-warehouse-'))
   const copy = join(directory, 'warehouse.db')
   await Promise.all(
@@ -47,9 +35,7 @@ export const copyWarehouse = async (path: string): Promise<ICopiedWarehouse> => 
       .map(async (suffix) => copyFile(`${path}${suffix}`, `${copy}${suffix}`))
   )
   const db = await openSqlite(copy, { isReadOnly: false })
-
-  vi.stubEnv('LOGBOOK_DB', copy)
-  vi.resetModules()
+  useWarehouse(copy)
 
   return {
     path: copy,
@@ -58,6 +44,24 @@ export const copyWarehouse = async (path: string): Promise<ICopiedWarehouse> => 
       db.close()
       vi.unstubAllEnvs()
       await rm(directory, { recursive: true, force: true })
+    },
+  }
+}
+
+// A copy of one of the run's demo sets: the product's own adapters and engine wrote it.
+export const copyDemo = async (set: DemoSet): Promise<ITestWarehouse> => copyWarehouse(inject(set).warehouse)
+
+// A migrated warehouse with no row at all, for the states a warehouse is in before anything was imported.
+export const emptyWarehouse = async (): Promise<ITestWarehouse> => {
+  const warehouse = await createTestWarehouse()
+  useWarehouse(warehouse.path)
+
+  return {
+    path: warehouse.path,
+    db: warehouse.db,
+    remove: async () => {
+      vi.unstubAllEnvs()
+      await warehouse.remove()
     },
   }
 }

@@ -5,11 +5,12 @@ import type { ISqliteDb } from '@log-book/core'
 import { readSyncLock, SCHEMA_VERSION, takeSyncLock, type IHeldLock } from '@log-book/warehouse'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type * as State from './state'
-import { session, START } from './testing/rows'
-import { insert, seedWarehouse, type ITestWarehouse } from './testing/warehouse'
+import { emptyWarehouse, insert, type ITestWarehouse } from './testing/warehouse'
 import { MINUTE } from './time'
 
 const RUN_IN_TERMINAL = 'Run logbook sync in a terminal to see the full output.'
+
+const START = Date.UTC(2026, 8, 14, 10)
 
 let warehouse: ITestWarehouse
 let db: ISqliteDb
@@ -34,13 +35,15 @@ const record = (outcome: string | null, error: string | null = null, isEnded = t
 }
 
 const withSession = (): void => {
-  session(db, {
+  insert(db, 'session', {
     id: 'one:demo-0001',
     harness: 'one',
+    source_id: 'demo-0001',
     origin: 'interactive',
+    is_scripted: 0,
     title: 'One',
-    startedAt: START,
-    endedAt: START,
+    started_at: START,
+    ended_at: START,
   })
 }
 
@@ -56,9 +59,8 @@ const harness = (row: { id: string; name: string } & Record<string, unknown>): v
 }
 
 beforeAll(async () => {
-  warehouse = await seedWarehouse((seeded) => {
-    db = seeded
-  })
+  warehouse = await emptyWarehouse()
+  ;({ db } = warehouse)
   state = await import('./state')
   holder = spawn(process.execPath, ['-e', 'setInterval(() => {}, 60000)'], { stdio: 'ignore' })
   if (holder.pid === undefined) {
