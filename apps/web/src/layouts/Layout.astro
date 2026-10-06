@@ -1,14 +1,16 @@
 ---
 import type { ComponentProps } from 'astro/types'
 import TopBar from '../components/TopBar.astro'
+import FirstRun from '../components/first-run/FirstRun.astro'
 import PageProblem from '../components/ui/PageProblem.astro'
+import type { PageProblem as TPageProblem } from '../lib/load'
 import '../styles/tokens.css'
 import '../styles/base.css'
 import './Layout.css'
 
 type Props = Pick<ComponentProps<typeof TopBar>, 'current' | 'range' | 'syncedAt' | 'conversation'> & {
   title: string
-  problem?: string | null
+  problem?: TPageProblem | null
   back?: string
 }
 
@@ -21,6 +23,8 @@ const {
   problem = null,
   back = `${Astro.url.pathname}${Astro.url.search}`,
 } = Astro.props
+
+const firstRun = typeof problem === 'object' ? problem : null
 ---
 
 <!doctype html>
@@ -29,11 +33,21 @@ const {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} · Log Book</title>
+    {firstRun?.isReloading === true && <meta http-equiv="refresh" content="5" />}
   </head>
   <body>
-    <TopBar current={current} range={range} syncedAt={syncedAt} conversation={conversation} back={back} />
+    <TopBar
+      current={current}
+      range={range}
+      syncedAt={syncedAt}
+      conversation={conversation}
+      back={back}
+      canSync={firstRun?.canSync ?? true}
+    />
     <main class="layout">
-      {problem === null ? <slot /> : <PageProblem problem={problem} />}
+      {problem === null && <slot />}
+      {typeof problem === 'string' && <PageProblem problem={problem} />}
+      {firstRun !== null && <FirstRun firstRun={firstRun} back={back} />}
     </main>
   </body>
 </html>

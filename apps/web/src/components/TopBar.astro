@@ -14,9 +14,11 @@ interface Props {
   conversation?: { title: string; href: string } | undefined
   syncedAt: number | null
   back: string
+  // A newer warehouse refuses this build, so a sync from here could not read it either.
+  canSync: boolean
 }
 
-const { current, range, conversation, syncedAt, back } = Astro.props
+const { current, range, conversation, syncedAt, back, canSync } = Astro.props
 
 const rangeHref = (key: string): string => {
   const params = new URLSearchParams(Astro.url.search)
@@ -80,13 +82,17 @@ const days = range === null || range.key === 'all' ? null : { from: isoDay(range
         </>
       )
     }
-    <form class="top-bar__sync" method="post" action="/sync" data-sync>
-      <input type="hidden" name="back" value={back} />
-      <Button class="top-bar__sync-button" variant="soft" type="submit" title="Import what changed since the last sync">
-        <Status tone={syncedAt === null ? 'hollow' : 'good'} />
-        <span data-sync-label>{syncedAt === null ? 'Never synced' : `Synced ${ago(syncedAt)}`}</span>
-      </Button>
-    </form>
+    {
+      canSync && (
+        <form class="top-bar__sync" method="post" action="/sync" data-sync>
+          <input type="hidden" name="back" value={back} />
+          <Button class="top-bar__sync-button" variant="soft" type="submit" title="Import what changed since the last sync">
+            <Status tone={syncedAt === null ? 'hollow' : 'good'} />
+            <span data-sync-label>{syncedAt === null ? 'Never synced' : `Synced ${ago(syncedAt)}`}</span>
+          </Button>
+        </form>
+      )
+    }
   </div>
 </header>
 

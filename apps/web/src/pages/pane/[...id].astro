@@ -44,7 +44,7 @@ if (!page.ok) {
     />
   ) : (
     <Card title="Turn" level={2} data-turn-pane="">
-      <PageProblem slot="flush" problem={page.problem} />
+      <PageProblem slot="flush" problem={typeof page.problem === 'string' ? page.problem : page.problem.headline} />
     </Card>
   )
 }
