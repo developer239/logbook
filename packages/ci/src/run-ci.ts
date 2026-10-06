@@ -1,6 +1,7 @@
 import { dependencyFindings } from './checks/deps.js'
 import { fixtureFindings } from './checks/fixtures.js'
 import { harnessFindings, ownerFindings } from './checks/literals.js'
+import { networkFindings } from './checks/network.js'
 import { releaseFindings } from './checks/release.js'
 import { checkTests } from './checks/tests.js'
 import { stageCli } from './stage/stage-cli.js'
@@ -42,6 +43,7 @@ const COMMANDS: Readonly<Record<string, CiCommand>> = {
   'deps': check(dependencyFindings),
   'fixtures': check(fixtureFindings),
   'release': check(releaseFindings),
+  'network': check(networkFindings),
   'literals': async (args, io) => {
     const [option] = args
     const findingsOf = args.length === 1 && option !== undefined ? LITERAL_CHECKS[option] : undefined

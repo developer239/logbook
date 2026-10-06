@@ -55,6 +55,8 @@ jobs:
         run: |
           pnpm check:fixtures
           pnpm check:tests
+      - name: 7. Network call sites
+        run: pnpm check:network
       - name: 8. Release guard
         run: pnpm check:release
       # The web tests build the demo through the staged CLI, so the build stages it before they run; step 14 still
