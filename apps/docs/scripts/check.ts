@@ -7,6 +7,7 @@ import { checkK3 } from '../capture/k3.js'
 import { SITE_URL } from '../site.js'
 import { checkK6 } from './k6.js'
 import { checkK7, findingLine } from './k7.js'
+import { checkK8 } from './k8.js'
 import { callSitesOf } from './privacy.js'
 import { WHAT_TO_DO } from './what-to-do.js'
 
@@ -44,6 +45,7 @@ const check = async (): Promise<number> => {
       binary: PACKAGE.binary,
       packageName: PACKAGE.name,
     })),
+    ...(await checkK8({ docs: DOCS, captures: join(BUILT, 'captures'), repository: REPOSITORY })),
   ]
   for (const finding of findings) {
     process.stdout.write(`${findingLine(finding)}\n`)

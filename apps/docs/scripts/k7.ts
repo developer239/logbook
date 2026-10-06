@@ -103,7 +103,7 @@ const argumentsOf = (line: string, binary: string, packageName: string): string[
 }
 
 // The lines inside fenced code blocks, with their line numbers.
-const codeLines = (text: string): { line: number; text: string }[] => {
+export const codeLines = (text: string): { line: number; text: string }[] => {
   let fence: string | null = null
   return text.split('\n').flatMap((line, index) => {
     const opening = FENCE.exec(line)?.groups?.fence
@@ -119,7 +119,8 @@ const codeLines = (text: string): { line: number; text: string }[] => {
   })
 }
 
-const pagesOf = async (docs: string): Promise<string[]> =>
+// Every hand-written page under src, relative to it, in order.
+export const pagesOf = async (docs: string): Promise<string[]> =>
   (await readdir(join(docs, 'src'), { recursive: true }))
     .filter((path) => path.endsWith('.md') && !path.startsWith(GENERATED))
     .toSorted()
