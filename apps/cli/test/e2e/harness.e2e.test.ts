@@ -54,7 +54,7 @@ describe('the end-to-end harness', () => {
       expect(existsSync(ran)).toBe(false)
     })
 
-    it('runs the file LOGBOOK_E2E_BIN names directly, with exactly the sealed environment and the named variables', async () => {
+    it('runs the file LOGBOOK_E2E_BIN names, with exactly the sealed environment and the named variables', async () => {
       // Arrange
       const home = await harness.createHome()
       const firstOnPath = join(home.out, 'fakes')

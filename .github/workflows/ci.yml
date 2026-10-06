@@ -93,6 +93,12 @@ jobs:
         run: pnpm run stage
       - name: 15. Package checks
         run: pnpm check:package
+      # What users install: every staged package packed and installed offline, then the end-to-end suite against the
+      # installed logbook, in the order of the same seed as step 13.
+      - name: 16. Installed smoke
+        env:
+          SEED: ${{ steps.seed.outputs.seed }}
+        run: pnpm check:installed --seed "$SEED"
 
   # The demo dataset's checks that need a built set, and the scan of committed demo captures that packages/ci cannot
   # run itself, since it may not import the demo package. Its one test command is test:demo; its other steps are static

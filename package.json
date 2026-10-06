@@ -43,7 +43,8 @@
     "check:literals": "pnpm ci:build && node packages/ci/dist/index.js literals",
     "check:network": "pnpm ci:build && node packages/ci/dist/index.js network",
     "check:package": "pnpm ci:build && node packages/ci/dist/index.js package",
-    "release:version": "pnpm ci:build && node packages/ci/dist/index.js release"
+    "release:version": "pnpm ci:build && node packages/ci/dist/index.js release",
+    "check:installed": "pnpm ci:build && node packages/ci/dist/index.js installed"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",

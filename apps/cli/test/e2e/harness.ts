@@ -160,11 +160,12 @@ const refuseOutsideTemporary = async (environment: Readonly<Record<string, strin
   }
 }
 
-// The command line of a logbook run: the file LOGBOOK_E2E_BIN names, run directly, or the staged shim run by this Node.
+// The command line of a logbook run: the file LOGBOOK_E2E_BIN names or the staged shim, either run by this Node. The
+// sealed PATH reaches no node for an installed binary's #! line to find; check:installed runs that binary directly.
 const commandOf = (args: readonly string[]): { file: string; args: string[] } => {
   const binary = process.env[BINARY_VARIABLE]
   if (binary !== undefined && binary !== '') {
-    return { file: binary, args: [...args] }
+    return { file: process.execPath, args: [binary, ...args] }
   }
   if (!existsSync(BUILT_SHIM)) {
     throw new Error('the built CLI is missing; run pnpm build')
