@@ -63,7 +63,13 @@ const SIDEBAR: DefaultTheme.SidebarItem[] = [
       { text: 'Environment variables', link: '/reference/environment' },
     ],
   },
-  { text: 'Help', items: [{ text: 'Troubleshooting', link: '/help/troubleshooting' }] },
+  {
+    text: 'Help',
+    items: [
+      { text: 'Troubleshooting', link: '/help/troubleshooting' },
+      { text: 'The license in plain words', link: '/help/license' },
+    ],
+  },
 ]
 
 // The README's first line, so the site, the README and npm describe Log Book in the same sentence.
@@ -111,9 +117,12 @@ export default defineConfigWithTheme<IThemeConfig>({
   sitemap: { hostname: SITE_URL },
   head: [
     ['meta', { 'http-equiv': 'Content-Security-Policy', 'content': CONTENT_SECURITY_POLICY }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${BASE_PATH}favicon.svg` }],
     ['meta', { property: 'og:image', content: new URL('captures/dashboard-dark.png', SITE_URL).href }],
   ],
   themeConfig: {
+    // Drawn by hand as plain shapes; apps/docs/artwork.json lists it.
+    logo: '/logo.svg',
     nav: [
       { text: 'Docs', link: '/start/install' },
       { text: 'Reference', link: '/reference/cli' },
