@@ -6,12 +6,63 @@ settings:
 
 catalogs:
   default:
+    '@astrojs/node':
+      specifier: 11.1.6
+      version: 11.1.6
+    '@astrojs/ts-content-mapper':
+      specifier: 0.2.0
+      version: 0.2.0
+    '@commitlint/cli':
+      specifier: 21.2.3
+      version: 21.2.3
+    '@commitlint/config-conventional':
+      specifier: 21.2.3
+      version: 21.2.3
+    '@commitlint/lint':
+      specifier: 21.2.3
+      version: 21.2.3
+    '@commitlint/load':
+      specifier: 21.2.3
+      version: 21.2.3
+    '@commitlint/types':
+      specifier: 21.2.3
+      version: 21.2.3
     '@types/node':
       specifier: 24.19.1
       version: 24.19.1
+    astro:
+      specifier: 7.3.5
+      version: 7.3.5
+    esbuild:
+      specifier: 0.28.2
+      version: 0.28.2
+    husky:
+      specifier: 9.1.7
+      version: 9.1.7
+    knip:
+      specifier: 6.39.0
+      version: 6.39.0
+    lint-staged:
+      specifier: 17.6.0
+      version: 17.6.0
     mermaid:
       specifier: 12.1.0
       version: 12.1.0
+    oxfmt:
+      specifier: 0.71.0
+      version: 0.71.0
+    oxlint:
+      specifier: 1.86.0
+      version: 1.86.0
+    oxlint-tsgolint:
+      specifier: 7.0.2003
+      version: 7.0.2003
+    stylelint:
+      specifier: 17.16.0
+      version: 17.16.0
+    typescript:
+      specifier: 7.1.0-dev.20261003.1
+      version: 7.1.0-dev.20261003.1
     vitepress:
       specifier: 1.6.3
       version: 1.6.3
@@ -24,6 +75,9 @@ catalogs:
     vue:
       specifier: 3.5.39
       version: 3.5.39
+    yaml:
+      specifier: 2.9.1
+      version: 2.9.1
 
 importers:
 
@@ -96,6 +150,9 @@ importers:
 
   apps/docs:
     devDependencies:
+      '@log-book/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.1
@@ -104,16 +161,16 @@ importers:
         version: 12.1.0
       vitepress:
         specifier: 'catalog:'
-        version: 1.6.3(@algolia/client-search@5.59.0)(@types/node@24.19.1)(lightningcss@1.33.0)(postcss@8.5.28)(search-insights@2.17.3)
+        version: 1.6.3(@algolia/client-search@5.59.0)(@types/node@24.19.1)(lightningcss@1.33.0)(postcss@8.5.28)(search-insights@2.17.3)(typescript@7.1.0-dev.20261003.1)
       vitepress-mermaid-renderer:
         specifier: 'catalog:'
-        version: 1.2.2(mermaid@12.1.0)(vue@3.5.39)
+        version: 1.2.2(mermaid@12.1.0)(vue@3.5.39(typescript@7.1.0-dev.20261003.1))
       vitest:
         specifier: 'catalog:'
         version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       vue:
         specifier: 'catalog:'
-        version: 3.5.39
+        version: 3.5.39(typescript@7.1.0-dev.20261003.1)
 
   apps/web:
     dependencies:
@@ -5629,10 +5686,10 @@ snapshots:
       d3-selection: 3.0.0
       d3-transition: 3.0.1(d3-selection@3.0.0)
 
-  '@vitejs/plugin-vue@5.2.4(vite@5.4.21(@types/node@24.19.1)(lightningcss@1.33.0))(vue@3.5.39)':
+  '@vitejs/plugin-vue@5.2.4(vite@5.4.21(@types/node@24.19.1)(lightningcss@1.33.0))(vue@3.5.39(typescript@7.1.0-dev.20261003.1))':
     dependencies:
       vite: 5.4.21(@types/node@24.19.1)(lightningcss@1.33.0)
-      vue: 3.5.39
+      vue: 3.5.39(typescript@7.1.0-dev.20261003.1)
 
   '@vitest/mocker@5.0.3(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))':
     dependencies:
@@ -5709,30 +5766,30 @@ snapshots:
       '@vue/shared': 3.5.39
       csstype: 3.2.3
 
-  '@vue/server-renderer@3.5.39(vue@3.5.39)':
+  '@vue/server-renderer@3.5.39(vue@3.5.39(typescript@7.1.0-dev.20261003.1))':
     dependencies:
       '@vue/compiler-ssr': 3.5.39
       '@vue/shared': 3.5.39
-      vue: 3.5.39
+      vue: 3.5.39(typescript@7.1.0-dev.20261003.1)
 
   '@vue/shared@3.5.39': {}
 
   '@vue/shared@3.5.43': {}
 
-  '@vueuse/core@12.8.2':
+  '@vueuse/core@12.8.2(typescript@7.1.0-dev.20261003.1)':
     dependencies:
       '@types/web-bluetooth': 0.0.21
       '@vueuse/metadata': 12.8.2
-      '@vueuse/shared': 12.8.2
-      vue: 3.5.39
+      '@vueuse/shared': 12.8.2(typescript@7.1.0-dev.20261003.1)
+      vue: 3.5.39(typescript@7.1.0-dev.20261003.1)
     transitivePeerDependencies:
       - typescript
 
-  '@vueuse/integrations@12.8.2(focus-trap@7.8.0)':
+  '@vueuse/integrations@12.8.2(focus-trap@7.8.0)(typescript@7.1.0-dev.20261003.1)':
     dependencies:
-      '@vueuse/core': 12.8.2
-      '@vueuse/shared': 12.8.2
-      vue: 3.5.39
+      '@vueuse/core': 12.8.2(typescript@7.1.0-dev.20261003.1)
+      '@vueuse/shared': 12.8.2(typescript@7.1.0-dev.20261003.1)
+      vue: 3.5.39(typescript@7.1.0-dev.20261003.1)
     optionalDependencies:
       focus-trap: 7.8.0
     transitivePeerDependencies:
@@ -5740,9 +5797,9 @@ snapshots:
 
   '@vueuse/metadata@12.8.2': {}
 
-  '@vueuse/shared@12.8.2':
+  '@vueuse/shared@12.8.2(typescript@7.1.0-dev.20261003.1)':
     dependencies:
-      vue: 3.5.39
+      vue: 3.5.39(typescript@7.1.0-dev.20261003.1)
     transitivePeerDependencies:
       - typescript
 
@@ -7522,12 +7579,12 @@ snapshots:
     optionalDependencies:
       vite: 8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
 
-  vitepress-mermaid-renderer@1.2.2(mermaid@12.1.0)(vue@3.5.39):
+  vitepress-mermaid-renderer@1.2.2(mermaid@12.1.0)(vue@3.5.39(typescript@7.1.0-dev.20261003.1)):
     dependencies:
       mermaid: 12.1.0
-      vue: 3.5.39
+      vue: 3.5.39(typescript@7.1.0-dev.20261003.1)
 
-  vitepress@1.6.3(@algolia/client-search@5.59.0)(@types/node@24.19.1)(lightningcss@1.33.0)(postcss@8.5.28)(search-insights@2.17.3):
+  vitepress@1.6.3(@algolia/client-search@5.59.0)(@types/node@24.19.1)(lightningcss@1.33.0)(postcss@8.5.28)(search-insights@2.17.3)(typescript@7.1.0-dev.20261003.1):
     dependencies:
       '@docsearch/css': 3.8.2
       '@docsearch/js': 3.8.2(@algolia/client-search@5.59.0)(search-insights@2.17.3)
@@ -7536,17 +7593,17 @@ snapshots:
       '@shikijs/transformers': 2.5.0
       '@shikijs/types': 2.5.0
       '@types/markdown-it': 14.2.0
-      '@vitejs/plugin-vue': 5.2.4(vite@5.4.21(@types/node@24.19.1)(lightningcss@1.33.0))(vue@3.5.39)
+      '@vitejs/plugin-vue': 5.2.4(vite@5.4.21(@types/node@24.19.1)(lightningcss@1.33.0))(vue@3.5.39(typescript@7.1.0-dev.20261003.1))
       '@vue/devtools-api': 7.7.10
       '@vue/shared': 3.5.43
-      '@vueuse/core': 12.8.2
-      '@vueuse/integrations': 12.8.2(focus-trap@7.8.0)
+      '@vueuse/core': 12.8.2(typescript@7.1.0-dev.20261003.1)
+      '@vueuse/integrations': 12.8.2(focus-trap@7.8.0)(typescript@7.1.0-dev.20261003.1)
       focus-trap: 7.8.0
       mark.js: 8.11.1
       minisearch: 7.2.0
       shiki: 2.5.0
       vite: 5.4.21(@types/node@24.19.1)(lightningcss@1.33.0)
-      vue: 3.5.39
+      vue: 3.5.39(typescript@7.1.0-dev.20261003.1)
     optionalDependencies:
       postcss: 8.5.28
     transitivePeerDependencies:
@@ -7600,13 +7657,15 @@ snapshots:
 
   vscode-jsonrpc@9.0.3: {}
 
-  vue@3.5.39:
+  vue@3.5.39(typescript@7.1.0-dev.20261003.1):
     dependencies:
       '@vue/compiler-dom': 3.5.39
       '@vue/compiler-sfc': 3.5.39
       '@vue/runtime-dom': 3.5.39
-      '@vue/server-renderer': 3.5.39(vue@3.5.39)
+      '@vue/server-renderer': 3.5.39(vue@3.5.39(typescript@7.1.0-dev.20261003.1))
       '@vue/shared': 3.5.39
+    optionalDependencies:
+      typescript: 7.1.0-dev.20261003.1
 
   walk-up-path@4.0.0: {}
 

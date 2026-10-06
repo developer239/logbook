@@ -27,6 +27,10 @@
       "entry": ["src/index.ts", "src/source-writer/index.ts"],
       "project": ["src/**/*.ts", "fixtures/**/*.ts"]
     },
+    "apps/docs": {
+      "entry": ["scripts/generate.ts"],
+      "project": ["*.ts", "scripts/**/*.ts", ".vitepress/**/*.{ts,mts,vue}"]
+    },
     "apps/web": {
       "entry": ["src/pages/**/*.astro", "src/scripts/*.ts"],
       "project": ["src/**/*.{ts,astro}", "test/**/*.ts"]
