@@ -92,7 +92,7 @@ const trackedFileFindings = (file: string, head: Buffer): string[] => [
 ]
 
 // Every owner literal in a tracked text file, by file, line and literal and never more of the line; every tracked demo
-// build output or SQLite database; and every committed image or video that breaks rules M1 to M4.
+// build output or SQLite database; and every committed image or video that breaks rules M1 to M5.
 export const ownerFindings = async (root: string): Promise<string[]> => {
   const files = await trackedFiles(root, ['.'])
   const findings = await Promise.all(

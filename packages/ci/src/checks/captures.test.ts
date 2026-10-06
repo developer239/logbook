@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ARTWORK_FILE, COMMITTED_CAPTURES_FILE, COVERED_CATEGORIES, OWNER_LOGIN } from '../rules/capture-rules.js'
+import { png } from '../testing/capture-bytes.js'
 import { gitWorkspaces } from '../testing/git-workspace.js'
 import { trackedFiles } from '../tracked-files.js'
 import { captureFindings } from './captures.js'
@@ -9,11 +10,11 @@ const COMMITTED = 'apps/docs/src/public/committed'
 const OWNER_PNG = `${COMMITTED}/dashboard-90-days.png`
 const DEMO_PNG = `${COMMITTED}/conversation-dark.png`
 const DEMO_TEXT = `${COMMITTED}/conversation-dark.txt`
-const PNG_BYTES = 'invented png bytes'
+const PNG_BYTES = png()
 const TEXT = 'Turn 01\n'
 const workspaces = gitWorkspaces()
 
-const sha256 = (text: string): string => createHash('sha256').update(text).digest('hex')
+const sha256 = (bytes: string | Buffer): string => createHash('sha256').update(bytes).digest('hex')
 
 const ownerEntry = (fields: Record<string, unknown> = {}): Record<string, unknown> => ({
   file: OWNER_PNG,
@@ -39,7 +40,7 @@ const demoEntry = (fields: Record<string, unknown> = {}): Record<string, unknown
 // A repository holding these files, the artwork list and the manifest with these entries, all tracked; the findings
 // of its tracked files.
 const findingsFor = async (
-  files: Readonly<Record<string, string>>,
+  files: Readonly<Record<string, string | Buffer>>,
   entries: readonly unknown[],
   artwork: readonly string[] = []
 ): Promise<string[]> => {
@@ -72,7 +73,7 @@ describe('M1, every committed image or video on record', () => {
 
   it('fails an entry whose SHA-256 differs from the bytes', async () => {
     // Act
-    const found = await findingsFor({ [OWNER_PNG]: PNG_BYTES }, [ownerEntry({ sha256: sha256('other bytes') })])
+    const found = await findingsFor({ [OWNER_PNG]: PNG_BYTES }, [ownerEntry({ sha256: sha256(png(['IDAT'])) })])
 
     // Assert
     expect(found).toStrictEqual([`${OWNER_PNG}: M1 sha256 does not match its bytes`])
@@ -180,6 +181,35 @@ describe('M2 to M4, each entry as its source asks', () => {
 
     // Assert
     expect(found).toStrictEqual([`${DEMO_PNG}: M3 textSha256 does not match the text capture`])
+  })
+})
+
+describe('M5, no metadata in a capture', () => {
+  it('fails a capture of either source that carries a text chunk, naming the file, M5 and the chunk', async () => {
+    // Arrange
+    const withText = png(['tEXt'])
+
+    // Act
+    const found = await findingsFor({ [OWNER_PNG]: withText, [DEMO_PNG]: withText, [DEMO_TEXT]: TEXT }, [
+      ownerEntry({ sha256: sha256(withText) }),
+      demoEntry({ sha256: sha256(withText) }),
+    ])
+
+    // Assert
+    expect(found).toStrictEqual([`${OWNER_PNG}: M5 carries a tEXt chunk`, `${DEMO_PNG}: M5 carries a tEXt chunk`])
+  })
+
+  it('fails a capture it cannot read to its end, naming the file', async () => {
+    // Arrange
+    const truncated = PNG_BYTES.subarray(0, 45)
+
+    // Act
+    const found = await findingsFor({ [OWNER_PNG]: truncated }, [ownerEntry({ sha256: sha256(truncated) })])
+
+    // Assert
+    expect(found).toStrictEqual([
+      `${OWNER_PNG}: M5 cannot be shown to carry no metadata: it ends inside its IDAT chunk`,
+    ])
   })
 })
 

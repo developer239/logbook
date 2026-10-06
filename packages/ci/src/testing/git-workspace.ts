@@ -8,7 +8,7 @@ const run = promisify(execFile)
 
 // Temporary git workspaces for the checks' tests, each holding the files a test plants, all tracked.
 export const gitWorkspaces = (): {
-  create: (files: Readonly<Record<string, string>>) => Promise<string>
+  create: (files: Readonly<Record<string, string | Uint8Array>>) => Promise<string>
   removeAll: () => Promise<void>
 } => {
   const roots: string[] = []
