@@ -26,20 +26,12 @@ export const turnOfCall = (callId: string): string =>
      JOIN tool_call c ON c.id = ${callId} JOIN message cm ON cm.id = c.message_id
      WHERE t.session_id = c.session_id AND tm.seq <= cm.seq ORDER BY tm.seq DESC LIMIT 1)`
 
-// What Claude Code writes in the user's name that the user did not type. The
-// cookbook reads these prompts the same way.
-export const HARNESS_PREFIXES = ['<local-command', '<command-', 'Caveat:', '[Request interrupted'] as const
-
-// GLOB reads [ as the start of a class, so it is written as a class of its own.
-const globOf = (prefix: string): string => `${prefix.replaceAll('[', '[[]')}*`
-
-const isTyped = (text: string): string =>
-  `NOT (${HARNESS_PREFIXES.map((prefix) => `ltrim(${text}) GLOB '${globOf(prefix)}'`).join(' OR ')})`
-
+// The conversation's own title, else the opening of its first message from the human. What the harness wrote in the
+// human's name has the actor `harness`, so it is never the title.
 export const titleOf = (sessionId: string): string =>
   `COALESCE(NULLIF((SELECT s2.title FROM session s2 WHERE s2.id = ${sessionId}), ''),
      (SELECT substr(p.text, 1, 90) FROM message m JOIN part p ON p.message_id = m.id AND p.kind = 'text'
-      WHERE m.session_id = ${sessionId} AND m.actor = 'user' AND ${isTyped('p.text')} ORDER BY m.seq, p.idx LIMIT 1))`
+      WHERE m.session_id = ${sessionId} AND m.actor = 'user' ORDER BY m.seq, p.idx LIMIT 1))`
 
 export const byAgent = (session: string): string =>
   `(${session}.origin = 'subagent' OR EXISTS (SELECT 1 FROM turn t WHERE t.session_id = ${session}.id
@@ -81,7 +73,7 @@ export const failedOf = (session: string): string =>
   `(SELECT COUNT(*) FROM tool_call tc WHERE tc.session_id = ${session}.id AND tc.status = 'error')`
 
 // The reactions in the human's prompts, each from the labelling that gave its prompt the newest `act`, so a
-// prompt two models labelled is read once. The cookbook stores reaction n of a prompt as `<message id>#<n>`,
+// prompt two models labelled is read once. Labelling stores reaction n of a prompt as `<message id>#<n>`,
 // and the ids between `<id>#` and `<id>$` are that prompt's, which the label table's key finds without a scan.
 export const REACTIONS = `(
   SELECT m.session_id, m.id AS message_id, r.record_id AS reaction_id, a.labeller, a.version,

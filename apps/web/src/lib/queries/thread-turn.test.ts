@@ -142,12 +142,12 @@ describe('thread', () => {
     ])
   })
 
-  it('should show a slash command the human ran as their prompt', () => {
+  it('should show no harness message as a prompt, only as a harness line', () => {
     const { turns } = thread.thread(session.sessionCache(), 'ses-script')
 
     expect(turns).toHaveLength(1)
-    expect(turns[0]?.prompt).toEqual({ text: '`/ship`', reactions: [] })
-    expect(turns[0]?.harnessLines).toEqual([])
+    expect(turns[0]?.prompt).toBeNull()
+    expect(turns[0]?.harnessLines).toEqual(['/ship', '[Request interrupted by user]'])
   })
 })
 
