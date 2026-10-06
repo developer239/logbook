@@ -1,3 +1,4 @@
+import { demoCaptureArguments } from './checks/demo-captures.js'
 import { dependencyFindings } from './checks/deps.js'
 import { fixtureFindings } from './checks/fixtures.js'
 import { harnessFindings, ownerFindings } from './checks/literals.js'
@@ -62,6 +63,22 @@ const COMMANDS: Readonly<Record<string, CiCommand>> = {
       return WRONG_ARGUMENTS
     }
     return checkTests(process.cwd(), { ...io, env: process.env })
+  },
+  // Prints `pnpm demo:scan` arguments for each demo entry of the committed capture manifest, for the demo job.
+  'demo-captures': async (args, io) => {
+    if (args.length > 0) {
+      io.stderr(`This command takes no arguments; got ${args.join(' ')}.\n`)
+      return WRONG_ARGUMENTS
+    }
+    const lines = await demoCaptureArguments(process.cwd())
+    if (typeof lines === 'string') {
+      io.stderr(`${lines}\n`)
+      return 1
+    }
+    for (const line of lines) {
+      io.stdout(`${line}\n`)
+    }
+    return 0
   },
   'stage-cli': async (args, io) => {
     if (args.length > 0) {
