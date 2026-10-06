@@ -1,7 +1,7 @@
 import { useData, withBase } from 'vitepress'
 import { defineComponent, h, type VNode } from 'vue'
 import { siteShotOf, type ISiteShot } from '../../capture/captures.js'
-import { data as shots } from './captures.data.js'
+import { data as captures } from './captures.data.js'
 
 type Scheme = 'dark' | 'light'
 
@@ -27,7 +27,7 @@ export const Shot = defineComponent({
   setup(props) {
     const { page } = useData()
     return () => {
-      const shot = siteShotOf(shots, props.id, page.value.relativePath)
+      const shot = siteShotOf(captures.shots, props.id, page.value.relativePath)
       return h('figure', { class: 'shot' }, [
         image(shot, 'dark'),
         image(shot, 'light'),

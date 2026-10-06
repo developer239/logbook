@@ -43,7 +43,8 @@ const THIRTY_DAYS: IShotRange = { key: '30d', label: '30 days' }
 const ALL_TIME: IShotRange = { key: 'all', label: 'All time' }
 const NOT_LABELLED_TEXT = 'These need labels from a model.'
 
-const card = (title: string): string => `section.card:has(h3.card__title:text-is("${title}"))`
+// A dashboard card, by its title.
+export const card = (title: string): string => `section.card:has(h3.card__title:text-is("${title}"))`
 
 const shot = (fields: Pick<IShot, 'id' | 'page' | 'expect' | 'alt'> & Partial<IShot>): IShot => ({
   range: null,
@@ -172,7 +173,7 @@ const commonGoalOutcome = (plan: DemoPlan): { goal: string; outcome: string } =>
 const withRange = (path: string, range: IShotRange | null): string =>
   range === null ? path : `${path}?${new URLSearchParams({ range: range.key }).toString()}`
 
-const showcasePath = (plan: DemoPlan): string => {
+export const showcasePath = (plan: DemoPlan): string => {
   if (plan.showcase === null) {
     throw new Error('The plan holds no showcase conversation')
   }

@@ -19,6 +19,7 @@
     "@log-book/demo": "workspace:*",
     "@log-book/engine": "workspace:*",
     "@types/node": "catalog:",
+    "ffmpeg-static": "catalog:",
     "mermaid": "catalog:",
     "playwright": "catalog:",
     "vitepress": "catalog:",

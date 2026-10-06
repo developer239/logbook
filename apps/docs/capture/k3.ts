@@ -31,19 +31,34 @@ const isDemoBuild = (value: unknown): value is IDemoBuild =>
   (value.size === 'small' || value.size === 'rich') &&
   typeof value.seed === 'number'
 
-const isTextCapture = (value: unknown): value is ITextCapture =>
-  isRecord(value) && typeof value.text === 'string' && typeof value.build === 'string'
+const isVideoText = (value: unknown): value is { file: string } => isRecord(value) && typeof value.file === 'string'
+
+// The text captures of one manifest entry: a shot's one, or one for each page a video visits; null for neither.
+const textCapturesOf = (value: unknown): ITextCapture[] | null => {
+  if (!isRecord(value) || typeof value.build !== 'string') {
+    return null
+  }
+  const { build, text, texts } = value
+  if (typeof text === 'string') {
+    return [{ text, build }]
+  }
+  if (Array.isArray(texts) && texts.every(isVideoText)) {
+    return texts.map((each) => ({ text: each.file, build }))
+  }
+  return null
+}
 
 // The run's demo builds and its text captures, as the capture manifest records them.
 const manifestOf = (manifest: unknown): { demo: IDemoBuild[]; captures: ITextCapture[] } => {
   const demo = isRecord(manifest) ? manifest.demo : undefined
-  const captures = isRecord(manifest) ? manifest.captures : undefined
-  if (!Array.isArray(demo) || !demo.every(isDemoBuild) || !Array.isArray(captures) || !captures.every(isTextCapture)) {
+  const entries = isRecord(manifest) ? manifest.captures : undefined
+  const captures = Array.isArray(entries) ? entries.map(textCapturesOf) : null
+  if (!Array.isArray(demo) || !demo.every(isDemoBuild) || captures === null || captures.includes(null)) {
     throw new Error(
       'The capture manifest holds no demo builds with size and seed and no text captures with their build'
     )
   }
-  return { demo, captures }
+  return { demo, captures: captures.flatMap((each) => each ?? []) }
 }
 
 // Every line of a text capture that the demo's scan refuses, with the size and seed of the build it was captured from:
