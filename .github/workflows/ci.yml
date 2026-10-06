@@ -91,3 +91,5 @@ jobs:
       # `pnpm stage` is a built-in command of pnpm 11, so the script runs through `pnpm run`.
       - name: 14. Bundle and stage
         run: pnpm run stage
+      - name: 15. Package checks
+        run: pnpm check:package

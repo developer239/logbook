@@ -3,7 +3,7 @@ import { dirname, join, posix } from 'node:path'
 import { homepageOf } from './published-fields.js'
 
 // One package of the published set, as packages/ci/src/rules/public-packages.json lists it.
-interface IPublicPackage {
+export interface IPublicPackage {
   name: string
   directory: string
   description: string
@@ -20,15 +20,18 @@ interface IWorkspaceManifest {
   dependencies: Record<string, string>
 }
 
-const PUBLIC_PACKAGES = 'packages/ci/src/rules/public-packages.json'
-const PUBLISH_ORDER = 'build/publish-order.txt'
-const STAGED = 'package'
+export const PUBLIC_PACKAGES = 'packages/ci/src/rules/public-packages.json'
+export const PUBLISH_ORDER = 'build/publish-order.txt'
+export const STAGED = 'package'
 const LICENSE = 'LICENSE.md'
 const VERSION = '0.0.0-development'
 const OWN_SCOPE = '@log-book/'
 const REPOSITORY = 'https://github.com/developer239/logbook'
 // A relative module specifier after `from`, `import` or `import(`, as tsc writes them.
 const RELATIVE_SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)['"](?<specifier>\.\.?\/[^'"]+)['"]/gu
+// A @log-book package a module or declaration file names, after `from`, `import`, `import(` or `require(`.
+const OWN_SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*)['"](?<name>@log-book\/[^'"/]+)/gu
+const CODE = /\.(?:js|d\.ts)$/u
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
@@ -65,6 +68,10 @@ const publicPackagesOf = (text: string): IPublicPackage[] => {
     }
   })
 }
+
+// The public package list of the repository at root.
+export const publicPackagesIn = async (root: string): Promise<IPublicPackage[]> =>
+  publicPackagesOf(await readFile(join(root, PUBLIC_PACKAGES), 'utf8'))
 
 const workspaceManifestOf = (text: string, name: string): IWorkspaceManifest => {
   const parsed: unknown = JSON.parse(text)
@@ -108,12 +115,21 @@ const reachableFrom = async (packageDirectory: string, entries: readonly string[
 
 const stripped = (path: string): string => path.replace(/^\.\//u, '')
 
-// The published manifest of a library: exactly these fields, its public entries, the site as its homepage, and its
-// @log-book dependencies at the set's one version.
+// The @log-book packages these files of a package directory import, by name.
+export const ownImportsOf = async (directory: string, files: readonly string[]): Promise<Set<string>> => {
+  const texts = await Promise.all(
+    files.filter((file) => CODE.test(file)).map(async (file) => readFile(join(directory, file), 'utf8'))
+  )
+  return new Set(texts.flatMap((text) => [...text.matchAll(OWN_SPECIFIER)].map((match) => match.groups?.name ?? '')))
+}
+
+// The published manifest of a library: exactly these fields, its public entries, the site as its homepage, and the
+// @log-book dependencies of its workspace manifest that its staged files import, at the set's one version.
 const libraryManifest = (
   entry: IPublicPackage,
   workspace: IWorkspaceManifest,
-  homepage: string
+  homepage: string,
+  imported: ReadonlySet<string>
 ): Record<string, unknown> => {
   const foreign = Object.keys(workspace.dependencies).filter((name) => !name.startsWith(OWN_SCOPE))
   if (foreign.length > 0) {
@@ -142,9 +158,36 @@ const libraryManifest = (
     publishConfig: { access: 'public' },
     dependencies: Object.fromEntries(
       Object.keys(workspace.dependencies)
+        .filter((name) => imported.has(name))
         .toSorted()
         .map((name) => [name, VERSION])
     ),
+  }
+}
+
+// What the stage writes for a library: the dist/ files its public entries and asset modules reach, and its manifest.
+interface ILibraryStage {
+  entry: IPublicPackage
+  files: string[]
+  dependsOn: string[]
+  manifest: Record<string, unknown>
+}
+
+export const libraryStageOf = async (root: string, entry: IPublicPackage, homepage: string): Promise<ILibraryStage> => {
+  const packageDirectory = join(root, entry.directory)
+  const workspace = workspaceManifestOf(await readFile(join(packageDirectory, 'package.json'), 'utf8'), entry.name)
+  const entries = entry.exports.flatMap((subpath) => {
+    const target = workspace.exports[subpath]
+    return target === undefined ? [] : [stripped(target.default), stripped(target.types)]
+  })
+  const modules = entry.assets.filter((asset) => asset.endsWith('.js'))
+  const files = [...(await reachableFrom(packageDirectory, [...entries, ...modules]))].toSorted()
+  const imported = await ownImportsOf(packageDirectory, files)
+  return {
+    entry,
+    files,
+    dependsOn: Object.keys(workspace.dependencies).filter((name) => imported.has(name)),
+    manifest: libraryManifest(entry, workspace, homepage, imported),
   }
 }
 
@@ -177,37 +220,23 @@ export const publishOrder = (
   return [...order, `${cli}/${STAGED}`]
 }
 
-const stageLibrary = async (
-  root: string,
-  entry: IPublicPackage,
-  workspace: IWorkspaceManifest,
-  homepage: string
-): Promise<void> => {
+const stageLibrary = async (root: string, { entry, files, manifest }: ILibraryStage): Promise<void> => {
   const packageDirectory = join(root, entry.directory)
   const staged = join(packageDirectory, STAGED)
   await rm(staged, { recursive: true, force: true })
-  const entries = entry.exports.flatMap((subpath) => {
-    const target = workspace.exports[subpath]
-    return target === undefined ? [] : [stripped(target.default), stripped(target.types)]
-  })
-  const modules = entry.assets.filter((asset) => asset.endsWith('.js'))
-  const files = await reachableFrom(packageDirectory, [...entries, ...modules])
   await Promise.all(
-    [...files].map(async (file) => {
+    files.map(async (file) => {
       await mkdir(dirname(join(staged, file)), { recursive: true })
       await cp(join(packageDirectory, file), join(staged, file))
     })
   )
   await Promise.all([
     ...entry.assets
-      .filter((asset) => !modules.includes(asset))
+      .filter((asset) => !asset.endsWith('.js'))
       .map(async (asset) => cp(join(packageDirectory, asset), join(staged, asset), { recursive: true })),
     cp(join(root, LICENSE), join(staged, LICENSE)),
     writeFile(join(staged, 'README.md'), readmeOf(entry)),
-    writeFile(
-      join(staged, 'package.json'),
-      `${JSON.stringify(libraryManifest(entry, workspace, homepage), null, 2)}\n`
-    ),
+    writeFile(join(staged, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`),
   ])
 }
 
@@ -215,34 +244,19 @@ const stageLibrary = async (
 // only what its public entries reach, and build/publish-order.txt, which every release job reads.
 export const stageLibraries = async (givenRoot: string): Promise<void> => {
   const root = await realpath(givenRoot)
-  const listed = publicPackagesOf(await readFile(join(root, PUBLIC_PACKAGES), 'utf8'))
+  const listed = await publicPackagesIn(root)
   const libraries = listed.filter((entry) => entry.exports.length > 0)
   const cli = listed.find((entry) => entry.exports.length === 0)
   if (cli === undefined) {
     throw new Error(`${PUBLIC_PACKAGES} lists no package without public entries, the CLI.`)
   }
-  const manifests = await Promise.all(
-    libraries.map(async (entry) =>
-      workspaceManifestOf(await readFile(join(root, entry.directory, 'package.json'), 'utf8'), entry.name)
-    )
-  )
   const homepage = await homepageOf(root)
+  const stages = await Promise.all(libraries.map(async (entry) => libraryStageOf(root, entry, homepage)))
   const order = publishOrder(
-    libraries.map((entry, index) => ({
-      name: entry.name,
-      directory: entry.directory,
-      dependsOn: Object.keys(manifests[index]?.dependencies ?? {}),
-    })),
+    stages.map(({ entry, dependsOn }) => ({ name: entry.name, directory: entry.directory, dependsOn })),
     cli.directory
   )
-  await Promise.all(
-    libraries.map(async (entry, index) => {
-      const manifest = manifests[index]
-      if (manifest !== undefined) {
-        await stageLibrary(root, entry, manifest, homepage)
-      }
-    })
-  )
+  await Promise.all(stages.map(async (stage) => stageLibrary(root, stage)))
   await mkdir(join(root, dirname(PUBLISH_ORDER)), { recursive: true })
   await writeFile(join(root, PUBLISH_ORDER), `${order.join('\n')}\n`)
 }

@@ -9,6 +9,11 @@ const exportOf = (module: string): { types: string; default: string } => ({
   default: `./dist/${module}.js`,
 })
 
+// A planted module's import of a workspace package, its specifier apart from `from` so the dependency rule does not read
+// the test as importing it.
+const importOf = (binding: string, specifier: string): string =>
+  [`import { ${binding} } from`, `'${specifier}'`].join(' ')
+
 const LIST = [
   {
     name: '@log-book/core',
@@ -37,7 +42,7 @@ const LIST = [
 ]
 
 // A workspace whose engine's public entry and testing entry share a module, whose source writer reaches a module of
-// its own, which starts a worker by path and reads a prompt.
+// its own and imports the warehouse, and which starts a worker by path and reads a prompt.
 const WORKSPACE = {
   'LICENSE.md': 'The license\n',
   'apps/docs/site.ts': "export const SITE_URL = 'https://example.com/logbook/'\n",
@@ -52,11 +57,15 @@ const WORKSPACE = {
       './testing': exportOf('testing/index'),
       './source-writer': exportOf('source-writer/index'),
     },
-    dependencies: { '@log-book/core': 'workspace:*' },
+    dependencies: { '@log-book/core': 'workspace:*', '@log-book/warehouse': 'workspace:*' },
     devDependencies: { '@log-book/demo': 'workspace:*', 'vitest': '5.0.0' },
   }),
-  'packages/engine/dist/index.js':
-    "export { shared } from './shared.js'\nimport versions from './versions.json' with { type: 'json' }\n",
+  'packages/engine/dist/index.js': [
+    "export { shared } from './shared.js'",
+    "import versions from './versions.json' with { type: 'json' }",
+    importOf('core', '@log-book/core'),
+    '',
+  ].join('\n'),
   'packages/engine/dist/index.d.ts': "export { shared } from './shared.js'\n",
   'packages/engine/dist/shared.js': 'export const shared = 1\n',
   'packages/engine/dist/shared.d.ts': 'export declare const shared = 1\n',
@@ -64,7 +73,7 @@ const WORKSPACE = {
   'packages/engine/dist/testing/index.js': "export { shared } from '../shared.js'\n",
   'packages/engine/dist/testing/index.d.ts': "export { shared } from '../shared.js'\n",
   'packages/engine/dist/source-writer/index.js': "export { write } from './writer.js'\n",
-  'packages/engine/dist/source-writer/writer.js': 'export const write = 1\n',
+  'packages/engine/dist/source-writer/writer.js': `${importOf('open', '@log-book/warehouse')}\nexport const write = open\n`,
   'packages/engine/dist/worker.js': "import { step } from './worker-step.js'\n",
   'packages/engine/dist/worker-step.js': 'export const step = 1\n',
   'packages/engine/dist/prompts/shell.prompt.txt': 'Label the call.\n',
@@ -105,7 +114,7 @@ describe('stageLibraries', () => {
     ])
   })
 
-  it('writes exactly the published fields, with the workspace @log-book dependencies at the set version', async () => {
+  it('writes exactly the published fields, with the workspace @log-book dependencies it imports at the set version', async () => {
     // Arrange
     const root = await workspaces.create(WORKSPACE)
 
