@@ -17,6 +17,10 @@ packages/demo/out/
 apps/cli/package/
 apps/cli/build/
 
+# staged library packages and the publish order the release jobs read
+packages/*/package/
+build/
+
 # documentation site builds and generated pages
 apps/docs/.vitepress/dist/
 apps/docs/.vitepress/cache/
