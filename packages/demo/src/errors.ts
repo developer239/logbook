@@ -9,4 +9,8 @@ export const DEMO_ERROR_CODES = {
   DEMO_SYNC_FAILED: 'DEMO_SYNC_FAILED',
   // An imported record differs from the writers' expected one: the error names the record and the field.
   DEMO_IMPORT_MISMATCH: 'DEMO_IMPORT_MISMATCH',
+  // A build started in a time zone other than UTC, where the writers would format times differently.
+  DEMO_TZ_NOT_UTC: 'DEMO_TZ_NOT_UTC',
+  // The out directory holds something other than a previous demo build: the error names the directory.
+  DEMO_OUT_NOT_DEMO: 'DEMO_OUT_NOT_DEMO',
 } as const
