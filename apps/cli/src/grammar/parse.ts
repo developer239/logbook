@@ -42,23 +42,25 @@ const LEAP_DAYS = 29
 
 class UsageLine extends Error {}
 
-const START = COMMANDS.find((spec) => spec.words[0] === 'start')
-
 // The command the first words name: a bare logbook, or one with only options, is start.
-const commandOf = (argv: readonly string[]): { spec: ICommandSpec; rest: readonly string[] } => {
+const commandOf = (
+  commands: readonly ICommandSpec[],
+  argv: readonly string[]
+): { spec: ICommandSpec; rest: readonly string[] } => {
   const [first, second] = argv
-  if ((first === undefined || first.startsWith('-')) && START !== undefined) {
-    return { spec: START, rest: argv }
+  const start = commands.find((spec) => spec.words[0] === 'start')
+  if ((first === undefined || first.startsWith('-')) && start !== undefined) {
+    return { spec: start, rest: argv }
   }
-  const pair = COMMANDS.find((spec) => spec.words.length === 2 && spec.words[0] === first && spec.words[1] === second)
+  const pair = commands.find((spec) => spec.words.length === 2 && spec.words[0] === first && spec.words[1] === second)
   if (pair !== undefined) {
     return { spec: pair, rest: argv.slice(2) }
   }
-  const single = COMMANDS.find((spec) => spec.words.length === 1 && spec.words[0] === first)
+  const single = commands.find((spec) => spec.words.length === 1 && spec.words[0] === first)
   if (single !== undefined) {
     return { spec: single, rest: argv.slice(1) }
   }
-  const isGroup = COMMANDS.some((spec) => spec.words.length === 2 && spec.words[0] === first)
+  const isGroup = commands.some((spec) => spec.words.length === 2 && spec.words[0] === first)
   const name = isGroup && second !== undefined && !second.startsWith('-') ? `${String(first)} ${second}` : first
   throw new UsageLine(`Unknown command: ${String(name)}. Run logbook --help for the commands.`)
 }
@@ -208,8 +210,8 @@ const checkForms = (
   }
 }
 
-const commandLine = (argv: readonly string[]): ParsedCommandLine => {
-  const { spec, rest } = commandOf(argv)
+const commandLine = (commands: readonly ICommandSpec[], argv: readonly string[]): ParsedCommandLine => {
+  const { spec, rest } = commandOf(commands, argv)
   const { positionals, given } = tokensOf(spec, rest)
   const command = spec.words.join(' ')
   if (given.some((token) => token.name === 'help')) {
@@ -222,24 +224,29 @@ const commandLine = (argv: readonly string[]): ParsedCommandLine => {
   return result
 }
 
-// The arguments after `logbook`, decided as far as the command table can decide them: the command, unknown options,
+// The arguments after `logbook`, decided as far as a command table can decide them: the command, unknown options,
 // types, ranges, the engine's vocabularies, required options, positionals, the model rule and each command's own
 // forms. What needs the machine (an agent, a session or a project that matches nothing) is the command's to check.
 // Pure: it opens no file, reads no environment and starts no process.
-export const parseCommandLine = (argv: readonly string[]): ParsedCommandLine => {
-  const [only] = argv
-  if (argv.length === 1 && only !== undefined && HELP.has(only)) {
-    return { kind: 'help', command: null }
-  }
-  if (argv.length === 1 && only !== undefined && VERSION.has(only)) {
-    return { kind: 'version' }
-  }
-  try {
-    return commandLine(argv)
-  } catch (error) {
-    if (error instanceof UsageLine) {
-      return { kind: 'usage-error', line: error.message }
+export const commandLineParser =
+  (commands: readonly ICommandSpec[]) =>
+  (argv: readonly string[]): ParsedCommandLine => {
+    const [only] = argv
+    if (argv.length === 1 && only !== undefined && HELP.has(only)) {
+      return { kind: 'help', command: null }
     }
-    throw error
+    if (argv.length === 1 && only !== undefined && VERSION.has(only)) {
+      return { kind: 'version' }
+    }
+    try {
+      return commandLine(commands, argv)
+    } catch (error) {
+      if (error instanceof UsageLine) {
+        return { kind: 'usage-error', line: error.message }
+      }
+      throw error
+    }
   }
-}
+
+// The arguments after `logbook`, parsed by the CLI's own command table.
+export const parseCommandLine = commandLineParser(COMMANDS)
