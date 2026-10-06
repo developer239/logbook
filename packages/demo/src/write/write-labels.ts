@@ -46,7 +46,8 @@ const valueOf = (ids: TIds, label: IPlannedLabel): string =>
         .join(',')
     : label.value
 
-const recordOf = (ids: TIds, label: IPlannedLabel): ILabelRecord => ({
+// The label row a planned label becomes.
+export const recordOf = (ids: TIds, label: IPlannedLabel): ILabelRecord => ({
   recordType: label.recordType,
   recordId: recordIdOf(ids, label),
   labeller: label.labeller,

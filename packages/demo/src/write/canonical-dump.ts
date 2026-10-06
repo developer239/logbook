@@ -32,7 +32,10 @@ const WAREHOUSE_RULES: Readonly<Record<string, ITableRules>> = {
 }
 const DERIVED_TABLE = /^part_fts(?:_|$)/u
 
-const isDumped = (kind: DumpKind, table: string): boolean => kind === 'sqlite' || !DERIVED_TABLE.test(table)
+// A warehouse table the warehouse derives from another: the full-text index of `part`.
+export const isDerivedTable = (table: string): boolean => DERIVED_TABLE.test(table)
+
+const isDumped = (kind: DumpKind, table: string): boolean => kind === 'sqlite' || !isDerivedTable(table)
 
 const quoted = (name: string): string => `"${name.replaceAll('"', '""')}"`
 

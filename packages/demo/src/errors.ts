@@ -13,4 +13,6 @@ export const DEMO_ERROR_CODES = {
   DEMO_TZ_NOT_UTC: 'DEMO_TZ_NOT_UTC',
   // The out directory holds something other than a previous demo build: the error names the directory.
   DEMO_OUT_NOT_DEMO: 'DEMO_OUT_NOT_DEMO',
+  // The check of a finished build found something other than what the build wrote: the error names the rule and where.
+  DEMO_CHECK_FAILED: 'DEMO_CHECK_FAILED',
 } as const

@@ -7,7 +7,7 @@ import { DEMO_CORPUS_MARK } from '../corpus/index.js'
 import type { DemoSize, IDemoPlan, LabelsVariant } from '../plan/types.js'
 import { canonicalDump } from './canonical-dump.js'
 
-const HOME_DIRECTORY = 'home'
+export const HOME_DIRECTORY = 'home'
 export const PLAN_FILE = 'plan.json'
 export const MANIFEST_FILE = 'manifest.json'
 
@@ -23,7 +23,7 @@ interface IManifestBuild {
   anchor: string
 }
 
-interface IManifest {
+export interface IManifest {
   build: IManifestBuild
   corpusMark: string
   // Every file written, by its path relative to the out directory, with the SHA-256 of its bytes, or of its canonical
@@ -42,7 +42,7 @@ export interface IWrittenDemo {
   homeFiles: readonly string[]
 }
 
-const sha256 = (data: string | Buffer): string => createHash('sha256').update(data).digest('hex')
+export const sha256 = (data: string | Buffer): string => createHash('sha256').update(data).digest('hex')
 
 const byCodeUnit = (left: string, right: string): number => {
   if (left === right) {
@@ -51,7 +51,7 @@ const byCodeUnit = (left: string, right: string): number => {
   return left < right ? -1 : 1
 }
 
-const isSqlite = async (path: string): Promise<boolean> => {
+export const isSqlite = async (path: string): Promise<boolean> => {
   const file = await open(path, 'r')
   try {
     const header = Buffer.alloc(SQLITE_HEADER.length)
@@ -62,7 +62,8 @@ const isSqlite = async (path: string): Promise<boolean> => {
   }
 }
 
-const fileHash = async (path: string): Promise<string> =>
+// A file's hash as the manifest records it.
+export const fileHash = async (path: string): Promise<string> =>
   (await isSqlite(path)) ? sha256(await canonicalDump(path, 'sqlite')) : sha256(await readFile(path))
 
 // The texts the check traces in the expected records: part text, session title and project directory, message model

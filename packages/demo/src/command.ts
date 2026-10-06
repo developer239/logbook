@@ -1,7 +1,8 @@
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { isLabelModelId, LABEL_MODEL_RULE, LogBookError } from '@log-book/core'
-import { buildDemo, thisHour, type IBuildOptions } from './build/build-demo.js'
+import { buildDemo, defaultOut, thisHour, type IBuildOptions } from './build/build-demo.js'
+import { checkDemo } from './check/check-demo.js'
 import type { DemoSize, LabelsVariant } from './plan/types.js'
 import { scanPurity } from './purity.js'
 
@@ -121,6 +122,34 @@ const runBuild = async (args: readonly string[]): Promise<number> => {
   }
 }
 
+// Checks an out directory, the small set's by default: nothing printed when it passes, one `<rule> <location>` line per
+// finding when it does not.
+const runCheck = async (args: readonly string[]): Promise<number> => {
+  let out: string
+  try {
+    const { values } = parseArgs({ args: [...args], options: { out: { type: 'string' } }, strict: true })
+    out = values.out ?? defaultOut('small')
+  } catch (error: unknown) {
+    const [first] = (error instanceof Error ? error.message : String(error)).split('\n')
+    process.stderr.write(`${first ?? ''}\n`)
+    return EXIT_USAGE
+  }
+
+  try {
+    const findings = await checkDemo(out)
+    for (const { rule, location } of findings) {
+      process.stdout.write(`${rule} ${location}\n`)
+    }
+    return findings.length === 0 ? 0 : EXIT_FAILURE
+  } catch (error: unknown) {
+    if (error instanceof LogBookError) {
+      process.stderr.write(`${error.message}\n`)
+      return EXIT_FAILURE
+    }
+    throw error
+  }
+}
+
 // Every command exits 0 on success, 1 on a failure with its one-line message last on stderr, and 2 on a usage error.
 export const runCommand = async (args: readonly string[]): Promise<number> => {
   const [command, ...rest] = args
@@ -129,6 +158,9 @@ export const runCommand = async (args: readonly string[]): Promise<number> => {
   }
   if (command === 'build') {
     return runBuild(rest)
+  }
+  if (command === 'check') {
+    return runCheck(rest)
   }
   process.stderr.write(command === undefined ? `${USAGE}\n` : `Unknown command ${command}. ${USAGE}\n`)
   return EXIT_USAGE
