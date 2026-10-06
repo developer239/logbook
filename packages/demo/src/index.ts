@@ -1,5 +1,6 @@
 export { buildDemo, type IBuildOptions, type IBuiltDemo } from './build/build-demo.js'
 export { checkDemo, type DemoRule, type IDemoFinding } from './check/check-demo.js'
+export { startDemo, type IStartDemoOptions, type IStartedDemo } from './start/start-demo.js'
 export { scanText, type IScanFinding, type IScanOptions, type ScanRule } from './check/scan-text.js'
 export { DEMO_ERROR_CODES } from './errors.js'
 export { planLabels } from './plan/labels.js'

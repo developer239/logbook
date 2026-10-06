@@ -351,6 +351,10 @@ export const checkDemo = async (out: string): Promise<IDemoFinding[]> => {
   }
 }
 
+// What stops a build or a start at a finding: its rule and where, as the finding names them.
+export const checkFailure = (found: IDemoFinding): LogBookError =>
+  new LogBookError(`The demo build breaks ${found.rule} at ${found.location}`, DEMO_ERROR_CODES.DEMO_CHECK_FAILED)
+
 // The build's last step: a finding removes the warehouse, with its write-ahead log, and stops the build naming the
 // first finding.
 export const checkBuild = async (out: string): Promise<void> => {
@@ -360,5 +364,5 @@ export const checkBuild = async (out: string): Promise<void> => {
   }
   const warehouse = demoWarehousePath(out)
   await Promise.all(['', '-wal', '-shm'].map(async (suffix) => rm(`${warehouse}${suffix}`, { force: true })))
-  throw new LogBookError(`The demo build breaks ${first.rule} at ${first.location}`, DEMO_ERROR_CODES.DEMO_CHECK_FAILED)
+  throw checkFailure(first)
 }

@@ -15,4 +15,6 @@ export const DEMO_ERROR_CODES = {
   DEMO_OUT_NOT_DEMO: 'DEMO_OUT_NOT_DEMO',
   // The check of a finished build found something other than what the build wrote: the error names the rule and where.
   DEMO_CHECK_FAILED: 'DEMO_CHECK_FAILED',
+  // A demo host exited before it was ready: the error names its last stderr line.
+  DEMO_START_FAILED: 'DEMO_START_FAILED',
 } as const
