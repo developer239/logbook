@@ -15,6 +15,7 @@ import { scriptPlan } from '../plan/scripts.js'
 import type { DemoSize, IDemoPlan, IPlanInputs, IWriterDeclaration, LabelsVariant } from '../plan/types.js'
 import { demoWarehousePath } from '../sealed-environment.js'
 import { MANIFEST_FILE, writeDemo, type IWrittenDemo } from '../write/write-demo.js'
+import { writeLabels } from '../write/write-labels.js'
 
 const HOUR_MS = 3_600_000
 
@@ -102,8 +103,9 @@ const guardOut = async (out: string): Promise<void> => {
   await Promise.all(entries.map(async (entry) => rm(join(out, entry), { recursive: true, force: true })))
 }
 
-// Plans the set, writes the home, the plan file and the manifest, then imports the home through the built CLI in the
-// sealed environment and compares what it read with what the writers wrote.
+// Plans the set, writes the home, the plan file and the manifest, imports the home through the built CLI in the
+// sealed environment and compares what it read with what the writers wrote, then writes the planned labels and their
+// labelling runs.
 export const buildDemo = async (options: IBuildOptions): Promise<IBuiltDemo> => {
   if (process.env.TZ !== 'UTC') {
     throw new LogBookError(
@@ -133,6 +135,7 @@ export const buildDemo = async (options: IBuildOptions): Promise<IBuiltDemo> => 
     WRITERS
   )
   await importDemo(out, written)
+  await writeLabels(demoWarehousePath(out), written.plan)
 
   return { out, warehouse: demoWarehousePath(out), manifest: written.manifest, plan: written.plan }
 }
