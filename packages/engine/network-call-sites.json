@@ -30,6 +30,11 @@
     "case": "local"
   },
   {
+    "file": "apps/cli/src/browser.ts",
+    "calls": "starts the user's open (macOS) or xdg-open (Linux) with the page's loopback URL, an argument array, no shell, detached",
+    "case": "local"
+  },
+  {
     "file": "packages/demo/src/import/import-demo.ts",
     "calls": "runs the built logbook CLI (doctor, then sync) as a child in the demo's sealed environment",
     "case": "local"
