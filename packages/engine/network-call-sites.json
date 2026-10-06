@@ -63,5 +63,10 @@
     "file": "apps/docs/version.ts",
     "calls": "runs git tag --points-at HEAD in the repository to name the release the documentation site is built from",
     "case": "local"
+  },
+  {
+    "file": "apps/docs/capture/videos.ts",
+    "calls": "runs ffmpeg-static's ffmpeg on the documentation build's recorded videos to encode them as MP4, an argument array, no shell",
+    "case": "local"
   }
 ]

@@ -1,12 +1,12 @@
 import { defineLoader } from 'vitepress'
-import type { SiteShots } from '../../capture/captures.js'
-import { CAPTURE_MANIFEST, loadSiteShots } from '../../capture/site-shots.js'
+import type { ISiteCaptures } from '../../capture/captures.js'
+import { CAPTURE_MANIFEST, loadSiteCaptures } from '../../capture/site-captures.js'
 
-declare const data: SiteShots
+declare const data: ISiteCaptures
 export { data }
 
-// The shots the Shot component shows, from the last capture.
+// The shots the Shot component and the videos the Video component show, from the last capture.
 export default defineLoader({
   watch: [CAPTURE_MANIFEST],
-  load: loadSiteShots,
+  load: loadSiteCaptures,
 })

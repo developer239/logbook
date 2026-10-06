@@ -6,6 +6,7 @@ import { buildDemo, startDemo, type IStartedDemo } from '@log-book/demo'
 import { chromium, type Browser } from 'playwright'
 import { captureShot, type ICaptureRecord } from './capture.js'
 import { SCHEMES, SHOTS, type BuildName, type Scheme } from './shots.js'
+import { recordVideo, VIDEOS, type IVideoRecord } from './videos.js'
 
 // From dist/capture where the build leaves this module.
 const CAPTURES = new URL('../../src/public/captures/', import.meta.url)
@@ -54,19 +55,33 @@ const captureScheme = async (browser: Browser, hosts: readonly IHost[], scheme: 
   }
 }
 
-const captureAll = async (hosts: readonly IHost[]): Promise<ICaptureRecord[]> => {
+// Every video, one after another, each in a context of its own, against the rich host.
+const recordAll = async (browser: Browser, hosts: readonly IHost[]): Promise<IVideoRecord[]> => {
+  const { url, plan } = hostFor(hosts, 'rich')
+  return VIDEOS.reduce<Promise<IVideoRecord[]>>(
+    async (done, video) => [
+      ...(await done),
+      await recordVideo({ browser, host: url, plan, video, directory: CAPTURES.pathname }),
+    ],
+    Promise.resolve([])
+  )
+}
+
+// Every shot in both schemes, then every video.
+const captureAll = async (hosts: readonly IHost[]): Promise<(ICaptureRecord | IVideoRecord)[]> => {
   const browser = await chromium.launch({ headless: true })
   try {
-    return await SCHEMES.reduce<Promise<ICaptureRecord[]>>(
+    const shots = await SCHEMES.reduce<Promise<ICaptureRecord[]>>(
       async (done, scheme) => [...(await done), ...(await captureScheme(browser, hosts, scheme))],
       Promise.resolve([])
     )
+    return [...shots, ...(await recordAll(browser, hosts))]
   } finally {
     await browser.close()
   }
 }
 
-const manifestOf = (hosts: readonly IHost[], captures: readonly ICaptureRecord[]): string =>
+const manifestOf = (hosts: readonly IHost[], captures: readonly (ICaptureRecord | IVideoRecord)[]): string =>
   `${JSON.stringify(
     { demo: hosts.map(({ build, started }) => ({ build, ...started.manifest.build })), captures },
     null,
@@ -80,9 +95,9 @@ const lineOf = (error: unknown): string => {
   return error instanceof Error ? error.message : String(error)
 }
 
-// pnpm docs:capture: builds the demo or reuses --demo-out, starts its hosts, captures every shot in both schemes into
-// src/public/captures with the run's manifest, and stops the hosts, also after a failure. Its zone must be UTC
-// before any module loads, which the bin shim sees to.
+// pnpm docs:capture: builds the demo or reuses --demo-out, starts its hosts, captures every shot in both schemes and
+// records every video into src/public/captures with the run's manifest, and stops the hosts, also after a failure.
+// Its zone must be UTC before any module loads, which the bin shim sees to.
 export const runCapture = async (argv: readonly string[], write: (line: string) => void): Promise<number> => {
   const { values } = parseArgs({ args: [...argv], options: { 'demo-out': { type: 'string' } }, strict: true })
   const demoOut =

@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { type DefaultTheme, defineConfigWithTheme, type MarkdownEnv, type MarkdownRenderer } from 'vitepress'
-import { shotIdsIn, siteShotOf, type SiteShots } from '../capture/captures.js'
-import { loadSiteShots } from '../capture/site-shots.js'
+import { idsIn, type ISiteCaptures, siteShotOf, siteVideoOf } from '../capture/captures.js'
+import { loadSiteCaptures } from '../capture/site-captures.js'
 import { cliFacts } from '../scripts/cli.js'
 import { firstLineOf } from '../scripts/readme.js'
 import { BASE_PATH, SITE_URL } from '../site.js'
@@ -45,17 +45,20 @@ const SIDEBAR: DefaultTheme.SidebarItem[] = [
 // The README's first line, so the site, the README and npm describe Log Book in the same sentence.
 const description = firstLineOf(await readFile(new URL('../../../README.md', import.meta.url), 'utf8'))
 
-// Every Shot a page names is one the last capture made, checked while the page's Markdown renders, so an unknown id
-// stops the build, naming it and the page.
-const checkShots =
-  (shots: SiteShots) =>
+// Every Shot and Video a page names is one the last capture made, with its poster, checked while the page's Markdown
+// renders, so an unknown id stops the build, naming it and the page.
+const checkCaptures =
+  (captures: ISiteCaptures) =>
   (md: MarkdownRenderer): void => {
-    md.core.ruler.push('shot-ids', (state) => {
+    md.core.ruler.push('capture-ids', (state) => {
       const page = (state.env as MarkdownEnv).relativePath
       for (const token of state.tokens.flatMap((each) => [each, ...(each.children ?? [])])) {
         if (token.type === 'html_block' || token.type === 'html_inline') {
-          for (const id of shotIdsIn(token.content)) {
-            siteShotOf(shots, id, page)
+          for (const id of idsIn(token.content, 'Shot')) {
+            siteShotOf(captures.shots, id, page)
+          }
+          for (const id of idsIn(token.content, 'Video')) {
+            siteVideoOf(captures, id, page)
           }
         }
       }
@@ -69,7 +72,7 @@ export default defineConfigWithTheme<IThemeConfig>({
   title: 'Log Book',
   description,
   srcDir: 'src',
-  markdown: { config: checkShots(await loadSiteShots()) },
+  markdown: { config: checkCaptures(await loadSiteCaptures()) },
   // Written parts that pages include, not pages of their own.
   srcExclude: ['reference/examples/**', 'privacy/statement.md', 'privacy/summary.md'],
   base: BASE_PATH,

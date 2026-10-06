@@ -9,27 +9,39 @@ const SMALL_SESSION = 'claude-code:de30da7a-0000-4000-8000-000000000001'
 const OTHER_UUID = '0b6d1f2e-9a4c-4e1b-8f3d-2c7a5e9b1d04'
 const directories: string[] = []
 
+// A manifest entry and the name of its text capture.
+interface ITextEntry {
+  entry: object
+  file: string
+}
+
+const SHOT: ITextEntry = {
+  entry: { file: 'tokens-dark.png', shot: 'tokens', scheme: 'dark', build: 'not-labelled', text: 'tokens-dark.txt' },
+  file: 'tokens-dark.txt',
+}
+
 // A repository whose built site holds one text capture of the small set, and the run's manifest.
-const capturesWith = async (text: string): Promise<{ repository: string; captures: string }> => {
+const capturesWith = async (
+  text: string,
+  { entry, file }: ITextEntry
+): Promise<{ repository: string; captures: string }> => {
   const repository = await mkdtemp(join(tmpdir(), 'docs-k3-'))
   directories.push(repository)
   const captures = join(repository, 'apps', 'docs', '.vitepress', 'dist', 'captures')
   await mkdir(captures, { recursive: true })
   const manifest = {
     demo: [{ build: 'not-labelled', size: 'small', seed: 1, labels: 'none', anchor: '2026-09-28T18:00:00.000Z' }],
-    captures: [
-      { file: 'tokens-dark.png', shot: 'tokens', scheme: 'dark', build: 'not-labelled', text: 'tokens-dark.txt' },
-    ],
+    captures: [entry],
   }
   await Promise.all([
     writeFile(join(captures, 'manifest.json'), JSON.stringify(manifest)),
-    writeFile(join(captures, 'tokens-dark.txt'), text),
+    writeFile(join(captures, file), text),
   ])
   return { repository, captures }
 }
 
-const linesOf = async (text: string): Promise<string[]> => {
-  const { repository, captures } = await capturesWith(text)
+const linesOf = async (text: string, entry: ITextEntry = SHOT): Promise<string[]> => {
+  const { repository, captures } = await capturesWith(text, entry)
   return (await checkK3({ captures, repository })).map(findingLine)
 }
 
@@ -62,6 +74,31 @@ describe('checkK3', () => {
       ],
       holdsText: false,
     })
+  })
+
+  it('scans the text capture of each page a video visits, naming that capture', async () => {
+    // Arrange
+    const video: ITextEntry = {
+      entry: {
+        file: 'tour.mp4',
+        video: 'tour',
+        scheme: 'dark',
+        build: 'not-labelled',
+        texts: [{ file: 'tour-1.txt', sha256: 'a', page: '/' }],
+      },
+      file: 'tour-1.txt',
+    }
+
+    // Act
+    const lines = await linesOf(
+      `Time per turn
+/conversations/${OTHER_UUID}
+`,
+      video
+    )
+
+    // Assert
+    expect(lines).toStrictEqual(['K3 apps/docs/.vitepress/dist/captures/tour-1.txt:2 C5'])
   })
 
   it("passes a capture holding only the small set's session ids", async () => {
