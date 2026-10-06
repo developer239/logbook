@@ -3,9 +3,11 @@ import { byPressure, harnessAgent } from '../labels'
 import { countBy } from '../lists'
 import { failureLabel, modelLabel, purposeLabel, REACTIONS, tokensRead } from '../sql'
 import { all, get } from '../warehouse'
+import { harnessesOf, type Harnesses } from './harnesses'
 
-export const agentName = (session: { agent: string | null; harness: string }): string =>
-  session.agent ?? harnessAgent(session.harness)
+// A session with no agent of its own ran as its harness's default agent.
+export const agentName = (harnesses: Harnesses, session: { agent: string | null; harness: string }): string =>
+  session.agent ?? harnessAgent(harnesses, session.harness)
 
 export const mainModel = (sessionId: string): string =>
   `(SELECT m.model FROM message m WHERE m.session_id = ${sessionId} AND m.actor = 'assistant' AND m.model IS NOT NULL
@@ -91,19 +93,23 @@ export interface IAgentRef {
   model: string | null
 }
 
-export const agentRef = (session: ISession, underTurnId: string): IAgentRef => ({
+export const agentRef = (harnesses: Harnesses, session: ISession, underTurnId: string): IAgentRef => ({
   sessionId: session.id,
   underTurnId,
-  agent: agentName(session),
+  agent: agentName(harnesses, session),
   harness: session.harness,
   model: session.model,
 })
 
 // A page reads a session several times (its thread, a spawned agent's block,
-// the selected turn); the cache lives for one request.
-export type SessionCache = Map<string, ISession>
+// the selected turn); the cache lives for one request, with the harnesses that
+// name its sessions' agents.
+export interface ISessionCache {
+  sessions: Map<string, ISession>
+  harnesses: Harnesses
+}
 
-export const sessionCache = (): SessionCache => new Map()
+export const sessionCache = (): ISessionCache => ({ sessions: new Map(), harnesses: harnessesOf() })
 
 export const turnOf = (session: ISession, turnId: string): ITurn => {
   const turn = session.turnById.get(turnId)
@@ -156,8 +162,8 @@ export const turnsOf = (
   return turns
 }
 
-export const sessionOf = (cache: SessionCache, sessionId: string): ISession => {
-  const cached = cache.get(sessionId)
+export const sessionOf = (cache: ISessionCache, sessionId: string): ISession => {
+  const cached = cache.sessions.get(sessionId)
   if (cached !== undefined) {
     return cached
   }
@@ -252,7 +258,7 @@ export const sessionOf = (cache: SessionCache, sessionId: string): ISession => {
     ),
   }
 
-  cache.set(sessionId, session)
+  cache.sessions.set(sessionId, session)
 
   return session
 }

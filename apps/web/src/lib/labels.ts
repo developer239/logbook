@@ -1,5 +1,6 @@
 import { countBy } from './lists'
 import type { ServerState } from './plugins'
+import type { Harnesses } from './queries/harnesses'
 
 export const UNLABELLED = 'Not labelled yet'
 
@@ -7,23 +8,15 @@ export const UNLABELLED_INLINE = UNLABELLED.toLowerCase()
 
 export const UNTITLED = 'Untitled conversation'
 
-interface IHarness {
-  name: string
-  defaultAgent: string
-  alias: string
-}
+// A session whose harness has no row shows its id: that cannot happen after a sync, and a page does not fail for it.
+export const harnessName = (harnesses: Harnesses, harness: string): string => harnesses.get(harness)?.name ?? harness
 
-const HARNESSES: Readonly<Record<string, IHarness>> = {
-  'claude-code': { name: 'Claude Code', defaultAgent: 'Claude', alias: 'claude' },
-  'opencode': { name: 'OpenCode', defaultAgent: 'OpenCode', alias: 'opencode' },
-}
+export const harnessAgent = (harnesses: Harnesses, harness: string): string =>
+  harnesses.get(harness)?.defaultAgent ?? harness
 
-export const harnessName = (harness: string): string => HARNESSES[harness]?.name ?? harness
-
-export const harnessAgent = (harness: string): string => HARNESSES[harness]?.defaultAgent ?? harness
-
-export const harnessOfFilter = (value: string): string =>
-  Object.entries(HARNESSES).find(([, harness]) => harness.alias === value.toLowerCase())?.[0] ?? value
+// The harness id a `harness:` filter value names, by alias or by id; any other value names none and matches nothing.
+export const harnessOfFilter = (harnesses: Harnesses, value: string): string =>
+  [...harnesses.values()].find((harness) => harness.filterAlias === value.toLowerCase())?.id ?? value
 
 export const STARTED_BY = { me: 'me', agent: 'an agent', script: 'a script' } as const
 

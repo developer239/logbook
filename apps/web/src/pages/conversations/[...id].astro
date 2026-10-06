@@ -47,6 +47,7 @@ const page = load(() => {
     messages: sumBy(own.turns, (turn) => (turn.prompt === null ? 0 : 1) + (turn.reply === null ? 0 : 1)),
     shown: first === undefined ? null : shownTurn(cache, id, turnId ?? first, stepId),
     plugins: sessionPlugins(cache, id),
+    harnesses: cache.harnesses,
   }
 })
 
@@ -69,7 +70,7 @@ const title = page.ok ? (page.data.head.title ?? UNTITLED) : 'Conversation'
     page.ok && (
       <>
         <ConversationHead id={page.data.id} title={title} parent={page.data.head.parent} range={page.data.range} />
-        <ConversationFacts facts={page.data.facts} head={page.data.head} />
+        <ConversationFacts facts={page.data.facts} head={page.data.head} harnesses={page.data.harnesses} />
         {
           page.data.plugins.offers === 'recorded' ? (
             <OfferedPlugins servers={page.data.plugins.servers} />
@@ -86,6 +87,7 @@ const title = page.ok ? (page.data.head.title ?? UNTITLED) : 'Conversation'
           promptBy={page.data.head.startedBy === 'me' ? 'You' : 'Prompt'}
           shown={page.data.shown}
           range={page.data.range}
+          harnesses={page.data.harnesses}
         />
       </>
     )

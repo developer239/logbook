@@ -1,4 +1,5 @@
 ---
+import type { Harnesses } from '../../lib/queries/harnesses'
 import { count, duration, pct, plural, tokensLine } from '../../lib/format'
 import { mainInput } from '../../lib/inputs'
 import { harnessName, purposeName } from '../../lib/labels'
@@ -19,9 +20,10 @@ interface Props {
   spanMs: number
   selected: ISelectedStep | null
   range: IRange
+  harnesses: Harnesses
 }
 
-const { steps, turnId, turnStart, spanMs, selected, range } = Astro.props
+const { steps, turnId, turnStart, spanMs, selected, range, harnesses } = Astro.props
 
 const OPEN_UP_TO = 10
 const MAX_LEVEL = 3
@@ -119,13 +121,13 @@ const depthOf = (step: Step): string | undefined =>
             isOpen={started.steps.length <= OPEN_UP_TO || everyStep(started.steps).some((child) => child.id === selected?.id)}
           >
             <Fragment slot="summary">
-              <b>{started.agent}</b> {harnessName(started.harness)} · {plural(started.steps.length, 'step')},
+              <b>{started.agent}</b> {harnessName(harnesses, started.harness)} · {plural(started.steps.length, 'step')},
               {started.failed === 0 ? ' none failed' : ` ${count(started.failed)} failed`}
             </Fragment>
             <div class="step-rows__kids-link">
               <Link href={`#${anchor('spawn', started.sessionId, started.underTurnId)}`}>Show in the thread</Link>
             </div>
-            <Astro.self steps={started.steps} turnId={turnId} turnStart={turnStart} spanMs={spanMs} selected={selected} range={range} />
+            <Astro.self steps={started.steps} turnId={turnId} turnStart={turnStart} spanMs={spanMs} selected={selected} range={range} harnesses={harnesses} />
           </Disclosure>
         )}
       </>

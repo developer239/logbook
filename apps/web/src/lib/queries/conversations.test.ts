@@ -5,15 +5,18 @@ import { seedWarehouse, type ITestWarehouse } from '../testing/warehouse'
 import { MINUTE } from '../time'
 import type * as Conversation from './conversation'
 import type * as Conversations from './conversations'
+import type * as HarnessQueries from './harnesses'
 
 let warehouse: ITestWarehouse
 let list: typeof Conversations
 let one: typeof Conversation
+let harnesses: typeof HarnessQueries
 
 beforeAll(async () => {
   warehouse = await seedWarehouse(seedRows)
   list = await import('./conversations')
   one = await import('./conversation')
+  harnesses = await import('./harnesses')
 })
 
 afterAll(async () => {
@@ -21,11 +24,11 @@ afterAll(async () => {
 })
 
 const idsOf = (query: string): string[] =>
-  list.conversations(parseFilter(query), everything(), 0).rows.map((row) => row.id)
+  list.conversations(parseFilter(query), everything(), 0, harnesses.harnessesOf()).rows.map((row) => row.id)
 
 describe('conversations', () => {
   it('should list every conversation of the range, the one worked on last first', () => {
-    const { rows, total, pageSize } = list.conversations(parseFilter(''), everything(), 0)
+    const { rows, total, pageSize } = list.conversations(parseFilter(''), everything(), 0, harnesses.harnessesOf())
 
     expect(rows.map((row) => row.id)).toEqual(['ses-script', 'ses-me', 'ses-agent'])
     expect(total).toBe(3)
@@ -33,7 +36,7 @@ describe('conversations', () => {
   })
 
   it('should say what a conversation is: its title, who started it, its work and its labels', () => {
-    const { rows } = list.conversations(parseFilter(''), everything(), 0)
+    const { rows } = list.conversations(parseFilter(''), everything(), 0, harnesses.harnessesOf())
 
     expect(rows.find((row) => row.id === 'ses-me')).toEqual({
       id: 'ses-me',
@@ -53,7 +56,7 @@ describe('conversations', () => {
   })
 
   it('should title a conversation by its first typed prompt where it has no title', () => {
-    const { rows } = list.conversations(parseFilter(''), everything(), 0)
+    const { rows } = list.conversations(parseFilter(''), everything(), 0, harnesses.harnessesOf())
 
     expect(rows.map((row) => [row.id, row.title, row.startedBy])).toEqual([
       ['ses-script', '[note] release v2 please', 'script'],
@@ -65,7 +68,9 @@ describe('conversations', () => {
   it('should keep to the range', () => {
     const day = { ...everything(), from: START + 60 * MINUTE }
 
-    expect(list.conversations(parseFilter(''), day, 0).rows.map((row) => row.id)).toEqual(['ses-script'])
+    expect(list.conversations(parseFilter(''), day, 0, harnesses.harnessesOf()).rows.map((row) => row.id)).toEqual([
+      'ses-script',
+    ])
   })
 
   it('should filter by the labels of a conversation, the newest label counting', () => {
@@ -103,7 +108,10 @@ describe('conversations', () => {
   })
 
   it('should count the whole list for a page past its end', () => {
-    expect(list.conversations(parseFilter(''), everything(), 4)).toMatchObject({ rows: [], total: 3 })
+    expect(list.conversations(parseFilter(''), everything(), 4, harnesses.harnessesOf())).toMatchObject({
+      rows: [],
+      total: 3,
+    })
   })
 })
 

@@ -17,6 +17,7 @@ import {
   toolIs,
 } from '../sql'
 import { hasCause } from './calls'
+import type { Harnesses } from './harnesses'
 import { allOf, type ISqlCondition, pagedRows } from './paged'
 
 export interface IConversationRow {
@@ -67,7 +68,7 @@ const known = (conditions: Readonly<Record<string, string>>, value: string): str
   return condition
 }
 
-const conditionOf = (field: FilterField, values: string[]): ISqlCondition => {
+const conditionOf = (harnesses: Harnesses, field: FilterField, values: string[]): ISqlCondition => {
   switch (field) {
     case 'goal':
       return { sql: `${modelLabel('session', 's.id', 'goal')} IN (${placeholders(values)})`, params: values }
@@ -80,7 +81,7 @@ const conditionOf = (field: FilterField, values: string[]): ISqlCondition => {
     case 'harness':
       return {
         sql: `s.harness IN (${placeholders(values)})`,
-        params: values.map(harnessOfFilter),
+        params: values.map((value) => harnessOfFilter(harnesses, value)),
       }
     case 'agent':
       return { sql: `s.agent IN (${placeholders(values)})`, params: values }
@@ -131,11 +132,12 @@ const COLUMNS = `s.id, ${titleOf('s.id')} AS title, s.harness, s.agent, ${starte
 export const conversations = (
   filter: IFilter,
   range: IRange,
-  page: number
+  page: number,
+  harnesses: Harnesses
 ): { rows: IConversationRow[]; total: number; pageSize: number } => {
   const where = allOf([
     { sql: 's.started_at >= ? AND s.started_at < ?', params: [range.from, range.to] },
-    ...[...filter.terms.entries()].map(([field, values]) => conditionOf(field, values)),
+    ...[...filter.terms.entries()].map(([field, values]) => conditionOf(harnesses, field, values)),
     ...(filter.text.length === 0 ? [] : [textCondition(filter.text)]),
   ])
 

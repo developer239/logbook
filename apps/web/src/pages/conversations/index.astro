@@ -7,6 +7,7 @@ import { parseFilter } from '../../lib/filter'
 import { load } from '../../lib/load'
 import { checkPage, parsePage } from '../../lib/paging'
 import { conversations } from '../../lib/queries/conversations'
+import { harnessesOf } from '../../lib/queries/harnesses'
 import { parseRange } from '../../lib/range'
 
 const page = load(() => {
@@ -14,10 +15,11 @@ const page = load(() => {
   const query = Astro.url.searchParams.get('q') ?? ''
   const filter = parseFilter(query)
   const pageNumber = parsePage(Astro.url.searchParams)
-  const list = conversations(filter, range, pageNumber)
+  const harnesses = harnessesOf()
+  const list = conversations(filter, range, pageNumber, harnesses)
   checkPage(pageNumber, list.total, list.pageSize)
 
-  return { range, query, filter, pageNumber, list }
+  return { range, query, filter, pageNumber, list, harnesses }
 })
 
 if (!page.ok) {
@@ -31,7 +33,7 @@ if (!page.ok) {
       <>
         <PageHead title="Conversations" range={page.data.range} />
         <ConversationFilter query={page.data.query} filter={page.data.filter} range={page.data.range} />
-        <ConversationList list={page.data.list} range={page.data.range} page={page.data.pageNumber} />
+        <ConversationList list={page.data.list} range={page.data.range} page={page.data.pageNumber} harnesses={page.data.harnesses} />
       </>
     )
   }

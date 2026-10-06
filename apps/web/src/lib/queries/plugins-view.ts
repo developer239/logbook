@@ -8,7 +8,7 @@ import {
 import { parseMcpName, toolName } from '../tools'
 import { all } from '../warehouse'
 import { loadedNames, resultKind } from './context-events'
-import { messageOf, sessionOf, type ISession, type SessionCache } from './session'
+import { messageOf, sessionOf, type ISession, type ISessionCache } from './session'
 
 export type PluginsView =
   | { offers: 'recorded'; servers: IPluginServer[] }
@@ -40,7 +40,7 @@ const loadedInTurn = (session: ISession): Map<string, number> => {
   return turns
 }
 
-export const sessionPlugins = (cache: SessionCache, sessionId: string): PluginsView => {
+export const sessionPlugins = (cache: ISessionCache, sessionId: string): PluginsView => {
   const session = sessionOf(cache, sessionId)
   const announcements = all<{ at: number; data: string }>(
     `SELECT at, data_json AS data FROM event WHERE session_id = ? AND kind = 'tools-offered' ORDER BY at`,

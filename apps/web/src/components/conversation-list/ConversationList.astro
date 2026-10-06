@@ -1,4 +1,5 @@
 ---
+import type { Harnesses } from '../../lib/queries/harnesses'
 import { count, duration, plural, when } from '../../lib/format'
 import { goalName, harnessName, outcomeStatus, UNLABELLED_INLINE, UNTITLED } from '../../lib/labels'
 import { conversationHref } from '../../lib/links'
@@ -15,9 +16,10 @@ interface Props {
   list: ReturnType<typeof conversations>
   range: IRange
   page: number
+  harnesses: Harnesses
 }
 
-const { list, range, page } = Astro.props
+const { list, range, page, harnesses } = Astro.props
 ---
 
 <Card title={plural(list.total, 'conversation')}>
@@ -40,7 +42,7 @@ const { list, range, page } = Astro.props
             </span>
             <span class="rows__cell rows__cell--muted rows__cell--num">{duration(row.activeMs)}</span>
             <span class="rows__cell rows__cell--muted">
-              {harnessName(row.harness)}
+              {harnessName(harnesses, row.harness)}
               {row.agent !== null && ` · ${row.agent}`}
               {` · ${row.startedBy}`}
             </span>

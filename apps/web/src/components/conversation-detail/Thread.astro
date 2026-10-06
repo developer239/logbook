@@ -1,4 +1,5 @@
 ---
+import type { Harnesses } from '../../lib/queries/harnesses'
 import { brief, clip, count, duration, plural, time, turnLabel } from '../../lib/format'
 import { harnessName, outcomeStatus, reactionStatus } from '../../lib/labels'
 import { anchor, selectHref } from '../../lib/links'
@@ -17,9 +18,10 @@ interface Props {
   selected: string | null
   path: ReadonlySet<string>
   isSpawn?: boolean
+  harnesses: Harnesses
 }
 
-const { turns, agent, promptBy, selected, path, isSpawn = false } = Astro.props
+const { turns, agent, promptBy, selected, path, isSpawn = false, harnesses } = Astro.props
 
 const BRIEF_LENGTH = 280
 ---
@@ -84,7 +86,7 @@ const BRIEF_LENGTH = 280
                 <Tile kind="agent" />
                 <b>{spawn.agent}</b>
                 <span class="thread__agent-model">
-                  {harnessName(spawn.harness)}
+                  {harnessName(harnesses, spawn.harness)}
                   {spawn.model !== null && ` · ${spawn.model}`}
                 </span>
                 {spawn.outcome !== null && (
@@ -100,7 +102,7 @@ const BRIEF_LENGTH = 280
               </summary>
               {opening !== null && <p class="thread__brief">Brief: {brief(opening, BRIEF_LENGTH)}</p>}
               <div class="thread__agent-body">
-                <Astro.self turns={spawn.turns} agent={spawn.agent} promptBy="Brief" selected={selected} path={path} isSpawn />
+                <Astro.self turns={spawn.turns} agent={spawn.agent} promptBy="Brief" selected={selected} path={path} isSpawn harnesses={harnesses} />
               </div>
             </details>
           )

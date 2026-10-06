@@ -5,7 +5,7 @@ import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { createTestWarehouse, type ITestWarehouse } from '@log-book/warehouse/testing'
+import { createTestWarehouse, insert, type ITestWarehouse } from '@log-book/warehouse/testing'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { HOST_REFUSAL, ORIGIN_REFUSAL } from '../src/lib/guard'
 import { logbookStub } from '../src/lib/testing/logbook-stub'
@@ -198,5 +198,83 @@ describe('POST /sync in the built handler', () => {
       statuses: [400, 400],
       calls: [],
     })
+  })
+})
+
+// A page of the app that must answer 200, as text.
+const page = async (path: string): Promise<string> => {
+  const response = await fetch(`${origin}${path}`)
+  expect(response.status).toBe(200)
+  return response.text()
+}
+
+describe('harness names in the built handler', () => {
+  const AT = Date.UTC(2026, 9, 4, 12)
+
+  beforeAll(() => {
+    if (warehouse === undefined) {
+      throw new Error('The warehouse is made before every describe block')
+    }
+    const { db } = warehouse
+    insert(db, 'harness', {
+      id: 'example',
+      name: 'Example Harness',
+      default_agent: 'helper',
+      filter_alias: 'ex',
+      is_found: 1,
+      checked_at: AT,
+      location_variables: '[]',
+    })
+    for (const [id, of, title] of [
+      ['example:demo-0001', 'example', 'Rename the release script'],
+      ['ghost:demo-0001', 'ghost', 'Tidy the changelog'],
+    ] as const) {
+      insert(db, 'session', {
+        id,
+        harness: of,
+        source_id: 'demo-0001',
+        origin: 'interactive',
+        is_scripted: 0,
+        title,
+        started_at: AT,
+        ended_at: AT + 60_000,
+      })
+    }
+  })
+
+  it("shows the descriptor's name in the list and on the conversation", async () => {
+    // Act
+    const [list, conversation] = [
+      await page('/conversations?range=all'),
+      await page('/conversations/example%3Ademo-0001?range=all'),
+    ]
+
+    // Assert
+    expect({
+      isListed: list.includes('Rename the release script') && list.includes('Example Harness'),
+      isNamed: conversation.includes('Example Harness'),
+    }).toStrictEqual({ isListed: true, isNamed: true })
+  })
+
+  it("filters by the descriptor's alias, and lists nothing for an unknown harness", async () => {
+    // Act
+    const [byAlias, unknown] = [
+      await page('/conversations?range=all&q=harness%3Aex'),
+      await page('/conversations?range=all&q=harness%3Anope'),
+    ]
+
+    // Assert
+    expect({
+      byAlias: byAlias.includes('Rename the release script') && !byAlias.includes('Tidy the changelog'),
+      unknown: unknown.includes('Rename the release script') || unknown.includes('Tidy the changelog'),
+    }).toStrictEqual({ byAlias: true, unknown: false })
+  })
+
+  it('renders a conversation whose harness has no row, naming the harness by its id', async () => {
+    // Act
+    const conversation = await page('/conversations/ghost%3Ademo-0001?range=all')
+
+    // Assert
+    expect(conversation).toContain('ghost')
   })
 })
