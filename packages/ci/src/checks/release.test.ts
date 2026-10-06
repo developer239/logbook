@@ -24,8 +24,32 @@ const workflow = ({ top = 'permissions:\n  contents: read', job = [] as string[]
 // An expression reading a stored secret.
 const secret = (name: string): string => ['$', '{{ secrets.', name, ' }}'].join('')
 
-const findings = async (files: Readonly<Record<string, string>>): Promise<string[]> =>
-  releaseFindings(await workspaces.create({ 'apps/example/package.json': PRIVATE, ...files }))
+// semantic-release's configuration, exactly as the guard holds it.
+const RELEASE_CONFIG = {
+  branches: [{ name: 'main', channel: 'next' }],
+  plugins: [
+    '@semantic-release/commit-analyzer',
+    '@semantic-release/release-notes-generator',
+    ['@semantic-release/github', { successComment: false, failComment: false, releasedLabels: false }],
+  ],
+}
+
+// The guard's findings on a workspace with a private manifest and the exact release configuration, with these files
+// planted over it and those whose value is null removed.
+const findings = async (files: Readonly<Record<string, string | null>>): Promise<string[]> => {
+  const planted = {
+    'apps/example/package.json': PRIVATE,
+    '.releaserc.json': JSON.stringify(RELEASE_CONFIG, null, 2),
+    ...files,
+  }
+  return releaseFindings(
+    await workspaces.create(
+      Object.fromEntries(
+        Object.entries(planted).filter((pair): pair is [string, string] => typeof pair[1] === 'string')
+      )
+    )
+  )
+}
 
 afterEach(async () => {
   await workspaces.removeAll()
@@ -135,5 +159,25 @@ describe('the release guard', () => {
       'apps/example/package.json: not "private": true; only the staged copies reach npm ' +
         '[release-guard/private-manifest]',
     ])
+  })
+
+  it.each([
+    [
+      'with @semantic-release/npm added',
+      JSON.stringify({ ...RELEASE_CONFIG, plugins: [...RELEASE_CONFIG.plugins, '@semantic-release/npm'] }),
+      ".releaserc.json: names @semantic-release/npm; publishing is the publish job's [release-guard/release-config]",
+    ],
+    [
+      'with the channel changed',
+      JSON.stringify({ ...RELEASE_CONFIG, branches: [{ name: 'main', channel: 'latest' }] }),
+      '.releaserc.json: not exactly the release configuration [release-guard/release-config]',
+    ],
+    ['missing', null, '.releaserc.json: missing [release-guard/release-config]'],
+  ])('refuses a release configuration %s', async (_case, text, finding) => {
+    // Act
+    const found = await findings({ '.releaserc.json': text })
+
+    // Assert
+    expect(found).toStrictEqual([finding])
   })
 })

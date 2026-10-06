@@ -1,3 +1,4 @@
+import semanticRelease from 'semantic-release'
 import { demoCaptureArguments } from './checks/demo-captures.js'
 import { dependencyFindings } from './checks/deps.js'
 import { fixtureFindings } from './checks/fixtures.js'
@@ -6,6 +7,7 @@ import { networkFindings } from './checks/network.js'
 import { packageFindings } from './checks/package.js'
 import { releaseFindings } from './checks/release.js'
 import { checkTests } from './checks/tests.js'
+import { releaseVersion } from './release/release-version.js'
 import { stageCli } from './stage/stage-cli.js'
 import { stageLibraries } from './stage/stage-libraries.js'
 
@@ -45,7 +47,7 @@ const LITERAL_CHECKS: Readonly<Record<string, (root: string) => Promise<string[]
 const COMMANDS: Readonly<Record<string, CiCommand>> = {
   'deps': check(dependencyFindings),
   'fixtures': check(fixtureFindings),
-  'release': check(releaseFindings),
+  'release-guard': check(releaseFindings),
   'network': check(networkFindings),
   'package': check(packageFindings),
   'literals': async (args, io) => {
@@ -64,6 +66,8 @@ const COMMANDS: Readonly<Record<string, CiCommand>> = {
     }
     return checkTests(process.cwd(), { ...io, env: process.env })
   },
+  'release': async (args, io) =>
+    releaseVersion(args, { stderr: io.stderr, env: process.env, cwd: process.cwd(), release: semanticRelease }),
   // Prints `pnpm demo:scan` arguments for each demo entry of the committed capture manifest, for the demo job.
   'demo-captures': async (args, io) => {
     if (args.length > 0) {

@@ -12,6 +12,14 @@
       "entry": ["src/index.ts", "src/source-writer/index.ts"],
       "project": ["src/**/*.ts", "fixtures/**/*.ts"]
     },
+    "packages/ci": {
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": [
+        "@semantic-release/commit-analyzer",
+        "@semantic-release/github",
+        "@semantic-release/release-notes-generator"
+      ]
+    },
     "packages/engine": {
       "entry": ["src/rewrite/rewrite-process.ts"],
       "project": ["src/**/*.ts"]

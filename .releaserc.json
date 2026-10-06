@@ -1,0 +1,11 @@
+{
+  "branches": [{ "name": "main", "channel": "next" }],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/github",
+      { "successComment": false, "failComment": false, "releasedLabels": false }
+    ]
+  ]
+}

@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { isDeepStrictEqual } from 'node:util'
 import { parse } from 'yaml'
+import { RELEASE_CONFIG, RELEASE_CONFIG_FILE } from '../rules/release-config.js'
 import { trackedFiles } from '../tracked-files.js'
 
 const WORKFLOW = /^\.github\/workflows\/[^/]+\.ya?ml$/u
@@ -77,8 +79,35 @@ const manifestFinding = (file: string, text: string): string[] => {
     : [`${file}: not "private": true; only the staged copies reach npm [release-guard/private-manifest]`]
 }
 
+const NPM_PLUGIN = '@semantic-release/npm'
+
+// semantic-release's configuration, exactly the one release-config.ts holds; an npm plugin is named on its own, since
+// it would publish from semantic-release's dependency tree.
+const releaseConfigFindings = async (root: string): Promise<string[]> => {
+  let text: string
+  try {
+    text = await readFile(join(root, RELEASE_CONFIG_FILE), 'utf8')
+  } catch {
+    return [`${RELEASE_CONFIG_FILE}: missing [release-guard/release-config]`]
+  }
+  if (text.includes(NPM_PLUGIN)) {
+    return [
+      `${RELEASE_CONFIG_FILE}: names ${NPM_PLUGIN}; publishing is the publish job's [release-guard/release-config]`,
+    ]
+  }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text)
+  } catch {
+    return [`${RELEASE_CONFIG_FILE}: not valid JSON [release-guard/release-config]`]
+  }
+  return isDeepStrictEqual(parsed, RELEASE_CONFIG)
+    ? []
+    : [`${RELEASE_CONFIG_FILE}: not exactly the release configuration [release-guard/release-config]`]
+}
+
 // Every workflow right and manifest the release guard refuses: no OIDC token, no contents write, no npm environment
-// or publishing text, no stored secret, and every workspace manifest private.
+// or publishing text, no stored secret, every workspace manifest private, and semantic-release configured exactly.
 export const releaseFindings = async (root: string): Promise<string[]> => {
   const files = await trackedFiles(root, ['.github/workflows', 'packages', 'apps'])
   const read = async (file: string): Promise<string> => readFile(join(root, file), 'utf8')
@@ -88,5 +117,5 @@ export const releaseFindings = async (root: string): Promise<string[]> => {
   const manifests = await Promise.all(
     files.filter((file) => MANIFEST.test(file)).map(async (file) => manifestFinding(file, await read(file)))
   )
-  return [...workflows.flat(), ...manifests.flat()]
+  return [...workflows.flat(), ...manifests.flat(), ...(await releaseConfigFindings(root))]
 }

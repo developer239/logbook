@@ -12,6 +12,10 @@
     "@commitlint/lint": "catalog:",
     "@commitlint/load": "catalog:",
     "@commitlint/types": "catalog:",
+    "@semantic-release/commit-analyzer": "catalog:",
+    "@semantic-release/github": "catalog:",
+    "@semantic-release/release-notes-generator": "catalog:",
+    "semantic-release": "catalog:",
     "vitest": "catalog:"
   },
   "dependencies": {
