@@ -14,7 +14,7 @@ const run = promisify(execFile)
 export const IMPORT_DEMO_URL = import.meta.url
 
 // The CLI as users get it: the bundle `pnpm build` stages.
-const BUILT_CLI = fileURLToPath(new URL('../../../../apps/cli/package/dist/cli.mjs', import.meta.url))
+export const BUILT_CLI = fileURLToPath(new URL('../../../../apps/cli/package/dist/cli.mjs', import.meta.url))
 
 // Doctor's lines start with a label padded to this width; an adapter's answer follows it.
 const DOCTOR_COLUMN = 12
