@@ -82,6 +82,48 @@ afterEach(async () => {
 })
 
 describe('the release guard', () => {
+  it("passes contents: write in ci.yml's job release, and refuses it in any other job and workflow", async () => {
+    // Arrange
+    const writes = { 'runs-on': 'ubuntu-latest', 'permissions': { contents: 'write' }, 'steps': [{ run: 'echo x' }] }
+
+    // Act
+    const found = await findings({
+      [CI]: ciWorkflow(publishJob(), { release: writes, build: writes }),
+      [WORKFLOW]: stringify({
+        name: 'Example',
+        on: 'push',
+        permissions: { contents: 'read' },
+        jobs: { release: writes },
+      }),
+    })
+
+    // Assert
+    expect(found).toStrictEqual([
+      `${CI}: job build: contents: write [release-guard/no-contents-write]`,
+      `${WORKFLOW}: job release: contents: write [release-guard/no-contents-write]`,
+    ])
+  })
+
+  it("refuses an OIDC token and an npm environment in ci.yml's job release", async () => {
+    // Act
+    const found = await findings({
+      [CI]: ciWorkflow(publishJob(), {
+        release: {
+          'runs-on': 'ubuntu-latest',
+          'environment': 'npm-next',
+          'permissions': { 'contents': 'write', 'id-token': 'write' },
+          'steps': [{ run: 'echo x' }],
+        },
+      }),
+    })
+
+    // Assert
+    expect(found).toStrictEqual([
+      `${CI}: job release: id-token: write [release-guard/no-id-token]`,
+      `${CI}: job release: environment npm-next [release-guard/no-npm-environment]`,
+    ])
+  })
+
   it('passes a workflow that reads only and a private manifest', async () => {
     // Act
     const found = await findings({ [WORKFLOW]: workflow() })
