@@ -2,6 +2,7 @@ import { open, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { KNOWN_TOOL_NAMES, KNOWN_TOOLS_FILE, OWNER_LITERALS } from '../rules/owner-literals.js'
 import { trackedFiles } from '../tracked-files.js'
+import { captureFindings } from './captures.js'
 
 const ADAPTER_DIRECTORY = /^packages\/adapter-(?<id>[^/]+)\//u
 // The adapter package every adapter builds on, which is no harness.
@@ -90,8 +91,8 @@ const trackedFileFindings = (file: string, head: Buffer): string[] => [
     : []),
 ]
 
-// Every owner literal in a tracked text file, by file, line and literal and never more of the line; and every tracked
-// demo build output or SQLite database.
+// Every owner literal in a tracked text file, by file, line and literal and never more of the line; every tracked demo
+// build output or SQLite database; and every committed image or video that breaks rules M1 to M4.
 export const ownerFindings = async (root: string): Promise<string[]> => {
   const files = await trackedFiles(root, ['.'])
   const findings = await Promise.all(
@@ -105,5 +106,5 @@ export const ownerFindings = async (root: string): Promise<string[]> => {
       ]
     })
   )
-  return findings.flat()
+  return [...findings.flat(), ...(await captureFindings(root, files))]
 }
