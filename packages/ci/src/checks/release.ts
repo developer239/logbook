@@ -28,6 +28,8 @@ const PUBLISH_JOB = 'publish'
 const PUBLISH_JOB_TEMPLATE = 'packages/ci/src/rules/publish-job.yaml'
 const PUBLISH_TEXT = new Set(['npm publish', 'npm-cli.js'])
 const PINNED_ACTIONS = ['actions/setup-node', 'actions/download-artifact']
+// The one job that may write contents: ci.yml's job release, which pushes the tag and writes the GitHub release.
+const RELEASE_JOB = 'release'
 const FULL_SHA = /^[0-9a-f]{40}$/u
 const ANY_SHA = '<sha>'
 
@@ -48,9 +50,12 @@ const jobFindings = (file: string, workflow: Record<string, unknown>, id: string
   const at = `${file}: job ${id}:`
   const permissions = 'permissions' in job ? job.permissions : workflow.permissions
   const environment = environmentOf(job)
+  const mayWriteContents = file === PUBLISH_WORKFLOW && id === RELEASE_JOB
   return [
     ...(grants(permissions, 'id-token') ? [`${at} id-token: write [release-guard/no-id-token]`] : []),
-    ...(grants(permissions, 'contents') ? [`${at} contents: write [release-guard/no-contents-write]`] : []),
+    ...(grants(permissions, 'contents') && !mayWriteContents
+      ? [`${at} contents: write [release-guard/no-contents-write]`]
+      : []),
     ...(typeof environment === 'string' && NPM_ENVIRONMENTS.has(environment)
       ? [`${at} environment ${environment} [release-guard/no-npm-environment]`]
       : []),
@@ -200,9 +205,9 @@ const releaseConfigFindings = async (root: string): Promise<string[]> => {
     : [`${RELEASE_CONFIG_FILE}: not exactly the release configuration [release-guard/release-config]`]
 }
 
-// Every workflow right and manifest the release guard refuses: no OIDC token, no contents write, no npm environment
-// or publishing text, no stored secret, outside ci.yml's job publish, which must equal its template; every workspace
-// manifest private; and semantic-release configured exactly.
+// Every workflow right and manifest the release guard refuses: no OIDC token, no contents write but in ci.yml's job
+// release, no npm environment or publishing text, no stored secret, outside ci.yml's job publish, which must equal its
+// template; every workspace manifest private; and semantic-release configured exactly.
 export const releaseFindings = async (root: string): Promise<string[]> => {
   const files = await trackedFiles(root, ['.github/workflows', 'packages', 'apps'])
   const read = async (file: string): Promise<string> => readFile(join(root, file), 'utf8')
