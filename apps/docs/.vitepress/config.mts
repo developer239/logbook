@@ -27,7 +27,15 @@ const CONTENT_SECURITY_POLICY = [
 ].join('; ')
 // In this order; each page's ticket adds its pages to its group, and a group with no page yet is left out.
 const SIDEBAR: DefaultTheme.SidebarItem[] = [
-  { text: 'Getting started', items: [] },
+  {
+    text: 'Getting started',
+    items: [
+      { text: 'Install', link: '/start/install' },
+      { text: 'The first run', link: '/start/first-run' },
+      { text: 'Update, disk space and uninstall', link: '/start/update' },
+      { text: 'Try the next version', link: '/start/next' },
+    ],
+  },
   { text: 'Using Log Book', items: [] },
   { text: 'Labelling', items: [{ text: 'What it sends', link: '/labelling/what-it-sends' }] },
   { text: 'Privacy', items: [{ text: 'What Log Book sends, and where', link: '/privacy/' }] },
