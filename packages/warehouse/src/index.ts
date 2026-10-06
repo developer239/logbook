@@ -73,6 +73,7 @@ export {
   isProcessAlive,
   readLabelsLock,
   readSyncLock,
+  SYNC_TIMEOUT_MS,
   takeLabelsLock,
   takeSyncLock,
   type IHeldLock,

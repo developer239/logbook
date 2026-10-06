@@ -14,7 +14,7 @@ export {
   type ReportTopic,
 } from './read/report-names.js'
 export type { IUnitProgress } from './sync/import-step.js'
-export { SYNC_TIMEOUT_MS, type ISyncAdapterResult, type ISyncResult, type SyncProgress } from './sync/sync.js'
+export type { ISyncAdapterResult, ISyncResult, SyncProgress } from './sync/sync.js'
 export { ITEM_CONTENTS, type IItemPart } from './labels/item-contents.js'
 export type { ILabelFacts } from './labels/facts.js'
 export type { ILabelRunReport, ILabelRunTaskCounts, LabelRunResult } from './labels/label-run.js'

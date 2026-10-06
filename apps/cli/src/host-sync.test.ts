@@ -1,6 +1,6 @@
 import type { ChildProcess } from 'node:child_process'
 import { EventEmitter } from 'node:events'
-import { SYNC_TIMEOUT_MS } from '@log-book/engine'
+import { SYNC_TIMEOUT_MS } from '@log-book/warehouse'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { IChildRegistry } from './child-registry.js'
 import {

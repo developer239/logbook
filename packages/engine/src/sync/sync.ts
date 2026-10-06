@@ -21,10 +21,6 @@ import {
 
 export type SyncProgress = IUnitProgress | { phase: 'derivations' }
 
-// How long a sync may run before whoever started it stops it as failed; the next sync continues from the units it
-// committed.
-export const SYNC_TIMEOUT_MS = 30 * 60 * 1000
-
 // One adapter's part of a sync, for the CLI to print. The location is in the `~/` form.
 export interface ISyncAdapterResult {
   name: string

@@ -15,6 +15,7 @@ export class WarehouseError extends Error {
   public readonly status = 503
 }
 
-export class CookbookError extends Error {
+// A logbook child the web app started failed; its message says how.
+export class CliError extends Error {
   public readonly status = 500
 }

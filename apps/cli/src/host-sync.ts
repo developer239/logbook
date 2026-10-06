@@ -1,5 +1,5 @@
 import type { ChildProcess } from 'node:child_process'
-import { SYNC_TIMEOUT_MS } from '@log-book/engine'
+import { SYNC_TIMEOUT_MS } from '@log-book/warehouse'
 import type { IChildRegistry } from './child-registry.js'
 import { exitCodeOf } from './errors.js'
 import { formatCount, formatDuration, tildePath } from './format.js'
