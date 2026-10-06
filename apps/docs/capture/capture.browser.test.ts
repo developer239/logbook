@@ -23,7 +23,7 @@ interface IStub {
 const SETTLE_MS = 1000
 const SESSION = 'stub:session-1'
 const CONVERSATION = `/conversations/${encodeURIComponent(SESSION)}`
-const DASHBOARD = '<h3>Tool problems</h3><h3>Reactions to the agent</h3><h3>Reactions from the agent</h3>'
+const DASHBOARD = '<h3>Tool trouble</h3><h3>Reactions to the agent</h3><h3>Reactions from the agent</h3>'
 const NOT_LABELLED = '<p class="labels-missing">These need labels from a model.</p>'
 // A plan holding what the shots read: the showcase conversation and the sessions' goals and outcomes.
 const PLAN = { showcase: { key: 'shop/showcase', id: SESSION }, plan: { sessions: [] } } as unknown as DemoPlan
