@@ -104,6 +104,24 @@ const guardOut = async (out: string): Promise<void> => {
   await Promise.all(entries.map(async (entry) => rm(join(out, entry), { recursive: true, force: true })))
 }
 
+// Plans the set and writes its home, its plan file and its manifest into `out`: what the writers wrote, before any
+// import.
+export const writeHome = async (out: string, options: IBuildOptions): Promise<IWrittenDemo> => {
+  const { size, seed = 1, labels = 'all', model = DEFAULT_LABEL_MODEL } = options
+  const inputs: IPlanInputs = {
+    size,
+    seed,
+    anchor: options.anchor ?? ANCHORS[size](thisHour(Date.now())),
+    labels,
+    model: labels === 'none' ? null : model,
+    corpus: PLAN_CORPUS,
+    writers: DECLARATIONS,
+  }
+  const plan = planDataset(inputs)
+  const scripts = scriptPlan(plan, inputs)
+  return writeDemo(out, { plan, writers: scripts, labels: planLabels(plan, scripts, PLAN_CORPUS), ids: {} }, WRITERS)
+}
+
 // Plans the set, writes the home, the plan file and the manifest, imports the home through the built CLI in the
 // sealed environment and compares what it read with what the writers wrote, writes the planned labels and their
 // labelling runs, and last checks the out directory against its manifest.
@@ -115,26 +133,9 @@ export const buildDemo = async (options: IBuildOptions): Promise<IBuiltDemo> => 
     )
   }
 
-  const { size, seed = 1, labels = 'all', model = DEFAULT_LABEL_MODEL } = options
-  const out = resolve(options.out ?? defaultOut(size))
-  const inputs: IPlanInputs = {
-    size,
-    seed,
-    anchor: options.anchor ?? ANCHORS[size](thisHour(Date.now())),
-    labels,
-    model: labels === 'none' ? null : model,
-    corpus: PLAN_CORPUS,
-    writers: DECLARATIONS,
-  }
-
+  const out = resolve(options.out ?? defaultOut(options.size))
   await guardOut(out)
-  const plan = planDataset(inputs)
-  const scripts = scriptPlan(plan, inputs)
-  const written = await writeDemo(
-    out,
-    { plan, writers: scripts, labels: planLabels(plan, scripts, PLAN_CORPUS), ids: {} },
-    WRITERS
-  )
+  const written = await writeHome(out, options)
   await importDemo(out, written)
   await writeLabels(demoWarehousePath(out), written.plan)
   await checkBuild(out)

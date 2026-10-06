@@ -1,8 +1,10 @@
+import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { isLabelModelId, LABEL_MODEL_RULE, LogBookError } from '@log-book/core'
 import { buildDemo, defaultOut, thisHour, type IBuildOptions } from './build/build-demo.js'
 import { checkDemo } from './check/check-demo.js'
+import { scanText } from './check/scan-text.js'
 import type { DemoSize, LabelsVariant } from './plan/types.js'
 import { scanPurity } from './purity.js'
 
@@ -150,6 +152,56 @@ const runCheck = async (args: readonly string[]): Promise<number> => {
   }
 }
 
+interface IScanArgs {
+  files: string[]
+  size: DemoSize
+  seed: number
+}
+
+const scanArgsOf = (args: readonly string[]): IScanArgs => {
+  const { values, positionals } = parseArgs({
+    args: [...args],
+    options: { size: { type: 'string' }, seed: { type: 'string' } },
+    strict: true,
+    allowPositionals: true,
+  })
+  if (positionals.length === 0) {
+    throw new UsageLine('Usage: logbook-demo scan <file>... [--size small] [--seed <n>]')
+  }
+  return {
+    files: positionals,
+    size: values.size === undefined ? 'small' : choiceOf('size', SIZES, values.size),
+    seed: values.seed === undefined ? 1 : seedOf(values.seed),
+  }
+}
+
+// Scans text files that carry no manifest against the demo of a size and seed: nothing printed when every file passes,
+// one `<file>:<line> <rule>` line per finding when one does not.
+const runScan = async (args: readonly string[]): Promise<number> => {
+  let scan: IScanArgs
+  try {
+    scan = scanArgsOf(args)
+  } catch (error: unknown) {
+    const [first] = (error instanceof Error ? error.message : String(error)).split('\n')
+    process.stderr.write(`${first ?? ''}\n`)
+    return EXIT_USAGE
+  }
+
+  const scanned = await Promise.all(
+    scan.files.map(async (file) => ({
+      file,
+      findings: await scanText(await readFile(file, 'utf8'), { size: scan.size, seed: scan.seed }),
+    }))
+  )
+  const lines = scanned.flatMap(({ file, findings }) =>
+    findings.map(({ line, rule }) => `${file}:${String(line)} ${rule}`)
+  )
+  for (const line of lines) {
+    process.stdout.write(`${line}\n`)
+  }
+  return lines.length === 0 ? 0 : EXIT_FAILURE
+}
+
 // Every command exits 0 on success, 1 on a failure with its one-line message last on stderr, and 2 on a usage error.
 export const runCommand = async (args: readonly string[]): Promise<number> => {
   const [command, ...rest] = args
@@ -161,6 +213,9 @@ export const runCommand = async (args: readonly string[]): Promise<number> => {
   }
   if (command === 'check') {
     return runCheck(rest)
+  }
+  if (command === 'scan') {
+    return runScan(rest)
   }
   process.stderr.write(command === undefined ? `${USAGE}\n` : `Unknown command ${command}. ${USAGE}\n`)
   return EXIT_USAGE

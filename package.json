@@ -29,7 +29,8 @@
     "check:release": "pnpm ci:build && node packages/ci/dist/index.js release",
     "stage": "pnpm ci:build && node packages/ci/dist/index.js stage-cli",
     "demo:build": "node packages/demo/bin/logbook-demo.mjs build",
-    "demo:check": "node packages/demo/bin/logbook-demo.mjs check"
+    "demo:check": "node packages/demo/bin/logbook-demo.mjs check",
+    "demo:scan": "node packages/demo/bin/logbook-demo.mjs scan"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",
