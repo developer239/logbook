@@ -48,12 +48,16 @@ describe('the logbook shim', () => {
   })
 
   it('exits 5 below a raised floor, naming it twice, with nothing on stdout', async () => {
+    // Arrange
+    // A minor of the running major that no release reaches, so the floor is above whichever Node runs the test.
+    const raised = `${process.versions.node.split('.')[0] ?? ''}.999`
+
     // Act
     const result = await withDirectory(async (directory) => {
       await mkdir(join(directory, 'bin'))
       const shim = join(directory, 'bin', 'logbook.cjs')
       await copyFile(SHIM, shim)
-      await writeFile(join(directory, 'package.json'), JSON.stringify({ engines: { node: '>=24.99' } }))
+      await writeFile(join(directory, 'package.json'), JSON.stringify({ engines: { node: `>=${raised}` } }))
       return runShim(shim, ['--version'])
     })
 
@@ -62,8 +66,8 @@ describe('the logbook shim', () => {
       code: 5,
       stdout: '',
       stderr:
-        `Log Book needs Node.js 24.99 or newer; this is Node.js ${process.versions.node} at ${process.execPath}. ` +
-        'Install Node.js 24.99 (https://nodejs.org) or switch to it with your version manager, then run logbook again.\n',
+        `Log Book needs Node.js ${raised} or newer; this is Node.js ${process.versions.node} at ${process.execPath}. ` +
+        `Install Node.js ${raised} (https://nodejs.org) or switch to it with your version manager, then run logbook again.\n`,
     })
   })
 

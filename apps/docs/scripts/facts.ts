@@ -10,7 +10,7 @@ export interface ICliFacts {
   facts: Facts
 }
 
-const NODE_FLOOR = /^>=(?<major>\d+)/u
+const NODE_FLOOR = /^>=(?<floor>\d+(?:\.\d+)?)$/u
 
 const defaultOf = (commands: readonly ICommandSpec[], words: string, option: string): string => {
   const value = commands
@@ -22,16 +22,16 @@ const defaultOf = (commands: readonly ICommandSpec[], words: string, option: str
   return String(value)
 }
 
-// The values from the command table, and the Node floor from the CLI's engines.node, such as >=24.
+// The values from the command table, and the Node floor from the CLI's engines.node, such as >=24.15.
 export const factsOf = (commands: readonly ICommandSpec[], engines: string): Facts => {
-  const major = NODE_FLOOR.exec(engines)?.groups?.major
-  if (major === undefined) {
-    throw new Error(`The CLI's engines.node ${engines} names no floor such as >=24`)
+  const floor = NODE_FLOOR.exec(engines)?.groups?.floor
+  if (floor === undefined) {
+    throw new Error(`The CLI's engines.node ${engines} names no floor such as >=24.15`)
   }
   return {
     defaultPort: defaultOf(commands, 'start', 'port'),
     defaultModel: defaultOf(commands, 'labels update', 'model'),
-    nodeFloor: major,
+    nodeFloor: floor,
   }
 }
 

@@ -52,7 +52,7 @@ const libraryManifest = (
   version: VERSION,
   license: 'PolyForm-Noncommercial-1.0.0',
   type: 'module',
-  engines: { node: '>=24' },
+  engines: { node: '>=24.15' },
   exports: { '.': INDEX },
   files: ['dist/'],
   homepage: HOMEPAGE,

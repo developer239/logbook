@@ -2,7 +2,6 @@ import { chmodSync, existsSync, mkdirSync, statSync } from 'node:fs'
 import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { LogBookError, openSqlite, runSubprocess } from '@log-book/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { WAREHOUSE_ERROR_CODES } from './errors.js'
@@ -31,18 +30,21 @@ const writeVersionedFile = async (path: string, version: number): Promise<void> 
   db.close()
 }
 
-// Lets a child process import the TypeScript sources: Node strips the types, and this maps an import of `./x.js` to
-// `./x.ts` when no `./x.js` exists.
-const RESOLVE_TYPESCRIPT_HOOK = `export const resolve = async (specifier, context, nextResolve) => {
-  try {
-    return await nextResolve(specifier, context)
-  } catch (error) {
-    if (specifier.startsWith('.') && specifier.endsWith('.js')) {
-      return nextResolve(specifier.slice(0, -3) + '.ts', context)
+// Lets the child import the TypeScript sources: Node strips the types, and this maps an import of `./x.js` to `./x.ts`
+// when no `./x.js` exists. registerHooks runs the hook on the importing thread; register() is deprecated.
+const REGISTER_TYPESCRIPT_HOOKS = `import { registerHooks } from 'node:module'
+registerHooks({
+  resolve: (specifier, context, nextResolve) => {
+    try {
+      return nextResolve(specifier, context)
+    } catch (error) {
+      if (specifier.startsWith('.') && specifier.endsWith('.js')) {
+        return nextResolve(specifier.slice(0, -3) + '.ts', context)
+      }
+      throw error
     }
-    throw error
-  }
-}
+  },
+})
 `
 
 // Signals ready, waits for the go file, then opens the warehouse once.
@@ -199,15 +201,10 @@ describe('WarehouseStore', () => {
       mkdirSync(dataDirectory, { recursive: true })
       const path = join(dataDirectory, 'warehouse.db')
       await writeVersionedFile(path, 0)
-      const hook = join(directory, 'hook.mjs')
       const register = join(directory, 'register.mjs')
       const child = join(directory, 'child.mjs')
       const goFile = join(directory, 'go')
-      await writeFile(hook, RESOLVE_TYPESCRIPT_HOOK)
-      await writeFile(
-        register,
-        `import { register } from 'node:module'\nregister(${JSON.stringify(pathToFileURL(hook).href)})\n`
-      )
+      await writeFile(register, REGISTER_TYPESCRIPT_HOOKS)
       await writeFile(child, RACING_CHILD)
       const storeUrl = new URL('./store.ts', import.meta.url).href
       const readyFiles = [join(directory, 'ready-1'), join(directory, 'ready-2')]

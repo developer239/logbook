@@ -3,7 +3,6 @@ import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { runSubprocess } from '@log-book/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readLabelsLock, readSyncLock, takeLabelsLock, takeSyncLock, type IHeldLock } from './locks.js'
@@ -20,18 +19,21 @@ const deadPid = (): number => spawnSync(process.execPath, ['-e', '']).pid
 const writeLockFile = (path: string, pid: number, operation: string): void =>
   writeFileSync(path, JSON.stringify({ pid, startedAt: STARTED_AT, operation }))
 
-// Lets a child process import the TypeScript sources: Node strips the types, and this maps an import of `./x.js` to
-// `./x.ts` when no `./x.js` exists.
-const RESOLVE_TYPESCRIPT_HOOK = `export const resolve = async (specifier, context, nextResolve) => {
-  try {
-    return await nextResolve(specifier, context)
-  } catch (error) {
-    if (specifier.startsWith('.') && specifier.endsWith('.js')) {
-      return nextResolve(specifier.slice(0, -3) + '.ts', context)
+// Lets the child import the TypeScript sources: Node strips the types, and this maps an import of `./x.js` to `./x.ts`
+// when no `./x.js` exists. registerHooks runs the hook on the importing thread; register() is deprecated.
+const REGISTER_TYPESCRIPT_HOOKS = `import { registerHooks } from 'node:module'
+registerHooks({
+  resolve: (specifier, context, nextResolve) => {
+    try {
+      return nextResolve(specifier, context)
+    } catch (error) {
+      if (specifier.startsWith('.') && specifier.endsWith('.js')) {
+        return nextResolve(specifier.slice(0, -3) + '.ts', context)
+      }
+      throw error
     }
-    throw error
-  }
-}
+  },
+})
 `
 
 // Waits for the go file, tries the sync lock, writes what happened, and keeps a held lock until the done file appears.
@@ -68,14 +70,9 @@ describe('locks', () => {
   let held: IHeldLock[] = []
 
   const writeChildFiles = async (child: string): Promise<{ register: string; script: string }> => {
-    const hook = join(directory, 'hook.mjs')
     const register = join(directory, 'register.mjs')
     const script = join(directory, 'child.mjs')
-    await writeFile(hook, RESOLVE_TYPESCRIPT_HOOK)
-    await writeFile(
-      register,
-      `import { register } from 'node:module'\nregister(${JSON.stringify(pathToFileURL(hook).href)})\n`
-    )
+    await writeFile(register, REGISTER_TYPESCRIPT_HOOKS)
     await writeFile(script, child)
     return { register, script }
   }

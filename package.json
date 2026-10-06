@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "license": "PolyForm-Noncommercial-1.0.0",
-  "packageManager": "pnpm@11.11.0",
+  "packageManager": "pnpm@11.25.0",
   "engines": {
-    "node": ">=24"
+    "node": ">=24.15"
   },
   "scripts": {
     "build:packages": "pnpm -r --filter '!@log-book/docs' build",

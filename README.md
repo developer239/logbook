@@ -9,7 +9,7 @@ npm install -g @log-book/cli
 logbook
 ```
 
-Log Book needs Node.js 24 or newer on macOS or Linux; on Windows, run it inside WSL.
+Log Book needs Node.js 24.15 or newer on macOS or Linux; on Windows, run it inside WSL.
 
 ## What Log Book sends, and where
 

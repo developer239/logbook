@@ -123,7 +123,7 @@ jobs:
           version=$(node -p process.versions.node)
           node_path=$(node -p process.execPath)
           expected="$RUNNER_TEMP/shim-expected"
-          printf '%s\n' "Log Book needs Node.js 24 or newer; this is Node.js $version at $node_path. Install Node.js 24 (https://nodejs.org) or switch to it with your version manager, then run logbook again." > "$expected"
+          printf '%s\n' "Log Book needs Node.js 24.15 or newer; this is Node.js $version at $node_path. Install Node.js 24.15 (https://nodejs.org) or switch to it with your version manager, then run logbook again." > "$expected"
           echo "Exit code: $code"
           echo "stderr:"
           cat "$err"
@@ -155,11 +155,11 @@ jobs:
       matrix:
         include:
           - runner: ubuntu-latest
-            node: 24.0.0
+            node: 24.15.0
           - runner: ubuntu-24.04-arm
             node: current
           - runner: macos-latest
-            node: 24.0.0
+            node: 24.15.0
           - runner: macos-latest
             node: current
           - runner: macos-26-intel
