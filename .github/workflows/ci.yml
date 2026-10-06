@@ -53,8 +53,10 @@ jobs:
           pnpm check:tests
       - name: 8. Release guard
         run: pnpm check:release
+      # The web tests build the demo through the staged CLI, so the build stages it before they run; step 14 still
+      # checks the bundle on its own.
       - name: 9. Build packages
-        run: pnpm build:packages
+        run: pnpm build
       - name: 10. Lint
         run: pnpm lint
       - name: 11. Typecheck

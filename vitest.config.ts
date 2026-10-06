@@ -57,6 +57,8 @@ const PROJECTS: IProjectSpec[] = [
     timeout: ENGINE_TIMEOUT_MS,
     isEnvStubKept: true,
     env: NO_USER_WAREHOUSE,
+    isBuiltCliNeeded: true,
+    setup: './apps/web/test/demo-sets.ts',
   },
   {
     name: 'cli',

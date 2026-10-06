@@ -154,6 +154,9 @@ importers:
       '@astrojs/ts-content-mapper':
         specifier: 'catalog:'
         version: 0.2.0(@emnapi/runtime@1.11.3)
+      '@log-book/demo':
+        specifier: workspace:*
+        version: link:../../packages/demo
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.1

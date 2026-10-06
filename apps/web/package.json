@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@astrojs/ts-content-mapper": "catalog:",
+    "@log-book/demo": "workspace:*",
     "@types/node": "catalog:",
     "vitest": "catalog:"
   }
