@@ -559,7 +559,7 @@ describe('packageFindings', () => {
       expect(findings).toStrictEqual(['@log-book/core: dist/index.js holds the demo corpus mark [package/corpus-mark]'])
     })
 
-    it('passes the CI workspace path and fails on any other home path, naming only the path up to the user', async () => {
+    it('passes the CI workspace path and fails on any other home path, naming it', async () => {
       // Act
       const findings = await findingsWith({
         [SERVER_CHUNK]: [
@@ -573,8 +573,8 @@ describe('packageFindings', () => {
 
       // Assert
       expect(findings).toStrictEqual([
-        '@log-book/cli: dist/web/server/chunks/page.mjs holds the absolute home path /Users/alex/ [package/home-path]',
-        '@log-book/cli: dist/web/server/chunks/page.mjs holds the absolute home path /home/alex/ [package/home-path]',
+        '@log-book/cli: dist/web/server/chunks/page.mjs holds the absolute home path /Users/alex/work/logbook/apps/web [package/home-path]',
+        '@log-book/cli: dist/web/server/chunks/page.mjs holds the absolute home path /home/alex/logbook [package/home-path]',
       ])
     })
 

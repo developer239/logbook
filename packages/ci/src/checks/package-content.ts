@@ -14,7 +14,8 @@ const FONT_LICENCE = 'Geist-OFL.txt'
 const OWN_SCOPE = '@log-book/'
 // The one absolute home path a package may hold: the checkout CI builds the published packages in.
 const CI_WORKSPACE = '/home/runner/work/logbook/logbook/'
-const HOME_PATH = /\/(?:Users|home)\/[^/\s"'`]*\/?/gu
+// An absolute home path, whole up to a quote or whitespace, so a finding shows what the build embedded.
+const HOME_PATH = /\/(?:Users|home)\/[^\s"'`]+/gu
 const CODE = /^dist\/.+\.(?:js|mjs|cjs|d\.ts)$/u
 // A quoted specifier after from, import, or a require call, whatever a bundler renamed it to (`__require`,
 // `require$2`). A specifier holds no whitespace, `$`, braces, parentheses or angle brackets, so prose and template text
