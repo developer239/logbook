@@ -2,6 +2,7 @@ import { cp, mkdir, readdir, readFile, realpath, rm, writeFile } from 'node:fs/p
 import { dirname, join } from 'node:path'
 import { build, stop, type BuildResult, type Plugin } from 'esbuild'
 import { harnessIdsIn } from '../checks/literals.js'
+import { descriptionOf, homepageOf, README } from './published-fields.js'
 
 // Where the stage reads and writes, relative to the repository root. It reads the workspace's builds as files and
 // imports no workspace package.
@@ -27,6 +28,12 @@ interface IWorkspaceManifest {
   os: string[]
 }
 
+// What npm shows of the package: the README's opening sentence in search, and the site as its homepage.
+interface IPublishedFields {
+  description: string
+  homepage: string
+}
+
 const isStringRecord = (value: unknown): value is Record<string, string> =>
   typeof value === 'object' &&
   value !== null &&
@@ -45,8 +52,13 @@ const workspaceManifestOf = (text: string): IWorkspaceManifest => {
 // The published manifest, exactly these fields, its keywords led by the harness ids the adapters bring. No dependency
 // field and no scripts: nothing is installed beside the bundle and no install-time code runs. The publish job writes
 // the release version.
-export const cliManifest = (workspace: IWorkspaceManifest, harnessIds: readonly string[]): Record<string, unknown> => ({
+export const cliManifest = (
+  workspace: IWorkspaceManifest,
+  harnessIds: readonly string[],
+  published: IPublishedFields
+): Record<string, unknown> => ({
   name: '@log-book/cli',
+  description: published.description,
   version: '0.0.0-development',
   license: 'PolyForm-Noncommercial-1.0.0',
   type: 'module',
@@ -54,6 +66,7 @@ export const cliManifest = (workspace: IWorkspaceManifest, harnessIds: readonly 
   engines: workspace.engines,
   os: workspace.os,
   files: ['bin/', 'dist/', 'THIRD-PARTY-NOTICES.md'],
+  homepage: published.homepage,
   repository: { type: 'git', url: 'git+https://github.com/developer239/logbook.git', directory: 'apps/cli' },
   bugs: 'https://github.com/developer239/logbook/issues',
   keywords: [...harnessIds, 'coding-agent', 'transcripts', 'analytics', 'local-first'],
@@ -81,6 +94,7 @@ export const stageCli = async (givenRoot: string): Promise<void> => {
   const root = await realpath(givenRoot)
   const at = (path: string): string => join(root, path)
   const manifest = workspaceManifestOf(await readFile(at(CLI_MANIFEST), 'utf8'))
+  const published = { description: await descriptionOf(root), homepage: await homepageOf(root) }
 
   await rm(at(PACKAGE), { recursive: true, force: true })
   await mkdir(dirname(at(METAFILE)), { recursive: true })
@@ -124,7 +138,12 @@ export const stageCli = async (givenRoot: string): Promise<void> => {
     cp(at(PROMPTS), at(join(PACKAGE, 'dist/prompts')), { recursive: true }),
     cp(at(SHIM), at(join(PACKAGE, 'bin/logbook.cjs'))),
     cp(at(LICENSE), at(join(PACKAGE, 'LICENSE.md'))),
+    // The root README is the CLI's npm page; its images link to the site, so the package carries none.
+    cp(at(README), at(join(PACKAGE, README))),
   ])
   const harnessIds = harnessIdsIn((await readdir(at('packages'))).map((name) => `packages/${name}/`))
-  await writeFile(at(join(PACKAGE, 'package.json')), `${JSON.stringify(cliManifest(manifest, harnessIds), null, 2)}\n`)
+  await writeFile(
+    at(join(PACKAGE, 'package.json')),
+    `${JSON.stringify(cliManifest(manifest, harnessIds, published), null, 2)}\n`
+  )
 }

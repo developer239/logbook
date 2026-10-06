@@ -1,5 +1,6 @@
 import { cp, mkdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, posix } from 'node:path'
+import { homepageOf } from './published-fields.js'
 
 // One package of the published set, as packages/ci/src/rules/public-packages.json lists it.
 interface IPublicPackage {
@@ -107,9 +108,13 @@ const reachableFrom = async (packageDirectory: string, entries: readonly string[
 
 const stripped = (path: string): string => path.replace(/^\.\//u, '')
 
-// The published manifest of a library: exactly these fields, its public entries, and its @log-book dependencies at
-// the set's one version.
-const libraryManifest = (entry: IPublicPackage, workspace: IWorkspaceManifest): Record<string, unknown> => {
+// The published manifest of a library: exactly these fields, its public entries, the site as its homepage, and its
+// @log-book dependencies at the set's one version.
+const libraryManifest = (
+  entry: IPublicPackage,
+  workspace: IWorkspaceManifest,
+  homepage: string
+): Record<string, unknown> => {
   const foreign = Object.keys(workspace.dependencies).filter((name) => !name.startsWith(OWN_SCOPE))
   if (foreign.length > 0) {
     throw new Error(`${entry.name} depends on ${foreign.join(', ')}, which a published library may not.`)
@@ -131,6 +136,7 @@ const libraryManifest = (entry: IPublicPackage, workspace: IWorkspaceManifest): 
       })
     ),
     files: ['dist/'],
+    homepage,
     repository: { type: 'git', url: `git+${REPOSITORY}.git`, directory: entry.directory },
     bugs: `${REPOSITORY}/issues`,
     publishConfig: { access: 'public' },
@@ -171,7 +177,12 @@ export const publishOrder = (
   return [...order, `${cli}/${STAGED}`]
 }
 
-const stageLibrary = async (root: string, entry: IPublicPackage, workspace: IWorkspaceManifest): Promise<void> => {
+const stageLibrary = async (
+  root: string,
+  entry: IPublicPackage,
+  workspace: IWorkspaceManifest,
+  homepage: string
+): Promise<void> => {
   const packageDirectory = join(root, entry.directory)
   const staged = join(packageDirectory, STAGED)
   await rm(staged, { recursive: true, force: true })
@@ -193,7 +204,10 @@ const stageLibrary = async (root: string, entry: IPublicPackage, workspace: IWor
       .map(async (asset) => cp(join(packageDirectory, asset), join(staged, asset), { recursive: true })),
     cp(join(root, LICENSE), join(staged, LICENSE)),
     writeFile(join(staged, 'README.md'), readmeOf(entry)),
-    writeFile(join(staged, 'package.json'), `${JSON.stringify(libraryManifest(entry, workspace), null, 2)}\n`),
+    writeFile(
+      join(staged, 'package.json'),
+      `${JSON.stringify(libraryManifest(entry, workspace, homepage), null, 2)}\n`
+    ),
   ])
 }
 
@@ -212,6 +226,7 @@ export const stageLibraries = async (givenRoot: string): Promise<void> => {
       workspaceManifestOf(await readFile(join(root, entry.directory, 'package.json'), 'utf8'), entry.name)
     )
   )
+  const homepage = await homepageOf(root)
   const order = publishOrder(
     libraries.map((entry, index) => ({
       name: entry.name,
@@ -224,7 +239,7 @@ export const stageLibraries = async (givenRoot: string): Promise<void> => {
     libraries.map(async (entry, index) => {
       const manifest = manifests[index]
       if (manifest !== undefined) {
-        await stageLibrary(root, entry, manifest)
+        await stageLibrary(root, entry, manifest, homepage)
       }
     })
   )
