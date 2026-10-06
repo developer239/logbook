@@ -123,8 +123,9 @@ export const writeDemo = async (
 ): Promise<IWrittenDemo> => {
   const home = join(out, HOME_DIRECTORY)
   await mkdir(home, { recursive: true })
-  // Each writer writes files of its own, so the writers run side by side.
-  const results = await Promise.all(
+  // Each writer writes files of its own, so the writers run side by side. A refusal is thrown only once every writer
+  // has ended, so nothing is written into the home after it.
+  const settled = await Promise.allSettled(
     writers.map(async (writer, index) => {
       const scripts = demo.writers[index]
       if (scripts === undefined) {
@@ -135,6 +136,11 @@ export const writeDemo = async (
       return { files: [...commandFiles, ...source.files], source }
     })
   )
+  const refusal = settled.find((outcome) => outcome.status === 'rejected')
+  if (refusal !== undefined) {
+    throw refusal.reason
+  }
+  const results = settled.flatMap((outcome) => (outcome.status === 'fulfilled' ? [outcome.value] : []))
   const files = results.flatMap((result) => result.files)
   const written: IWrittenSource[] = results.map((result) => result.source)
   const ids = idsOf(written)

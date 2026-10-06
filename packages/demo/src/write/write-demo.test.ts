@@ -1,6 +1,7 @@
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
+import { setTimeout as delay } from 'node:timers/promises'
 import { SOURCE_WRITER_ERROR_CODES } from '@log-book/adapter-api/source-writer'
 import { claudeCodeSourceWriter } from '@log-book/adapter-claude-code/source-writer'
 import { openCodeSourceWriter } from '@log-book/adapter-opencode/source-writer'
@@ -30,6 +31,9 @@ const INPUTS: IPlanInputs = {
   corpus: PLAN_CORPUS,
   writers: DECLARATIONS,
 }
+
+// How long the first writer goes on after the second refused, far longer than the refusal takes to reach the caller.
+const STILL_WRITING_MS = 100
 
 const directories: string[] = []
 
@@ -177,6 +181,58 @@ describe('writeDemo', () => {
       code: SOURCE_WRITER_ERROR_CODES.WRITER_SCRIPT_UNSUPPORTED,
       message: expect.stringContaining(String(first?.key)) as unknown,
     })
+  })
+
+  it('throws a refusal only once every other writer has finished, so nothing is written after it', async () => {
+    // Arrange
+    const out = await temporary()
+    const demo = demoPlan()
+    const [, second] = demo.writers
+    const [first] = demo.writers[0]?.scripts ?? []
+    const broken = { ...demo, writers: [demo.writers[0], { ...second, scripts: first === undefined ? [] : [first] }] }
+    const [claudeCode, openCode] = WRITERS
+    // The first writer starts its sessions only a while after the second has refused, so it is still writing then.
+    const { promise: refused, resolve: release } = Promise.withResolvers<undefined>()
+    const slowSessions = async (
+      home: string,
+      scripts: Parameters<typeof claudeCode.writeSessions>[1]
+    ): ReturnType<typeof claudeCode.writeSessions> => {
+      await refused
+      await delay(STILL_WRITING_MS)
+      return claudeCode.writeSessions(home, scripts)
+    }
+    let firstWriting: Promise<unknown> = Promise.resolve()
+    const writers = [
+      {
+        ...claudeCode,
+        writeSessions: async (home: string, scripts: Parameters<typeof claudeCode.writeSessions>[1]) => {
+          const writing = slowSessions(home, scripts)
+          firstWriting = writing
+          return writing
+        },
+      },
+      {
+        ...openCode,
+        writeSessions: async (home: string, scripts: Parameters<typeof openCode.writeSessions>[1]) => {
+          try {
+            return await openCode.writeSessions(home, scripts)
+          } finally {
+            release(undefined)
+          }
+        },
+      },
+    ]
+
+    // Act
+    const rejection = await writeDemo(out, broken as IDemoPlan, writers).catch((error: unknown) => error)
+    const filesAtRejection = sorted(await filesUnder(out))
+    await firstWriting
+
+    // Assert
+    expect({
+      code: (rejection as { code?: string }).code,
+      isUnchangedSince: sorted(await filesUnder(out)).join('\n') === filesAtRejection.join('\n'),
+    }).toStrictEqual({ code: SOURCE_WRITER_ERROR_CODES.WRITER_SCRIPT_UNSUPPORTED, isUnchangedSince: true })
   })
 })
 
