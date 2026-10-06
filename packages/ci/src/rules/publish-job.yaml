@@ -1,0 +1,96 @@
+# The publish job, the only code that ever gets an npm token able to publish. ci.yml's job `publish` must equal this
+# template in everything but the commit SHAs of actions/setup-node and actions/download-artifact, which must be full
+# 40-character SHAs; check:release compares the two. It runs nothing from the repository and installs nothing: two
+# pinned actions, Node, and an npm fetched by URL and checked against its pinned SHA-512 integrity.
+needs: [checks, release]
+if: needs.release.outputs.version != ''
+runs-on: ubuntu-latest
+environment: npm-next
+permissions:
+  id-token: write
+# Values from other jobs reach the scripts through env, never written into them.
+env:
+  VERSION: ${{ needs.release.outputs.version }}
+  PACKAGE_HASH: ${{ needs.checks.outputs.package-hash }}
+  NPM_INTEGRITY: sha512-Zov8KhamNneiLdELtj5YALtNmJW4L4fCLTzjfpzXG2w6MSHcf0UxgdlK5uloCuksWT+7mGUU7wi79cO6RqivPg==
+steps:
+  - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+    with:
+      node-version: 24
+  - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+    with:
+      name: npm-packages
+      path: npm-packages
+  # Any job of the run could replace an artefact of the same name, so its content hash must be the one checks wrote:
+  # per file, the hex SHA-256 of its bytes, two spaces and its path from the root; lines in byte order; the SHA-256 of
+  # that text.
+  - name: Check the artefact, the version and the publish order
+    run: |
+      hash=$(cd npm-packages && find . -type f | sed 's|^\./||' | LC_ALL=C sort | while IFS= read -r file; do
+        printf '%s  %s\n' "$(sha256sum -- "$file" | cut -d ' ' -f 1)" "$file"
+      done | sha256sum | cut -d ' ' -f 1)
+      if [ "$hash" != "$PACKAGE_HASH" ]; then
+        echo "The npm-packages artefact hashes to $hash, not to the $PACKAGE_HASH the checks job wrote."
+        exit 1
+      fi
+      if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "The version $VERSION is not X.Y.Z."
+        exit 1
+      fi
+      if grep -vxE 'apps/cli/package|packages/[a-z-]+/package' npm-packages/build/publish-order.txt; then
+        echo "publish-order.txt holds the lines above, which are not staged package directories."
+        exit 1
+      fi
+  # npm bundles its dependencies, so the unpacked directory runs alone; trusted publishing needs npm 11.5.1 or later.
+  # Every npm command below is this file; the runner's own npm never runs.
+  - name: Fetch npm and check its integrity
+    run: |
+      curl --fail --silent --show-error --location --output npm.tgz https://registry.npmjs.org/npm/-/npm-11.21.0.tgz
+      integrity="sha512-$(openssl dgst -sha512 -binary npm.tgz | base64 --wrap=0)"
+      if [ "$integrity" != "$NPM_INTEGRITY" ]; then
+        echo "npm-11.21.0.tgz has the integrity $integrity, not $NPM_INTEGRITY."
+        exit 1
+      fi
+      mkdir npm
+      tar --extract --gzip --file npm.tgz --directory npm --strip-components 1
+      if [ "$(node npm/bin/npm-cli.js --version)" != "11.21.0" ]; then
+        echo "The unpacked npm is not 11.21.0."
+        exit 1
+      fi
+  # Dependencies first and the CLI last, so no package names a version npm does not have yet. A package the registry
+  # already has at this version, from a re-run, is skipped when its tarball is the same and stops the job when not.
+  # npm exchanges the job's OIDC token for a publish token and attaches the provenance attestation itself.
+  - name: Publish to next
+    run: |
+      npm_cli="$PWD/npm/bin/npm-cli.js"
+      while IFS= read -r directory; do
+        package="npm-packages/$directory"
+        (
+          cd "$package"
+          node "$npm_cli" pkg set "version=$VERSION"
+          for dependency in $(node "$npm_cli" pkg get dependencies --json | node --input-type=module --eval \
+            "process.stdout.write(Object.keys(JSON.parse(await new Response(process.stdin).text())).filter((name) => name.startsWith('@log-book/')).join(' '))"); do
+            node "$npm_cli" pkg set "dependencies.$dependency=$VERSION"
+          done
+        )
+        name=$(node "$npm_cli" pkg get name --prefix "$package" | tr -d '"')
+        if published=$(node "$npm_cli" view "$name@$VERSION" dist.integrity 2> view-error.txt); then
+          :
+        elif grep -q E404 view-error.txt; then
+          published=""
+        else
+          cat view-error.txt
+          exit 1
+        fi
+        if [ -n "$published" ]; then
+          packed=$(cd "$package" && node "$npm_cli" pack --dry-run --json --ignore-scripts | node --input-type=module --eval \
+            "process.stdout.write(JSON.parse(await new Response(process.stdin).text())[0].integrity)")
+          if [ "$packed" != "$published" ]; then
+            echo "$name@$VERSION is on the registry with $published, but $directory packs to $packed."
+            exit 1
+          fi
+          echo "$name@$VERSION is already on the registry with the same tarball; skipped."
+          continue
+        fi
+        node "$npm_cli" publish "./$package" --tag next --ignore-scripts
+      done < npm-packages/build/publish-order.txt
