@@ -323,7 +323,7 @@ export const seedRows = (db: ISqliteDb): void => {
     id: 'm-sc-1',
     sessionId: 'ses-script',
     seq: 1,
-    actor: 'user',
+    actor: 'harness',
     at: START + DAY,
     text: '<command-name>/ship</command-name>',
   })
@@ -331,7 +331,7 @@ export const seedRows = (db: ISqliteDb): void => {
     id: 'm-sc-2',
     sessionId: 'ses-script',
     seq: 2,
-    actor: 'user',
+    actor: 'harness',
     at: START + DAY + MINUTE,
     text: '  [Request interrupted by user]',
   })

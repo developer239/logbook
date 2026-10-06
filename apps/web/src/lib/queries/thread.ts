@@ -1,5 +1,4 @@
 import { sumBy } from '../lists'
-import { HARNESS_PREFIXES } from '../sql'
 import {
   agentName,
   agentRef,
@@ -34,12 +33,7 @@ interface ISpawn extends IAgentRef {
   turns: IThreadTurn[]
 }
 
-const escapeRegExp = (text: string): string => text.replaceAll(/[.*+?^${}()|[\]\\]/gu, '\\$&')
-
-const NOT_A_PROMPT = new RegExp(`^\\s*(?:${HARNESS_PREFIXES.map(escapeRegExp).join('|')})`, 'u')
-const COMMAND_NAME = /<command-name>\/?([^<]+)<\/command-name>/u
-const COMMAND_ARGS = /<command-args>([\s\S]*?)<\/command-args>/u
-
+// The first line of what the harness wrote, without its markup.
 const harnessLine = (text: string | null): string | null => {
   const line =
     (text ?? '')
@@ -51,29 +45,13 @@ const harnessLine = (text: string | null): string | null => {
   return line === '' ? null : line
 }
 
-type Opening = { kind: 'prompt'; text: string } | { kind: 'harness'; line: string | null }
-
-export const promptOf = (text: string): Opening => {
-  if (!NOT_A_PROMPT.test(text)) {
-    return { kind: 'prompt', text }
-  }
-
-  const command = COMMAND_NAME.exec(text)?.[1]
-  if (command === undefined) {
-    return { kind: 'harness', line: harnessLine(text) }
-  }
-
-  const args = COMMAND_ARGS.exec(text)?.[1]?.trim() ?? ''
-
-  return { kind: 'prompt', text: `\`/${command}${args === '' ? '' : ` ${args}`}\`` }
-}
-
 const isSaid = (text: string | null): text is string => (text ?? '').trim() !== ''
 
 const threadTurn = (cache: ISessionCache, session: ISession, turn: ITurn): IThreadTurn => {
   const first = turn.messages[0]
   const reply = turn.messages.findLast((message) => message.actor === 'assistant' && isSaid(message.text))
-  const opening = first?.actor === 'user' && isSaid(first.text) ? promptOf(first.text) : null
+  // Only the human's own message opens a turn with a prompt; what the harness wrote is never one.
+  const prompt = first?.actor === 'user' && isSaid(first.text) ? first.text : null
 
   const harnessLines = turn.messages
     .filter((message) => message.actor === 'harness')
@@ -86,14 +64,14 @@ const threadTurn = (cache: ISessionCache, session: ISession, turn: ITurn): IThre
     startedAt: turn.startedAt,
     durationMs: turn.endedAt - turn.startedAt,
     prompt:
-      opening?.kind === 'prompt'
-        ? { text: opening.text, reactions: (first === undefined ? undefined : session.reactions.get(first.id)) ?? [] }
-        : null,
+      prompt === null
+        ? null
+        : { text: prompt, reactions: (first === undefined ? undefined : session.reactions.get(first.id)) ?? [] },
     reply:
       reply === undefined
         ? null
         : { text: reply.text ?? '', model: reply.model, at: reply.completedAt ?? reply.createdAt },
-    harnessLines: opening?.kind === 'harness' && opening.line !== null ? [opening.line, ...harnessLines] : harnessLines,
+    harnessLines,
     compactions: turn.messages.flatMap((message) =>
       message.compactionSummary === null ? [] : [{ at: message.createdAt, summary: message.compactionSummary }]
     ),

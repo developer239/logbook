@@ -104,6 +104,17 @@ describe('the built handler, away from the repository', () => {
       missing: [],
     })
   })
+
+  it('names the product Log Book in the tab title and the top bar', async () => {
+    // Act
+    const page = await (await fetch(`${origin}/`)).text()
+
+    // Assert
+    expect({
+      title: /<title>(?<title>[^<]*)<\/title>/u.exec(page)?.groups?.title,
+      logo: /class="top-bar__logo"[^>]*>[\s\S]*?<\/span>\s*(?<logo>[^<]*?)\s*<\/a>/u.exec(page)?.groups?.logo,
+    }).toStrictEqual({ title: 'Dashboard · Log Book', logo: 'Log Book' })
+  })
 })
 
 describe('the guard in the built handler', () => {
