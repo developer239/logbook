@@ -45,7 +45,11 @@ const writeSmall = async (out: string, seed = INPUTS.seed): Promise<IWrittenDemo
   const inputs = { ...INPUTS, seed }
   const plan = planDataset(inputs)
   const writers = scriptPlan(plan, inputs)
-  return writeDemo(out, { plan, writers, labels: planLabels(plan, writers, PLAN_CORPUS), ids: {} }, WRITERS)
+  return writeDemo(
+    out,
+    { plan, writers, labels: planLabels(plan, writers, PLAN_CORPUS), ids: {}, showcase: null },
+    WRITERS
+  )
 }
 
 const isWarehouseWritten = async (out: string): Promise<boolean> =>

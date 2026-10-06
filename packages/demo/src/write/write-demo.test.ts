@@ -46,7 +46,7 @@ afterEach(async () => {
 const demoPlan = (): IDemoPlan => {
   const plan = planDataset(INPUTS)
   const writers = scriptPlan(plan, INPUTS)
-  return { plan, writers, labels: planLabels(plan, writers, PLAN_CORPUS), ids: {} }
+  return { plan, writers, labels: planLabels(plan, writers, PLAN_CORPUS), ids: {}, showcase: null }
 }
 
 const filesUnder = async (directory: string): Promise<string[]> =>

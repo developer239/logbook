@@ -6,6 +6,7 @@ import { CAST, PROJECTS } from './projects.js'
 import { PROMPTS } from './prompts.js'
 import { REPLIES } from './replies.js'
 import { SHAPES } from './shapes.js'
+import { SHOWCASE } from './showcase.js'
 import { TOOLS } from './tools.js'
 import { OUTCOME_NOTES, WORK } from './work.js'
 
@@ -20,6 +21,7 @@ export const CORPUS = {
   'prompts.ts': { PROMPTS },
   'replies.ts': { REPLIES },
   'shapes.ts': { SHAPES },
+  'showcase.ts': { SHOWCASE },
   'tools.ts': { TOOLS },
   'work.ts': { OUTCOME_NOTES, WORK },
 }
@@ -36,6 +38,7 @@ export const PLAN_CORPUS: IPlanCorpus = {
   commands: COMMANDS,
   rates: MODEL_RATES,
   habits: REPLY_HABITS,
+  showcase: SHOWCASE,
 }
 
 // Recorded in every build's manifest; CI fails a packed tarball that contains it. It lives in a data file so the

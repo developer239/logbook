@@ -17,6 +17,7 @@ import type { IProject, ProjectName } from '../corpus/projects.js'
 import type { IPromptCorpus } from '../corpus/prompts.js'
 import type { IReplyCorpus } from '../corpus/replies.js'
 import type { IShapeCorpus, ShapeName, SubagentTaskName } from '../corpus/shapes.js'
+import type { IShowcase } from '../corpus/showcase.js'
 import type { IFailureLabels, IShellLabels, IToolCorpus } from '../corpus/tools.js'
 import type { IWorkItem } from '../corpus/work.js'
 
@@ -45,6 +46,7 @@ export interface IPlanCorpus {
   commands: ICommandCorpus
   rates: Readonly<Record<string, IModelRates>>
   habits: Readonly<Record<string, IReplyHabit>>
+  showcase: IShowcase
 }
 
 export interface IPlanInputs {
@@ -80,8 +82,9 @@ export interface IPlannedSession {
   agent: string | null
   // The item of work.ts the session works on; a started session works on its parent's.
   work: string
-  // The shapes.ts shape of its turns; a started session takes its parent's and follows the task it was started with.
-  shape: ShapeName
+  // The shapes.ts shape of its turns, or `showcase` for the showcase conversation's from showcase.ts; a started session
+  // takes its parent's and follows the task it was started with.
+  shape: ShapeName | 'showcase'
   // The session whose shell call started this scripted one; the warehouse records no link for it.
   startedFrom: string | null
   goal: SessionGoal | null
@@ -181,11 +184,19 @@ export interface ILabelPlan {
   runs: IPlannedRun[]
 }
 
+// The showcase conversation by its plan key and its session id, for the captures of the conversation page.
+export interface IShowcaseRef {
+  key: string
+  id: string
+}
+
 // The plan as a build returns it and plan.json holds it: the sessions, each writer's scripts, the labels and their
-// runs, and every plan key's record id, which the writers give when the home is written.
+// runs, every plan key's record id, which the writers give when the home is written, and the showcase conversation,
+// null in a set without one.
 export interface IDemoPlan {
   plan: IPlan
   writers: IWriterScripts[]
   labels: ILabelPlan
   ids: Record<string, string>
+  showcase: IShowcaseRef | null
 }

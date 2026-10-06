@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import type { ISourceWriter, IWrittenSource } from '@log-book/adapter-api/source-writer'
 import type { IImportedSession } from '@log-book/warehouse'
 import { DEMO_CORPUS_MARK } from '../corpus/index.js'
-import type { DemoSize, IDemoPlan, LabelsVariant } from '../plan/types.js'
+import type { DemoSize, IDemoPlan, IPlan, IShowcaseRef, LabelsVariant } from '../plan/types.js'
 import { canonicalDump } from './canonical-dump.js'
 
 export const HOME_DIRECTORY = 'home'
@@ -100,6 +100,19 @@ const idsOf = (written: readonly IWrittenSource[]): Record<string, string> => {
   return ids
 }
 
+// The top-level session the plan shapes as the showcase, with the id its writer gave it.
+const showcaseOf = (plan: IPlan, ids: Readonly<Record<string, string>>): IShowcaseRef | null => {
+  const session = plan.sessions.find((candidate) => candidate.shape === 'showcase' && candidate.parentKey === null)
+  if (session === undefined) {
+    return null
+  }
+  const id = ids[session.key]
+  if (id === undefined) {
+    throw new Error(`The writers gave no id to the showcase conversation ${session.key}`)
+  }
+  return { key: session.key, id }
+}
+
 // Writes the plan as a harness user's home holds it into `<out>/home`, one writeCommandFiles and then one writeSessions
 // call per writer, then plan.json, then manifest.json with the hash of everything written. A writer
 // that refuses a script stops the write with its own error, which names the script key.
@@ -124,7 +137,8 @@ export const writeDemo = async (
   )
   const files = results.flatMap((result) => result.files)
   const written: IWrittenSource[] = results.map((result) => result.source)
-  const plan: IDemoPlan = { ...demo, ids: idsOf(written) }
+  const ids = idsOf(written)
+  const plan: IDemoPlan = { ...demo, ids, showcase: showcaseOf(demo.plan, ids) }
   await writeFile(join(out, PLAN_FILE), JSON.stringify(plan))
   const paths = [...files.map((file) => join(HOME_DIRECTORY, file)), PLAN_FILE].toSorted(byCodeUnit)
   const hashes = await Promise.all(paths.map(async (path) => [path, await fileHash(join(out, path))] as const))

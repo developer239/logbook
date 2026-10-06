@@ -121,7 +121,11 @@ export const writeHome = async (out: string, options: IBuildOptions): Promise<IW
   }
   const plan = planDataset(inputs)
   const scripts = scriptPlan(plan, inputs)
-  return writeDemo(out, { plan, writers: scripts, labels: planLabels(plan, scripts, PLAN_CORPUS), ids: {} }, WRITERS)
+  return writeDemo(
+    out,
+    { plan, writers: scripts, labels: planLabels(plan, scripts, PLAN_CORPUS), ids: {}, showcase: null },
+    WRITERS
+  )
 }
 
 // Plans the set, writes the home, the plan file and the manifest, imports the home through the built CLI in the
