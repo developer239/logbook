@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { access, mkdir, readFile, utimes, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import {
   checkCommandFiles,
@@ -91,6 +91,13 @@ const writeDatabase = async (path: string, context: IWriteContext): Promise<void
     db.exec('COMMIT')
   } finally {
     db.close()
+  }
+  // The time of the newest session's last update, so equal scripts give the database an equal modification time, which
+  // locate reads to choose among databases, in two homes.
+  const updated = context.sessionRows.map((row) => Number(row.time_updated))
+  if (updated.length > 0) {
+    const lastAt = new Date(Math.max(...updated))
+    await utimes(path, lastAt, lastAt)
   }
 }
 
