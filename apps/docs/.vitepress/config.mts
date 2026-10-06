@@ -36,7 +36,17 @@ const SIDEBAR: DefaultTheme.SidebarItem[] = [
       { text: 'Try the next version', link: '/start/next' },
     ],
   },
-  { text: 'Using Log Book', items: [] },
+  {
+    text: 'Using Log Book',
+    items: [
+      { text: 'Dashboard', link: '/ui/dashboard' },
+      { text: 'Conversations', link: '/ui/conversations' },
+      { text: 'A conversation', link: '/ui/conversation' },
+      { text: 'Steps', link: '/ui/steps' },
+      { text: 'Tokens by tool', link: '/ui/tokens' },
+      { text: 'Syncing and empty states', link: '/ui/states' },
+    ],
+  },
   { text: 'Labelling', items: [{ text: 'What it sends', link: '/labelling/what-it-sends' }] },
   { text: 'Privacy', items: [{ text: 'What Log Book sends, and where', link: '/privacy/' }] },
   {
