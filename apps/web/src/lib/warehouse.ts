@@ -42,5 +42,6 @@ export const all = <TRow>(sql: string, ...params: TSqlParam[]): TRow[] => open()
 
 export const get = <TRow>(sql: string, ...params: TSqlParam[]): TRow | undefined => open().get<TRow>(sql, ...params)
 
-export const syncedAt = (): number | null =>
-  get<{ at: number | null }>('SELECT MAX(imported_at) AS at FROM source_state')?.at ?? null
+// Changes whenever another connection (a sync, a labelling run) commits to the warehouse, so a cache over its rows is
+// current while this number stays the same.
+export const dataVersion = (): number => get<{ version: number }>('PRAGMA data_version')?.version ?? 0

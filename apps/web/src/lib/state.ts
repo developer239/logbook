@@ -1,5 +1,11 @@
-import { readSyncLock, resolveWarehousePath, SCHEMA_VERSION, type SyncOutcome } from '@log-book/warehouse'
-import { plural } from './format'
+import {
+  readSyncLock,
+  resolveWarehousePath,
+  SCHEMA_VERSION,
+  type SyncLockOperation,
+  type SyncOutcome,
+} from '@log-book/warehouse'
+import { ago, elapsed, plural } from './format'
 import { harnessesOf, type IHarness } from './queries/harnesses'
 import { get, unreadable } from './warehouse'
 
@@ -34,10 +40,16 @@ export interface IFirstRun {
 }
 
 interface ISyncRecord {
+  startedAt: number
   endedAt: number | null
   outcome: SyncOutcome | null
   error: string | null
 }
+
+const newestRecord = (): ISyncRecord | undefined =>
+  get<ISyncRecord>(
+    'SELECT started_at AS startedAt, ended_at AS endedAt, outcome, error FROM sync_run ORDER BY id DESC LIMIT 1'
+  )
 
 const RUN_IN_TERMINAL = 'Run logbook sync in a terminal to see the full output.'
 
@@ -143,7 +155,68 @@ export const firstRun = (now = Date.now()): IFirstRun | null => {
     )
   }
 
-  return recordPanel(
-    get<ISyncRecord>('SELECT ended_at AS endedAt, outcome, error FROM sync_run ORDER BY id DESC LIMIT 1')
-  )
+  return recordPanel(newestRecord())
+}
+
+export type SyncTone = 'slow' | 'hollow' | 'good' | 'problem'
+
+// The top bar's Sync control: what runs now, else how the last sync ended.
+export interface ISyncControl {
+  label: string
+  // Shown on hover.
+  title: string
+  tone: SyncTone
+  // A sync started while the lock is held would exit already running, so the button is disabled.
+  isRunning: boolean
+}
+
+const SYNC_TITLE = 'Import what changed since the last sync'
+
+// Specification 07's words. Forget's title does not suggest Ctrl+C: stopped after its deletion, it leaves the
+// forgotten text in the file's free space until a compaction runs.
+const RUNNING: Record<SyncLockOperation, { label: string; title: string }> = {
+  compact: {
+    label: 'Compacting',
+    title:
+      'logbook compact is rewriting the warehouse. Pages keep working; syncs and labelling wait until it ends. Stop it where it was started with Ctrl+C.',
+  },
+  forget: {
+    label: 'Forgetting sessions',
+    title:
+      'logbook forget is removing sessions and rewriting the warehouse. Pages keep working; syncs and labelling wait until it ends.',
+  },
+  sync: { label: 'Syncing…', title: SYNC_TITLE },
+}
+
+const lastSync = (record: ISyncRecord | undefined, now: number): ISyncControl => {
+  if (record === undefined) {
+    return { label: 'Never synced', title: SYNC_TITLE, tone: 'hollow', isRunning: false }
+  }
+
+  const when = ago(record.endedAt ?? record.startedAt, now)
+  const title = record.error ?? SYNC_TITLE
+
+  switch (record.endedAt === null ? null : record.outcome) {
+    case 'ok':
+      return { label: `Synced ${when}`, title: SYNC_TITLE, tone: 'good', isRunning: false }
+    case 'partial':
+      return { label: `Synced ${when}, with problems`, title, tone: 'problem', isRunning: false }
+    case 'failed':
+    case 'stopped':
+    case null:
+      return { label: `Sync failed ${when}`, title, tone: 'problem', isRunning: false }
+  }
+}
+
+// A held lock says what runs now, the newest record only how the last sync ended, so the lock decides first. A
+// warehouse the app cannot read has no record to read.
+export const syncControl = (now = Date.now()): ISyncControl => {
+  const lock = readSyncLock(resolveWarehousePath())
+
+  if (lock.isHeld && lock.operation !== null && lock.startedAt !== null) {
+    const { label, title } = RUNNING[lock.operation]
+    return { label: `${label} (since ${elapsed(now - lock.startedAt)})`, title, tone: 'slow', isRunning: true }
+  }
+
+  return lastSync(unreadable() === null ? newestRecord() : undefined, now)
 }

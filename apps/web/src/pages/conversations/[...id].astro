@@ -62,7 +62,7 @@ const title = page.ok ? (page.data.head.title ?? UNTITLED) : 'Conversation'
   title={title}
   current={null}
   range={page.ok ? page.data.range : null}
-  syncedAt={page.syncedAt}
+ 
   conversation={page.ok ? { title, href: conversationHref(page.data.id, {}, page.data.range) } : undefined}
   problem={page.ok ? null : page.problem}
 >

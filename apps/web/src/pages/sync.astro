@@ -2,7 +2,6 @@
 import Layout from '../layouts/Layout.astro'
 import { CliError } from '../lib/errors'
 import { pageOf, readForm } from '../lib/forms'
-import { syncedAtOrNull } from '../lib/load'
 import { sync } from '../lib/sync'
 
 if (Astro.request.method !== 'POST') {
@@ -33,7 +32,6 @@ if (page === null) {
   title="Sync"
   current={null}
   range={null}
-  syncedAt={syncedAtOrNull()}
   problem={problem}
   back={page ?? '/'}
 />

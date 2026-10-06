@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import type * as State from './state'
 import { session, START } from './testing/rows'
 import { insert, seedWarehouse, type ITestWarehouse } from './testing/warehouse'
+import { MINUTE } from './time'
 
 const RUN_IN_TERMINAL = 'Run logbook sync in a terminal to see the full output.'
 
@@ -29,6 +30,17 @@ const record = (outcome: string | null, error: string | null = null, isEnded = t
     ended_at: isEnded ? START + 1000 : null,
     outcome,
     error,
+  })
+}
+
+const withSession = (): void => {
+  session(db, {
+    id: 'one:demo-0001',
+    harness: 'one',
+    origin: 'interactive',
+    title: 'One',
+    startedAt: START,
+    endedAt: START,
   })
 }
 
@@ -220,14 +232,7 @@ describe('first run, after a sync', () => {
     // Arrange
     holdLock('sync')
     record('failed', 'the disk is full')
-    session(db, {
-      id: 'one:demo-0001',
-      harness: 'one',
-      origin: 'interactive',
-      title: 'One',
-      startedAt: START,
-      endedAt: START,
-    })
+    withSession()
 
     // Act
     const shown = state.firstRun()
@@ -291,5 +296,99 @@ describe('a warehouse the app cannot read', () => {
       headline: `There is no warehouse at ${missing} yet. Sync creates it.`,
       canSync: true,
     })
+  })
+})
+
+describe('the Sync control', () => {
+  const SYNC_TITLE = 'Import what changed since the last sync'
+  // Four minutes after the test records end.
+  const LATER = START + 1000 + 4 * MINUTE
+
+  it.each([
+    [
+      'compact',
+      'Compacting (since 2 min)',
+      'logbook compact is rewriting the warehouse. Pages keep working; syncs and labelling wait until it ends. Stop it where it was started with Ctrl+C.',
+    ],
+    [
+      'forget',
+      'Forgetting sessions (since 2 min)',
+      'logbook forget is removing sessions and rewriting the warehouse. Pages keep working; syncs and labelling wait until it ends.',
+    ],
+    ['sync', 'Syncing… (since 2 min)', SYNC_TITLE],
+  ] as const)(
+    'reads the lock held as %s over a record that never ended, never as a failed sync',
+    (operation, label, title) => {
+      // Arrange
+      withSession()
+      record(null, null, false)
+      const startedAt = holdLock(operation)
+
+      // Act
+      const control = state.syncControl(startedAt + 2 * MINUTE)
+
+      // Assert
+      expect(control).toStrictEqual({ label, title, tone: 'slow', isRunning: true })
+    }
+  )
+
+  it('says never synced while there is no record', () => {
+    // Arrange
+    withSession()
+
+    // Act
+    const control = state.syncControl(LATER)
+
+    // Assert
+    expect(control).toStrictEqual({ label: 'Never synced', title: SYNC_TITLE, tone: 'hollow', isRunning: false })
+  })
+
+  it('says when the last sync ended ok', () => {
+    // Arrange
+    withSession()
+    record('ok')
+
+    // Act
+    const control = state.syncControl(LATER)
+
+    // Assert
+    expect(control).toStrictEqual({ label: 'Synced 4 min ago', title: SYNC_TITLE, tone: 'good', isRunning: false })
+  })
+
+  it("shows a partial sync's first problem on hover, over the data it imported", () => {
+    // Arrange
+    withSession()
+    record('partial', 'Example Harness: cannot read ~/.example/data: permission denied')
+
+    // Act
+    const control = state.syncControl(LATER)
+
+    // Assert
+    expect(control).toStrictEqual({
+      label: 'Synced 4 min ago, with problems',
+      title: 'Example Harness: cannot read ~/.example/data: permission denied',
+      tone: 'problem',
+      isRunning: false,
+    })
+  })
+
+  it('shows a failed sync with its error, a stopped one with the default title, and one that never ended as failed', () => {
+    // Act
+    const controls = [
+      ['failed', 'the disk is full', true],
+      ['stopped', null, true],
+      [null, null, false],
+    ].map(([outcome, error, isEnded]) => {
+      db.exec('DELETE FROM sync_run')
+      record(outcome as string | null, error as string | null, isEnded as boolean)
+      return state.syncControl(LATER)
+    })
+
+    // Assert
+    expect(controls).toStrictEqual([
+      { label: 'Sync failed 4 min ago', title: 'the disk is full', tone: 'problem', isRunning: false },
+      { label: 'Sync failed 4 min ago', title: SYNC_TITLE, tone: 'problem', isRunning: false },
+      { label: 'Sync failed 4 min ago', title: SYNC_TITLE, tone: 'problem', isRunning: false },
+    ])
   })
 })

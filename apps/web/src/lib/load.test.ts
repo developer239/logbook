@@ -20,13 +20,6 @@ beforeAll(async () => {
   current = await createTestWarehouse()
   warehouse = current.path
 
-  insert(current.db, 'source_state', {
-    harness: 'claude-code',
-    locator: 'transcripts',
-    fingerprint: 'abc',
-    parser_version: 1,
-    imported_at: 42,
-  })
   insert(current.db, 'session', {
     id: 'example:demo-0001',
     harness: 'example',
@@ -51,7 +44,7 @@ describe('load', () => {
       throw new ParamError('page must be a whole number, got x')
     })
 
-    expect(page).toEqual({ ok: false, problem: 'page must be a whole number, got x', status: 400, syncedAt: 42 })
+    expect(page).toEqual({ ok: false, problem: 'page must be a whole number, got x', status: 400 })
   })
 
   it('should answer something the URL names that is not there with 404', async () => {
@@ -73,7 +66,6 @@ describe('load', () => {
     expect(page).toMatchObject({
       ok: false,
       status: 503,
-      syncedAt: null,
       problem: { kind: 'no-warehouse', headline: `There is no warehouse at ${missing} yet. Sync creates it.` },
     })
   })
@@ -99,7 +91,7 @@ describe('load', () => {
     const page = load(() => 1)
     await newer.remove()
 
-    expect(page).toMatchObject({ ok: false, status: 503, syncedAt: null, problem: { kind: 'newer-schema' } })
+    expect(page).toMatchObject({ ok: false, status: 503, problem: { kind: 'newer-schema' } })
   })
 
   it('should throw what is not a problem a page can show', async () => {

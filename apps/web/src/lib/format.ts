@@ -133,22 +133,19 @@ export const rangeDay = (at: number): string => {
 
 export const stamp = (at: number): string => `${rangeDay(at)}, ${time(at)}`
 
-export const ago = (at: number, now: number = Date.now()): string => {
-  const elapsed = Math.max(0, now - at)
+// An elapsed time as the Sync and Label controls write it: whole minutes under an hour, at least 1; whole hours under
+// a day; whole days from then on.
+export const elapsed = (ms: number): string => {
+  const value = Math.max(0, ms)
 
-  if (elapsed < MINUTE) {
-    return 'just now'
+  if (value < HOUR) {
+    return `${String(Math.max(1, Math.floor(value / MINUTE)))} min`
   }
 
-  const [value, unit]: [number, string] =
-    elapsed < HOUR
-      ? [Math.floor(elapsed / MINUTE), 'minute']
-      : elapsed < DAY
-        ? [Math.floor(elapsed / HOUR), 'hour']
-        : [Math.floor(elapsed / DAY), 'day']
-
-  return `${plural(value, unit)} ago`
+  return value < DAY ? `${String(Math.floor(value / HOUR))} h` : `${String(Math.floor(value / DAY))} d`
 }
+
+export const ago = (at: number, now: number = Date.now()): string => `${elapsed(now - at)} ago`
 
 export const clip = (text: string, max: number): string => {
   const characters = Array.from(text)
