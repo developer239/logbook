@@ -21,6 +21,13 @@ const literalAt = (index: number): string => {
   return literal
 }
 const workspaces = gitWorkspaces()
+// The owner pass reads the artwork list and the committed capture manifest, which every repository holds.
+const ownerWorkspace = async (files: Readonly<Record<string, string>>): Promise<string> =>
+  workspaces.create({
+    'apps/docs/artwork.json': '{ "files": [] }\n',
+    'apps/docs/committed-captures.json': '{ "captures": [] }\n',
+    ...files,
+  })
 
 afterEach(async () => {
   await workspaces.removeAll()
@@ -82,7 +89,7 @@ describe('the owner-literal check', () => {
     async (index) => {
       // Arrange
       const literal = literalAt(index)
-      const root = await workspaces.create({ 'notes.md': `Ported from ${literal}.\nAnd ${literal.toUpperCase()}.\n` })
+      const root = await ownerWorkspace({ 'notes.md': `Ported from ${literal}.\nAnd ${literal.toUpperCase()}.\n` })
 
       // Act
       const found = await ownerFindings(root)
@@ -100,7 +107,7 @@ describe('the owner-literal check', () => {
 
   it('passes every owner literal in the owner-literals file itself', async () => {
     // Arrange
-    const root = await workspaces.create({
+    const root = await ownerWorkspace({
       'packages/ci/src/rules/owner-literals.ts': OWNER_LITERALS.map((literal) => `'${literal}'`).join('\n'),
     })
 
@@ -113,7 +120,7 @@ describe('the owner-literal check', () => {
 
   it('passes the four tool names in the known-tool table and fails any other owner literal there', async () => {
     // Arrange
-    const root = await workspaces.create({
+    const root = await ownerWorkspace({
       [KNOWN_TOOLS_FILE]: `${KNOWN_TOOL_NAMES.map((name) => `  ['${name}', 'dispatch'],`).join('\n')}\n// ${literalAt(0)}\n`,
     })
 
@@ -126,7 +133,7 @@ describe('the owner-literal check', () => {
 
   it('names the literal and none of the rest of the line', async () => {
     // Arrange
-    const root = await workspaces.create({ 'apps/web/src/secret.ts': `const token = 'abc123-${literalAt(4)}xyz'\n` })
+    const root = await ownerWorkspace({ 'apps/web/src/secret.ts': `const token = 'abc123-${literalAt(4)}xyz'\n` })
 
     // Act
     const [finding] = await ownerFindings(root)
@@ -144,7 +151,7 @@ describe('the owner-literal check', () => {
   it('fails a tracked demo build output and a tracked SQLite database, and passes the same database untracked', async () => {
     // Arrange
     const database = 'SQLite format 3\u0000\u0010\u0000rows'
-    const root = await workspaces.create({
+    const root = await ownerWorkspace({
       'packages/demo/out/small/manifest.json': '{}\n',
       'example.db': database,
     })
