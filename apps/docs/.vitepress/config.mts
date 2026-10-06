@@ -63,7 +63,7 @@ const SIDEBAR: DefaultTheme.SidebarItem[] = [
       { text: 'Environment variables', link: '/reference/environment' },
     ],
   },
-  { text: 'Help', items: [] },
+  { text: 'Help', items: [{ text: 'Troubleshooting', link: '/help/troubleshooting' }] },
 ]
 
 // The README's first line, so the site, the README and npm describe Log Book in the same sentence.
