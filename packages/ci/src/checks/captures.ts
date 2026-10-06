@@ -9,6 +9,7 @@ import {
   OWNER_LOGIN,
   SCREENS,
 } from '../rules/capture-rules.js'
+import { inspectCapture } from './metadata.js'
 
 type Fields = Record<string, unknown>
 
@@ -194,8 +195,32 @@ const fileFindings = async (
   ]
 }
 
-// Rules M1 to M4 over the repository's tracked files: the committed images and videos against the artwork list and the
-// committed capture manifest. A missing or unparsable list fails, naming it.
+// M5: the metadata a tracked capture of either source carries, or why its structure cannot be read to its end.
+const metadataFindings = async (
+  root: string,
+  entries: readonly IEntry[],
+  tracked: ReadonlySet<string>
+): Promise<string[]> => {
+  const files = [
+    ...new Set(
+      entries.flatMap(({ fields }) =>
+        typeof fields.file === 'string' && tracked.has(fields.file) ? [fields.file] : []
+      )
+    ),
+  ]
+  const findings = await Promise.all(
+    files.map(async (file) => {
+      const inspection = inspectCapture(await readFile(join(root, file)))
+      return 'problem' in inspection
+        ? [`${file}: M5 cannot be shown to carry no metadata: ${inspection.problem}`]
+        : inspection.found.map((name) => `${file}: M5 carries ${name}`)
+    })
+  )
+  return findings.flat()
+}
+
+// Rules M1 to M5 over the repository's tracked files: the committed images and videos against the artwork list and the
+// committed capture manifest, and the metadata a capture carries. A missing or unparsable list fails, naming it.
 export const captureFindings = async (root: string, files: readonly string[]): Promise<string[]> => {
   const [artwork, captures] = await Promise.all([
     listIn(root, ARTWORK_FILE, 'files'),
@@ -207,5 +232,9 @@ export const captureFindings = async (root: string, files: readonly string[]): P
   const entries = entriesOf(captures)
   const tracked = new Set(files)
   const perEntry = await Promise.all(entries.map(async (entry) => entryFindings(root, entry, tracked)))
-  return [...(await fileFindings(root, files, artwork, entries)), ...perEntry.flat()]
+  return [
+    ...(await fileFindings(root, files, artwork, entries)),
+    ...perEntry.flat(),
+    ...(await metadataFindings(root, entries, tracked)),
+  ]
 }
