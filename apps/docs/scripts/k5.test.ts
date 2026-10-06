@@ -41,13 +41,24 @@ describe('checkK5', () => {
     expect(lines).toStrictEqual([])
   })
 
+  it("passes a shields.io badge and a badge of the repository's workflows", async () => {
+    // Act
+    const lines = await linesFor(
+      '[![CI](https://github.com/developer239/logbook/actions/workflows/ci.yml/badge.svg?branch=main)](https://example.com)\n' +
+        '[![npm](https://img.shields.io/npm/v/@log-book/cli)](https://example.com)\n'
+    )
+
+    // Assert
+    expect(lines).toStrictEqual([])
+  })
+
   it('fails an image that is neither, naming the README and its line', async () => {
     // Act
     const lines = await linesFor('# Log Book\n\n![example](https://example.com/x.png)\n')
 
     // Assert
     expect(lines).toStrictEqual([
-      "K5 README.md:3 the image https://example.com/x.png is neither a shot's capture nor a committed capture",
+      "K5 README.md:3 the image https://example.com/x.png is neither a shot's capture, a committed capture nor a badge",
     ])
   })
 })
