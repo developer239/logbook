@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createTestWarehouse, type ITestWarehouse } from '@log-book/warehouse/testing'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { HOST_REFUSAL, ORIGIN_REFUSAL } from '../src/lib/guard'
+import { logbookStub } from '../src/lib/testing/logbook-stub'
 
 type THandler = (req: IncomingMessage, res: ServerResponse, next?: (error?: unknown) => void) => void | Promise<void>
 
@@ -148,5 +149,54 @@ describe('the guard in the built handler', () => {
 
     // Assert
     expect({ status: reply.status, body: reply.body }).toStrictEqual({ status: 403, body: ORIGIN_REFUSAL })
+  })
+})
+
+describe('POST /sync in the built handler', () => {
+  const FORM = { 'Content-Type': 'application/x-www-form-urlencoded' }
+  const post = async (body: string): Promise<IReply> => send('POST', '/sync', { ...FORM, Origin: origin }, body)
+
+  it('runs logbook sync and returns to the page the form names', async () => {
+    // Arrange
+    const stub = await logbookStub(directory)
+
+    // Act
+    const reply = await post('back=%2Fsteps')
+
+    // Assert
+    expect({ status: reply.status, location: reply.headers.location, calls: await stub.calls() }).toStrictEqual({
+      status: 303,
+      location: '/steps',
+      calls: [['sync']],
+    })
+  })
+
+  it("shows a failed sync's last stderr line on a 500 page", async () => {
+    // Arrange
+    const stub = await logbookStub(directory)
+    stub.answer(1, ['disk full'])
+
+    // Act
+    const reply = await post('back=%2Fsteps')
+
+    // Assert
+    expect({ status: reply.status, hasMessage: reply.body.includes('logbook sync failed: disk full') }).toStrictEqual({
+      status: 500,
+      hasMessage: true,
+    })
+  })
+
+  it('answers 400 to a form that names no page of this app', async () => {
+    // Arrange
+    const stub = await logbookStub(directory)
+
+    // Act
+    const replies = [await post(''), await post('back=https%3A%2F%2Fevil.example%2F')]
+
+    // Assert
+    expect({ statuses: replies.map((reply) => reply.status), calls: await stub.calls() }).toStrictEqual({
+      statuses: [400, 400],
+      calls: [],
+    })
   })
 })

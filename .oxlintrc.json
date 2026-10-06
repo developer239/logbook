@@ -469,6 +469,17 @@
       }
     },
     {
+      "files": ["apps/web/src/locals.d.ts"],
+      "rules": {
+        "naming/declaration-naming": [
+          "error",
+          {
+            "interfaceExceptions": ["Locals"]
+          }
+        ]
+      }
+    },
+    {
       "files": ["apps/web/src/**/*.astro"],
       "globals": {
         "Astro": "readonly"

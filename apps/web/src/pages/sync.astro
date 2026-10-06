@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro'
-import { CookbookError } from '../lib/errors'
+import { CliError } from '../lib/errors'
 import { pageOf, readForm } from '../lib/forms'
 import { syncedAtOrNull } from '../lib/load'
 import { sync } from '../lib/sync'
@@ -17,10 +17,10 @@ if (page === null) {
   Astro.response.status = 400
 } else {
   try {
-    await sync()
+    await sync(Astro.locals.children)
     return Astro.redirect(page, 303)
   } catch (error) {
-    if (!(error instanceof CookbookError)) {
+    if (!(error instanceof CliError)) {
       throw error
     }
     problem = error.message

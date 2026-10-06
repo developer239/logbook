@@ -9,6 +9,10 @@ const LOCK_FILE_MODE = 0o600
 const RELEASING_SIGNALS = ['SIGTERM', 'SIGINT'] as const
 
 const SYNC_LOCK_OPERATIONS = ['sync', 'compact', 'forget'] as const
+
+// How long a sync may hold the sync lock before whoever started it stops it as failed; the next sync continues from
+// the units it committed.
+export const SYNC_TIMEOUT_MS = 30 * 60 * 1000
 const LABELS_LOCK_OPERATIONS = ['labels', 'compact', 'forget'] as const
 
 export type SyncLockOperation = (typeof SYNC_LOCK_OPERATIONS)[number]

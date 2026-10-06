@@ -40,8 +40,8 @@
     "case": "local"
   },
   {
-    "file": "apps/web/src/lib/cookbook.ts",
-    "calls": "starts the cookbook CLI as a child of the web server to sync and label; replaced by the logbook CLI client",
+    "file": "apps/web/src/lib/cli.ts",
+    "calls": "starts logbook commands as children of the host, through its child registry, or of the dev server under astro dev",
     "case": "local"
   },
   {
