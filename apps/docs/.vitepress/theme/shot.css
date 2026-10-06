@@ -1,0 +1,21 @@
+.shot {
+  margin: 1.5rem 0;
+}
+
+.shot__image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+html.dark .shot__image--light,
+html:not(.dark) .shot__image--dark {
+  display: none;
+}
+
+.shot__caption {
+  margin-top: 0.5rem;
+  color: var(--vp-c-text-2);
+  font-size: 0.875rem;
+}

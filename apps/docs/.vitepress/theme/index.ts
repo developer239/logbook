@@ -3,6 +3,8 @@ import { createMermaidRenderer } from 'vitepress-mermaid-renderer'
 import DefaultTheme from 'vitepress/theme'
 import { defineComponent, h, onMounted, watch } from 'vue'
 import { Fact, InstallCommand } from './components.js'
+import { Shot } from './shot.js'
+import './shot.css'
 
 // Mermaid draws its diagrams in the scheme the reader has, dark or light.
 const startMermaid = (isDark: boolean): void => {
@@ -25,5 +27,6 @@ export default {
   enhanceApp({ app }) {
     app.component('Fact', Fact)
     app.component('InstallCommand', InstallCommand)
+    app.component('Shot', Shot)
   },
 } satisfies Theme

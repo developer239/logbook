@@ -429,7 +429,8 @@
         "**/*.config.ts",
         "**/*.config.mjs",
         "apps/docs/.vitepress/config.mts",
-        "apps/docs/.vitepress/theme/index.ts"
+        "apps/docs/.vitepress/theme/index.ts",
+        "apps/docs/.vitepress/theme/*.data.ts"
       ],
       "rules": {
         "import/no-default-export": "off"
