@@ -32,7 +32,7 @@ describe('pluginServers', () => {
       inputs(
         [
           announce(50, {
-            added: ['WebFetch', 'mcp__claude_ai_Docs__batch', 'mcp__opencode__jira_get_issue', 'mcp__opencode__launch'],
+            added: ['WebFetch', 'mcp__claude_ai_Docs__batch', 'mcp__worklist__jira_get_issue', 'mcp__worklist__launch'],
             surfaced: ['mcp__claude_ai_Docs__batch'],
             pendingServers: [],
             needsAuthServers: [],
@@ -40,9 +40,9 @@ describe('pluginServers', () => {
           }),
         ],
         {
-          loadedInTurn: new Map([['mcp__opencode__launch', 2]]),
-          callsOf: (full) => (full === 'mcp__opencode__launch' ? 3 : 0),
-          definitionOf: (full) => (full.startsWith('mcp__opencode__') ? 400 : null),
+          loadedInTurn: new Map([['mcp__worklist__launch', 2]]),
+          callsOf: (full) => (full === 'mcp__worklist__launch' ? 3 : 0),
+          definitionOf: (full) => (full.startsWith('mcp__worklist__') ? 400 : null),
         }
       )
     )
@@ -66,8 +66,8 @@ describe('pluginServers', () => {
         ],
       },
       {
-        key: 'opencode',
-        name: 'opencode',
+        key: 'worklist',
+        name: 'worklist',
         startState: 'connected',
         error: null,
         tools: [
@@ -100,9 +100,9 @@ describe('pluginServers', () => {
         announce(50, {
           added: ['mcp__claude_ai_Slack__authenticate'],
           needsAuthServers: ['claude.ai Slack'],
-          failedServers: [{ name: 'opencode', error: 'timed out after 30000ms' }],
+          failedServers: [{ name: 'worklist', error: 'timed out after 30000ms' }],
         }),
-        announce(2000, { added: ['mcp__opencode__launch'], failedServers: [] }),
+        announce(2000, { added: ['mcp__worklist__launch'], failedServers: [] }),
       ])
     )
 
@@ -124,7 +124,7 @@ describe('pluginServers', () => {
         ],
       ],
       [
-        'opencode',
+        'worklist',
         'failed',
         'timed out after 30000ms',
         [
@@ -143,12 +143,12 @@ describe('pluginServers', () => {
   })
 
   it('should take a re-announcement after a compaction as nothing new and a drop as a removal', () => {
-    const all = ['mcp__opencode__launch', 'mcp__opencode__jira_get_issue']
+    const all = ['mcp__worklist__launch', 'mcp__worklist__jira_get_issue']
     const servers = pluginServers(
       inputs([
         announce(50, { added: all }),
-        announce(500, { removed: ['mcp__opencode__jira_get_issue'] }),
-        announce(1500, { added: ['mcp__opencode__launch'] }),
+        announce(500, { removed: ['mcp__worklist__jira_get_issue'] }),
+        announce(1500, { added: ['mcp__worklist__launch'] }),
       ])
     )
 
@@ -194,12 +194,12 @@ describe('calledPlugins', () => {
   it('should count each plugin tool a session called, by plugin, the most called first', () => {
     const plugins = calledPlugins([
       { name: 'jira_get_issue', plugin: 'jira', calls: 1, definitionTokens: null },
-      { name: 'launch', plugin: 'opencode', calls: 1, definitionTokens: 1200 },
-      { name: 'launch', plugin: 'opencode', calls: 1, definitionTokens: 1200 },
+      { name: 'launch', plugin: 'worklist', calls: 1, definitionTokens: 1200 },
+      { name: 'launch', plugin: 'worklist', calls: 1, definitionTokens: 1200 },
     ])
 
     expect(plugins).toEqual([
-      { plugin: 'opencode', tools: [{ name: 'launch', calls: 2, definitionTokens: 1200 }] },
+      { plugin: 'worklist', tools: [{ name: 'launch', calls: 2, definitionTokens: 1200 }] },
       { plugin: 'jira', tools: [{ name: 'jira_get_issue', calls: 1, definitionTokens: null }] },
     ])
   })
