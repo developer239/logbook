@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 import type { IFinding } from './k7.js'
 import type { ICallSite } from './privacy.js'
+import { readmeDrift } from './readme.js'
 
 export interface IK6Inputs {
   // The documentation package's directory, which holds src and the built site.
@@ -11,6 +12,9 @@ export interface IK6Inputs {
   callSites: readonly ICallSite[]
   // The built site, such as .vitepress/dist.
   built: string
+  // The repository's README, whose statement block copies the statement.
+  readme: string
+  siteUrl: string
 }
 
 interface IMarker {
@@ -99,8 +103,22 @@ const linkFindings = async (inputs: IK6Inputs): Promise<IFinding[]> => {
     }))
 }
 
-// K6: the statement's case markers match the call-site file, and its links reach the headings they name.
+// The README's statement block, between its markers, is the statement with its links made absolute.
+const readmeFindings = async (inputs: IK6Inputs): Promise<IFinding[]> => {
+  const [readme, statement] = await Promise.all([
+    readFile(inputs.readme, 'utf8'),
+    readFile(join(inputs.docs, STATEMENT), 'utf8'),
+  ])
+  const drift = readmeDrift(readme, statement, inputs.siteUrl)
+  return drift === null
+    ? []
+    : [{ rule: RULE, file: relative(inputs.repository, inputs.readme), line: 1, message: drift }]
+}
+
+// K6: the statement's case markers match the call-site file, its links reach the headings they name, and the README
+// holds it word for word.
 export const checkK6 = async (inputs: IK6Inputs): Promise<IFinding[]> => [
   ...(await caseFindings(inputs)),
   ...(await linkFindings(inputs)),
+  ...(await readmeFindings(inputs)),
 ]

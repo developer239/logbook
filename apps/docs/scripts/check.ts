@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { COMMANDS, EXIT_CODES, PACKAGE, parseCommandLine } from '@log-book/cli/grammar'
+import { SITE_URL } from '../site.js'
 import { checkK6 } from './k6.js'
 import { checkK7, findingLine } from './k7.js'
 import { callSitesOf } from './privacy.js'
@@ -13,6 +14,7 @@ const DOCS = fileURLToPath(new URL('../../', import.meta.url))
 const REPOSITORY = fileURLToPath(new URL('../../../../', import.meta.url))
 const BUILT = fileURLToPath(new URL('../../.vitepress/dist/', import.meta.url))
 const CALL_SITES = join(REPOSITORY, 'packages', 'engine', 'network-call-sites.json')
+const README = join(REPOSITORY, 'README.md')
 
 // The site's own check on a finished build: one line per finding, and exit 1 when any rule fails.
 const check = async (): Promise<number> => {
@@ -22,7 +24,14 @@ const check = async (): Promise<number> => {
   }
   const callSites = callSitesOf(await readFile(CALL_SITES, 'utf8'))
   const findings = [
-    ...(await checkK6({ docs: DOCS, repository: REPOSITORY, callSites, built: BUILT })),
+    ...(await checkK6({
+      docs: DOCS,
+      repository: REPOSITORY,
+      callSites,
+      built: BUILT,
+      readme: README,
+      siteUrl: SITE_URL,
+    })),
     ...(await checkK7({
       docs: DOCS,
       repository: REPOSITORY,

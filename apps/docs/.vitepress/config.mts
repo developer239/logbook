@@ -1,6 +1,8 @@
+import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { type DefaultTheme, defineConfigWithTheme } from 'vitepress'
 import { cliFacts } from '../scripts/cli.js'
+import { firstLineOf } from '../scripts/readme.js'
 import { BASE_PATH, SITE_URL } from '../site.js'
 import { versionAt } from '../version.js'
 import type { IThemeConfig } from './theme/theme-config.js'
@@ -38,12 +40,15 @@ const SIDEBAR: DefaultTheme.SidebarItem[] = [
   { text: 'Help', items: [] },
 ]
 
+// The README's first line, so the site, the README and npm describe Log Book in the same sentence.
+const description = firstLineOf(await readFile(new URL('../../../README.md', import.meta.url), 'utf8'))
+
 // The site describes the release it was built from, so a page never documents a flag the published CLI lacks.
 const version = await versionAt(fileURLToPath(new URL('.', import.meta.url)))
 
 export default defineConfigWithTheme<IThemeConfig>({
   title: 'Log Book',
-  description: "Where your coding agent's time went.",
+  description,
   srcDir: 'src',
   // Written parts that pages include, not pages of their own.
   srcExclude: ['reference/examples/**', 'privacy/statement.md', 'privacy/summary.md'],
