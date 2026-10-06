@@ -1,6 +1,7 @@
 ---
 import { PRESETS, RANGE_PARAMS, type IRange } from '../lib/range'
 import type { ISyncControl } from '../lib/state'
+import type { ILabelControl } from '../lib/views/label-control'
 import { isoDay } from '../lib/time'
 import Button from './ui/Button.astro'
 import Icon from './ui/Icon.astro'
@@ -13,12 +14,14 @@ interface Props {
   range: IRange | null
   conversation?: { title: string; href: string } | undefined
   sync: ISyncControl
+  // Null while there is nothing to label.
+  label: ILabelControl | null
   back: string
   // A newer warehouse refuses this build, so a sync from here could not read it either.
   canSync: boolean
 }
 
-const { current, range, conversation, sync, back, canSync } = Astro.props
+const { current, range, conversation, sync, label, back, canSync } = Astro.props
 
 const rangeHref = (key: string): string => {
   const params = new URLSearchParams(Astro.url.search)
@@ -91,6 +94,21 @@ const days = range === null || range.key === 'all' ? null : { from: isoDay(range
             <span data-sync-label>{sync.label}</span>
           </Button>
         </form>
+      )
+    }
+    {
+      label !== null && (
+        <p class="top-bar__label" data-label-control>
+          <Status tone={label.tone} />
+          <span class="top-bar__label-text" title={label.title ?? undefined}>
+            {label.text}
+          </span>
+          {label.link !== null && (
+            <a class="top-bar__label-link" href="/labels" title={label.link.title}>
+              {label.link.word}
+            </a>
+          )}
+        </p>
       )
     }
   </div>
