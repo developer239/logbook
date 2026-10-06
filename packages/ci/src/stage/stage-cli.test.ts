@@ -42,11 +42,14 @@ const BUILDS: Readonly<Record<string, string>> = {
   'LICENSE.md': 'PolyForm Noncommercial 1.0.0\n',
   'README.md': `${PUBLISHED.description}\n\n![The dashboard](${PUBLISHED.homepage}captures/dashboard-dark.png)\n`,
   'apps/docs/site.ts': `export const SITE_URL = '${PUBLISHED.homepage}'\n`,
+  'apps/web/build/modules.json': JSON.stringify({ server: [], client: [] }),
+  'packages/ci/src/rules/licence-texts.json': '{}',
 }
 
 const STAGED = [
   'LICENSE.md',
   'README.md',
+  'THIRD-PARTY-NOTICES.md',
   'bin/logbook.cjs',
   'dist/cli.mjs',
   'dist/prompts/example.prompt.txt',
