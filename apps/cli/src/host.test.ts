@@ -53,6 +53,9 @@ const recordingSteps = (calls: string[], runningPort: number | null = null): ISt
   recordHost: () => {
     calls.push('recordHost')
   },
+  open: (port) => {
+    calls.push(`open ${String(port)}`)
+  },
   detect: () => {
     calls.push('detect')
   },
@@ -98,12 +101,13 @@ describe('startHost', () => {
       'announce',
       'serve',
       'recordHost',
+      'open 7314',
       'detect',
       'sync',
     ])
   })
 
-  it('stops after the one-host check when a host runs on the warehouse, before anything opens it', async () => {
+  it('stops after the one-host check when a host runs on the warehouse, opening its page, before anything opens the warehouse', async () => {
     // Arrange
     const calls: string[] = []
 
@@ -113,7 +117,7 @@ describe('startHost', () => {
     // Assert
     expect({ outcome, calls }).toStrictEqual({
       outcome: { kind: 'already running', port: 7314 },
-      calls: ['resolvePaths', 'findRunningHost'],
+      calls: ['resolvePaths', 'findRunningHost', 'open 7314'],
     })
   })
 })
@@ -254,56 +258,67 @@ describe('findRunningHost', () => {
 })
 
 describe('the host runner on a warehouse a host already serves', () => {
-  it('prints the running host and exits 0 without opening the warehouse', async () => {
-    // Arrange
-    const warehouse = await warehouseIn()
-    const port = await serverOnPort(true)
-    writeHostFile(hostFilePath(warehouse), { pid: process.pid, port, version: '0.0.0-development', startedAt: 1 })
-    vi.stubEnv('LOGBOOK_DB', warehouse)
-    const opened: string[] = []
-    const sources: IHostSources = {
-      openWarehouse: async (path) => {
-        opened.push(path)
-        return refuse()
-      },
-      environment: () => {
-        throw new Error('not reached')
-      },
-      loadWebApp: refuse,
-      detect: refuse,
-      createRegistry: () => {
-        throw new Error('not reached')
-      },
-      signals: () => () => undefined,
-    }
-    let stdout = ''
-
-    // Act
-    const code = await createHostRunner(sources)({
-      command: 'start',
-      values: { port: 0 },
-      positionals: [],
-      version: '0.0.0-development',
-      io: {
-        argv: [],
-        env: {},
-        home: '/home/example',
-        stdout: (text) => {
-          stdout += text
+  it.each([
+    [{}, true],
+    [{ 'no-open': true }, false],
+  ])(
+    'prints the running host, opens its page unless --no-open (%o), and exits 0 without opening the warehouse',
+    async (flags, isOpened) => {
+      // Arrange
+      const warehouse = await warehouseIn()
+      const port = await serverOnPort(true)
+      writeHostFile(hostFilePath(warehouse), { pid: process.pid, port, version: '0.0.0-development', startedAt: 1 })
+      vi.stubEnv('LOGBOOK_DB', warehouse)
+      const opened: string[] = []
+      const pages: string[] = []
+      const sources: IHostSources = {
+        openWarehouse: async (path) => {
+          opened.push(path)
+          return refuse()
         },
-        stderr: () => undefined,
-        isStderrTty: false,
-        signal: new AbortController().signal,
-      },
-    })
+        environment: () => {
+          throw new Error('not reached')
+        },
+        loadWebApp: refuse,
+        detect: refuse,
+        createRegistry: () => {
+          throw new Error('not reached')
+        },
+        openBrowser: (url) => {
+          pages.push(url)
+        },
+        signals: () => () => undefined,
+      }
+      let stdout = ''
 
-    // Assert
-    expect({ code, stdout, opened }).toStrictEqual({
-      code: 0,
-      stdout: `Log Book is already running at http://127.0.0.1:${String(port)}\n`,
-      opened: [],
-    })
-  })
+      // Act
+      const code = await createHostRunner(sources)({
+        command: 'start',
+        values: { port: 0, ...flags },
+        positionals: [],
+        version: '0.0.0-development',
+        io: {
+          argv: [],
+          env: {},
+          home: '/home/example',
+          stdout: (text) => {
+            stdout += text
+          },
+          stderr: () => undefined,
+          isStderrTty: false,
+          signal: new AbortController().signal,
+        },
+      })
+
+      // Assert
+      expect({ code, stdout, opened, pages }).toStrictEqual({
+        code: 0,
+        stdout: `Log Book is already running at http://127.0.0.1:${String(port)}\n`,
+        opened: [],
+        pages: isOpened ? [`http://127.0.0.1:${String(port)}`] : [],
+      })
+    }
+  )
 })
 
 describe('bindHost', () => {
@@ -343,13 +358,16 @@ describe('bindHost', () => {
 })
 
 // Runs the host with stand-ins for the web app, detection and the registry, until it serves; then stops it.
-const serveOnce = async (values: Readonly<Record<string, number | boolean>>): Promise<number> => {
+const serveOnce = async (
+  values: Readonly<Record<string, number | boolean>>
+): Promise<{ spawns: number; pages: string[]; stdout: string }> => {
   const warehouse = await warehouseIn()
   vi.stubEnv('LOGBOOK_DB', warehouse)
   vi.stubEnv('XDG_DATA_HOME', directory)
   vi.stubEnv('LOGBOOK_CLI', '')
   vi.stubEnv('LOGBOOK_HOST_VERSION', '')
   let spawns = 0
+  const pages: string[] = []
   const registry: IChildRegistry = {
     spawn: () => {
       spawns += 1
@@ -374,6 +392,10 @@ const serveOnce = async (values: Readonly<Record<string, number | boolean>>): Pr
       }),
     detect: async () => new Promise(() => undefined),
     createRegistry: () => registry,
+    openBrowser: (url, report) => {
+      pages.push(url)
+      report('Browser      not opened: no xdg-open on this machine.')
+    },
     signals: (listener) => {
       stop.on('signal', listener)
       return () => stop.off('signal', listener)
@@ -402,13 +424,13 @@ const serveOnce = async (values: Readonly<Record<string, number | boolean>>): Pr
   })
   stop.emit('signal')
   await running
-  return spawns
+  return { spawns, pages, stdout }
 }
 
 describe('the host runner and its syncs', () => {
   it('starts no sync with --no-sync', async () => {
     // Act
-    const spawns = await serveOnce({ 'no-sync': true })
+    const { spawns } = await serveOnce({ 'no-sync': true })
 
     // Assert
     expect(spawns).toBe(0)
@@ -416,9 +438,34 @@ describe('the host runner and its syncs', () => {
 
   it('starts the first sync once it serves', async () => {
     // Act
-    const spawns = await serveOnce({})
+    const { spawns } = await serveOnce({})
 
     // Assert
     expect(spawns).toBe(1)
+  })
+})
+
+describe('the host runner and the browser', () => {
+  it('opens the printed page once it serves, and prints what the opener reports', async () => {
+    // Act
+    const { pages, stdout } = await serveOnce({ 'no-sync': true })
+    const url = /Log Book is running at (?<url>\S+)/u.exec(stdout)?.groups?.url
+
+    // Assert
+    expect({
+      pages,
+      isReported: stdout.includes('Browser      not opened: no xdg-open on this machine.\n'),
+    }).toStrictEqual({
+      pages: [url],
+      isReported: true,
+    })
+  })
+
+  it('opens nothing with --no-open', async () => {
+    // Act
+    const { pages } = await serveOnce({ 'no-sync': true, 'no-open': true })
+
+    // Assert
+    expect(pages).toStrictEqual([])
   })
 })

@@ -6,6 +6,7 @@ import { adapterEnvironment, createEngine, type ClaudeDetection } from '@log-boo
 import { resolveDataDirectory, resolveWarehousePath, WarehouseStore } from '@log-book/warehouse'
 import type * as WebEntry from '@log-book/web'
 import type * as WebGuard from '@log-book/web/guard'
+import { openBrowser } from './browser.js'
 import { CLI_ENTRY_VARIABLE, createChildRegistry, type IChildRegistry } from './child-registry.js'
 import { discoverAdapters, discoveryLines, warehouseLine } from './discovery.js'
 import { errorReport, exitCodeOf, PortTakenError } from './errors.js'
@@ -43,8 +44,7 @@ export interface IServing {
   kill: () => void
 }
 
-// The steps of the start this command owns, by their number in the start sequence. Opening the browser (8) takes its
-// place between them.
+// The steps of the start this command owns, by their number in the start sequence.
 export interface IStartSteps {
   // 2: the paths, before anything opens the warehouse.
   resolvePaths: () => IHostPaths
@@ -58,6 +58,8 @@ export interface IStartSteps {
   serve: (paths: IHostPaths) => Promise<IServing>
   // 7: the host file, with the bound port.
   recordHost: (paths: IHostPaths, serving: IServing) => void
+  // 8: the page in the browser, unless --no-open; a second start opens the running host's page.
+  open: (port: number) => void
   // 9: labelling detection, in the background; it never delays the URL.
   detect: () => void
   // 10 and 11: the first sync, then a sync every interval, in the background.
@@ -72,12 +74,14 @@ export const startHost = async (steps: IStartSteps): Promise<StartOutcome> => {
   const paths = steps.resolvePaths()
   const runningPort = await steps.findRunningHost(paths)
   if (runningPort !== null) {
+    steps.open(runningPort)
     return { kind: 'already running', port: runningPort }
   }
   const opened = await steps.migrate(paths)
   await steps.announce(opened)
   const serving = await steps.serve(paths)
   steps.recordHost(paths, serving)
+  steps.open(serving.port)
   steps.detect()
   steps.sync()
   return { kind: 'serving', paths, serving }
@@ -137,6 +141,7 @@ export interface IHostSources {
   loadWebApp: () => Promise<IWebApp>
   detect: (signal: AbortSignal) => Promise<ClaudeDetection>
   createRegistry: (env: NodeJS.ProcessEnv, syncLogs: ISyncLogs) => IChildRegistry
+  openBrowser: (url: string, report: (line: string) => void) => void
   signals: StopSignals
 }
 
@@ -170,10 +175,15 @@ const DEFAULT_SOURCES: IHostSources = {
   detect: async (signal) =>
     createEngine({ adapters: ADAPTERS, warehousePath: resolveWarehousePath() }).labels.detect({ signal }),
   createRegistry: (env, syncLogs) => createChildRegistry(env, { syncLogs }),
+  openBrowser: (url, report) => {
+    openBrowser(url, report)
+  },
   signals: processSignals,
 }
 
 const line = (text: string): string => `${text}\n`
+
+const pageUrl = (port: number): string => `http://${HOST_ADDRESS}:${String(port)}`
 
 // `logbook` and `logbook start`: migrate the warehouse, say what was found, serve the web app on 127.0.0.1 and own
 // every child process until a stop signal.
@@ -234,9 +244,7 @@ export const createHostRunner =
           createRequestListener(app, version, { children }, report),
           requiredIntegerOf(values, 'port')
         )
-        io.stdout(
-          `\nLog Book is running at http://${HOST_ADDRESS}:${String(portOf(server))}\nPress Ctrl+C to stop.\n\n`
-        )
+        io.stdout(`\nLog Book is running at ${pageUrl(portOf(server))}\nPress Ctrl+C to stop.\n\n`)
         return {
           port: portOf(server),
           stop: async () => {
@@ -257,6 +265,13 @@ export const createHostRunner =
       recordHost: ({ warehousePath }, { port }) => {
         writeHostFile(hostFilePath(warehousePath), { pid: process.pid, port, version, startedAt: Date.now() })
       },
+      open: (port) => {
+        if (values['no-open'] !== true) {
+          sources.openBrowser(pageUrl(port), (text) => {
+            io.stdout(line(text))
+          })
+        }
+      },
       detect: () => {
         void announceDetection()
       },
@@ -265,7 +280,7 @@ export const createHostRunner =
       },
     })
     if (outcome.kind === 'already running') {
-      io.stdout(line(`Log Book is already running at http://${HOST_ADDRESS}:${String(outcome.port)}`))
+      io.stdout(line(`Log Book is already running at ${pageUrl(outcome.port)}`))
       return exitCodeOf('success')
     }
     const code = await waitForStop(outcome.serving, sources.signals)
