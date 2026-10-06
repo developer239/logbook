@@ -31,7 +31,10 @@
     "demo:build": "node packages/demo/bin/logbook-demo.mjs build",
     "demo:check": "node packages/demo/bin/logbook-demo.mjs check",
     "demo:scan": "node packages/demo/bin/logbook-demo.mjs scan",
-    "demo:start": "node packages/demo/bin/logbook-demo.mjs start"
+    "demo:start": "node packages/demo/bin/logbook-demo.mjs start",
+    "docs:dev": "pnpm --filter @log-book/docs dev",
+    "docs:build": "pnpm --filter @log-book/docs build",
+    "docs:preview": "pnpm --filter @log-book/docs preview"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",

@@ -1,0 +1,24 @@
+import { type Theme, useData } from 'vitepress'
+import { createMermaidRenderer } from 'vitepress-mermaid-renderer'
+import DefaultTheme from 'vitepress/theme'
+import { defineComponent, h, onMounted, watch } from 'vue'
+
+// Mermaid draws its diagrams in the scheme the reader has, dark or light.
+const startMermaid = (isDark: boolean): void => {
+  createMermaidRenderer({ theme: isDark ? 'dark' : 'default' })
+}
+
+export default {
+  extends: DefaultTheme,
+  // The default layout, with Mermaid started in the browser and started again when the reader switches the scheme.
+  Layout: defineComponent({
+    setup(_props, { slots }) {
+      const { isDark } = useData()
+      onMounted(() => {
+        startMermaid(isDark.value)
+      })
+      watch(isDark, startMermaid)
+      return () => h(DefaultTheme.Layout, null, slots)
+    },
+  }),
+} satisfies Theme

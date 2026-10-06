@@ -58,5 +58,10 @@
     "file": "apps/web/src/scripts/follow.ts",
     "calls": "the browser fetches the Turn pane (/pane/<id>) from the page's own origin",
     "case": "local"
+  },
+  {
+    "file": "apps/docs/version.ts",
+    "calls": "runs git tag --points-at HEAD in the repository to name the release the documentation site is built from",
+    "case": "local"
   }
 ]
