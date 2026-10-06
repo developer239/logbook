@@ -2,15 +2,17 @@
   "name": "@log-book/docs",
   "version": "0.0.0-development",
   "scripts": {
-    "dev": "vitepress dev",
-    "build": "vitepress build",
+    "dev": "pnpm run generate && vitepress dev",
+    "build": "pnpm run generate && vitepress build",
     "preview": "vitepress preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate": "tsc -p tsconfig.build.json && node dist/scripts/generate.js"
   },
   "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
   "private": true,
   "devDependencies": {
+    "@log-book/cli": "workspace:*",
     "@types/node": "catalog:",
     "mermaid": "catalog:",
     "vitepress": "catalog:",

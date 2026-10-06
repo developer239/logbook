@@ -34,7 +34,8 @@
     "demo:start": "node packages/demo/bin/logbook-demo.mjs start",
     "docs:dev": "pnpm --filter @log-book/docs dev",
     "docs:build": "pnpm --filter @log-book/docs build",
-    "docs:preview": "pnpm --filter @log-book/docs preview"
+    "docs:preview": "pnpm --filter @log-book/docs preview",
+    "docs:generate": "pnpm --filter @log-book/docs generate"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",

@@ -1,7 +1,9 @@
 import { fileURLToPath } from 'node:url'
-import { type DefaultTheme, defineConfig } from 'vitepress'
+import { type DefaultTheme, defineConfigWithTheme } from 'vitepress'
+import { cliFacts } from '../scripts/cli.js'
 import { BASE_PATH, SITE_URL } from '../site.js'
 import { versionAt } from '../version.js'
+import type { IThemeConfig } from './theme/theme-config.js'
 
 const REPOSITORY = 'https://github.com/developer239/logbook'
 // GitHub Pages sends no response headers, so the policy is a meta tag. The browser refuses every other origin: the
@@ -25,17 +27,26 @@ const SIDEBAR: DefaultTheme.SidebarItem[] = [
   { text: 'Using Log Book', items: [] },
   { text: 'Labelling', items: [] },
   { text: 'Privacy', items: [] },
-  { text: 'Reference', items: [] },
+  {
+    text: 'Reference',
+    items: [
+      { text: 'The logbook command', link: '/reference/cli' },
+      { text: 'Exit codes', link: '/reference/exit-codes' },
+      { text: 'Environment variables', link: '/reference/environment' },
+    ],
+  },
   { text: 'Help', items: [] },
 ]
 
 // The site describes the release it was built from, so a page never documents a flag the published CLI lacks.
 const version = await versionAt(fileURLToPath(new URL('.', import.meta.url)))
 
-export default defineConfig({
+export default defineConfigWithTheme<IThemeConfig>({
   title: 'Log Book',
   description: "Where your coding agent's time went.",
   srcDir: 'src',
+  // Written parts that pages include, not pages of their own.
+  srcExclude: ['reference/examples/**'],
   base: BASE_PATH,
   cleanUrls: true,
   appearance: 'dark',
@@ -56,5 +67,6 @@ export default defineConfig({
     search: { provider: 'local' },
     editLink: { pattern: `${REPOSITORY}/edit/main/apps/docs/src/:path` },
     footer: { message: 'Source-available under the PolyForm Noncommercial License 1.0.0.' },
+    cli: await cliFacts(),
   },
 })
