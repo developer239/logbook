@@ -1,4 +1,5 @@
 ---
+import type { Harnesses } from '../../lib/queries/harnesses'
 import { pct } from '../../lib/format'
 import type { ISelectedStep, ITurnDetail } from '../../lib/queries/turn'
 import type { IRange } from '../../lib/range'
@@ -10,9 +11,10 @@ interface Props {
   turn: ITurnDetail
   selected: ISelectedStep | null
   range: IRange
+  harnesses: Harnesses
 }
 
-const { turn, selected, range } = Astro.props
+const { turn, selected, range, harnesses } = Astro.props
 
 const { spanMs, stepMs, ticks } = turnTicks(turn.spanMs)
 const at = (ms: number): string => pct(ms / spanMs)
@@ -32,5 +34,5 @@ const at = (ms: number): string => pct(ms / spanMs)
       }
     </span>
   </div>
-  <StepRows steps={turn.steps} turnId={turn.id} turnStart={turn.startedAt} spanMs={spanMs} selected={selected} range={range} />
+  <StepRows steps={turn.steps} turnId={turn.id} turnStart={turn.startedAt} spanMs={spanMs} selected={selected} range={range} harnesses={harnesses} />
 </div>

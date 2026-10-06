@@ -1,4 +1,5 @@
 ---
+import type { Harnesses } from '../../lib/queries/harnesses'
 import { stamp } from '../../lib/format'
 import { harnessName } from '../../lib/labels'
 import type { IConversation } from '../../lib/queries/conversation'
@@ -11,9 +12,10 @@ import './ConversationFacts.css'
 interface Props {
   facts: IFact[]
   head: IConversation
+  harnesses: Harnesses
 }
 
-const { facts, head } = Astro.props
+const { facts, head, harnesses } = Astro.props
 ---
 
 <div class="conversation-facts__list">
@@ -37,7 +39,7 @@ const { facts, head } = Astro.props
   }
 </div>
 <div class="conversation-facts__chips">
-  <Chip class="conversation-facts__chip">{harnessName(head.harness)}</Chip>
+  <Chip class="conversation-facts__chip">{harnessName(harnesses, head.harness)}</Chip>
   {head.agent !== null && <Chip class="conversation-facts__chip">{head.agent}</Chip>}
   {
     head.model !== null && (

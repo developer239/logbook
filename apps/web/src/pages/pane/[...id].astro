@@ -22,9 +22,10 @@ const page = load(() => {
     throw new ParamError('The Turn pane shows a turn the URL names')
   }
 
-  const { turn, selected } = shownTurn(sessionCache(), id, turnId, Astro.url.searchParams.get('step'))
+  const cache = sessionCache()
+  const { turn, selected } = shownTurn(cache, id, turnId, Astro.url.searchParams.get('step'))
 
-  return { id, turn, selected, range }
+  return { id, turn, selected, range, harnesses: cache.harnesses }
 })
 
 if (!page.ok) {
@@ -39,6 +40,7 @@ if (!page.ok) {
       isNested={page.data.turn.sessionId !== page.data.id}
       selected={page.data.selected}
       range={page.data.range}
+      harnesses={page.data.harnesses}
     />
   ) : (
     <Card title="Turn" level={2} data-turn-pane="">

@@ -16,7 +16,7 @@ import {
   type IMessageRow,
   type ISession,
   type ITurn,
-  type SessionCache,
+  type ISessionCache,
 } from './session'
 
 // A request whose first output came this long after the session was ready did
@@ -105,7 +105,7 @@ const modelStep = (message: IMessageRow, readyAt: number, level: number): IModel
   }
 }
 
-const turnSteps = (cache: SessionCache, session: ISession, turn: ITurn, level: number): Step[] => {
+const turnSteps = (cache: ISessionCache, session: ISession, turn: ITurn, level: number): Step[] => {
   // The session is ready for a request at the end of the last step before its
   // first output (a Claude transcript stamps a request only as it streams).
   const ends = [
@@ -148,7 +148,7 @@ const turnSteps = (cache: SessionCache, session: ISession, turn: ITurn, level: n
         startedSession === null
           ? null
           : {
-              ...agentRef(startedSession, turn.id),
+              ...agentRef(cache.harnesses, startedSession, turn.id),
               steps: children,
               failed: everyStep(children).filter((child) => child.kind === 'tool' && child.isFailed).length,
             },
@@ -178,7 +178,7 @@ const turnContext = (session: ISession, turn: ITurn): ITurnDetail['context'] => 
   return { first: firstSnapshot, last: lastSnapshot, isSame: first.id === last.id }
 }
 
-const turnDetail = (cache: SessionCache, sessionId: string, turnId: string): ITurnDetail => {
+const turnDetail = (cache: ISessionCache, sessionId: string, turnId: string): ITurnDetail => {
   const session = sessionOf(cache, sessionId)
   const turn = turnOf(session, turnId)
   const steps = turnSteps(cache, session, turn, 0)
@@ -188,7 +188,7 @@ const turnDetail = (cache: SessionCache, sessionId: string, turnId: string): ITu
   return {
     id: turn.id,
     sessionId,
-    agent: agentName(session),
+    agent: agentName(cache.harnesses, session),
     number: turn.seq + 1,
     startedAt: turn.startedAt,
     durationMs: turn.endedAt - turn.startedAt,
@@ -223,7 +223,7 @@ const selectedStep = (step: Step): ISelectedStep => {
 }
 
 export const shownTurn = (
-  cache: SessionCache,
+  cache: ISessionCache,
   sessionId: string,
   turnId: string,
   stepId: string | null

@@ -13,6 +13,24 @@ import {
   UNLABELLED,
   UNLABELLED_INLINE,
 } from './labels'
+import type { Harnesses } from './queries/harnesses'
+
+// An invented descriptor row, as a sync would write it.
+const DESCRIPTORS: Harnesses = new Map([
+  [
+    'example',
+    {
+      id: 'example',
+      name: 'Example Harness',
+      defaultAgent: 'helper',
+      filterAlias: 'ex',
+      isFound: true,
+      location: null,
+      locationVariables: [],
+      problem: null,
+    },
+  ],
+])
 
 describe('labels', () => {
   it('should name a failed call by its cause, a shell call by its failure', () => {
@@ -52,18 +70,20 @@ describe('labels', () => {
     expect(purposeName(null)).toBeNull()
   })
 
-  it('should name a harness and its agent, an unknown one as it is', () => {
-    expect([harnessName('claude-code'), harnessAgent('claude-code')]).toEqual(['Claude Code', 'Claude'])
-    expect([harnessName('opencode'), harnessAgent('opencode')]).toEqual(['OpenCode', 'OpenCode'])
-    expect([harnessName('other'), harnessAgent('other')]).toEqual(['other', 'other'])
+  it('should name a harness and its agent from its descriptor row, one without a row by its id', () => {
+    expect([harnessName(DESCRIPTORS, 'example'), harnessAgent(DESCRIPTORS, 'example')]).toEqual([
+      'Example Harness',
+      'helper',
+    ])
+    expect([harnessName(DESCRIPTORS, 'other'), harnessAgent(DESCRIPTORS, 'other')]).toEqual(['other', 'other'])
   })
 
-  it('should read a harness a filter names by its alias or its name in the warehouse', () => {
-    expect([harnessOfFilter('Claude'), harnessOfFilter('claude-code'), harnessOfFilter('opencode')]).toEqual([
-      'claude-code',
-      'claude-code',
-      'opencode',
-    ])
+  it('should read the harness a filter names by its alias or its id, and nothing else as one', () => {
+    expect([
+      harnessOfFilter(DESCRIPTORS, 'EX'),
+      harnessOfFilter(DESCRIPTORS, 'example'),
+      harnessOfFilter(DESCRIPTORS, 'nope'),
+    ]).toEqual(['example', 'example', 'nope'])
   })
 
   it('should give the labels behind a cause as shown, shell and other apart', () => {

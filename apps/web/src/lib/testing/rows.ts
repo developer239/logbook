@@ -47,7 +47,7 @@ interface ISessionRow {
   endedAt: number
 }
 
-const session = (db: ISqliteDb, row: ISessionRow): void => {
+export const session = (db: ISqliteDb, row: ISessionRow): void => {
   insert(db, 'session', {
     id: row.id,
     harness: row.harness,
@@ -76,7 +76,7 @@ interface IMessageRow {
   tokens?: [number, number, number, number]
 }
 
-const message = (db: ISqliteDb, row: IMessageRow): void => {
+export const message = (db: ISqliteDb, row: IMessageRow): void => {
   insert(db, 'message', {
     id: row.id,
     session_id: row.sessionId,
@@ -185,7 +185,29 @@ const toolCall = (db: ISqliteDb, row: IToolCallRow): void => {
 
 const SHELL_TEST = 'check a change (format, lint, typecheck, build)'
 
+interface IHarnessRow {
+  id: string
+  name: string
+  defaultAgent: string
+  filterAlias: string
+}
+
+// A harness descriptor row, as each sync writes one per registered adapter.
+export const harness = (db: ISqliteDb, row: IHarnessRow): void => {
+  insert(db, 'harness', {
+    id: row.id,
+    name: row.name,
+    default_agent: row.defaultAgent,
+    filter_alias: row.filterAlias,
+    is_found: 1,
+    checked_at: START,
+    location_variables: '[]',
+  })
+}
+
 export const seedRows = (db: ISqliteDb): void => {
+  harness(db, { id: 'claude-code', name: 'Claude Code', defaultAgent: 'Claude', filterAlias: 'claude' })
+  harness(db, { id: 'opencode', name: 'OpenCode', defaultAgent: 'OpenCode', filterAlias: 'opencode' })
   session(db, {
     id: 'ses-me',
     harness: 'claude-code',

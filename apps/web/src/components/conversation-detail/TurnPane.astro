@@ -1,4 +1,5 @@
 ---
+import type { Harnesses } from '../../lib/queries/harnesses'
 import { count, duration, plural, time, turnLabel } from '../../lib/format'
 import type { ISelectedStep, ITurnDetail } from '../../lib/queries/turn'
 import type { IRange } from '../../lib/range'
@@ -13,9 +14,10 @@ interface Props {
   isNested: boolean
   selected: ISelectedStep | null
   range: IRange
+  harnesses: Harnesses
 }
 
-const { turn, isNested, selected, range } = Astro.props
+const { turn, isNested, selected, range, harnesses } = Astro.props
 
 const title = `${turnLabel(turn.number)}${isNested ? ` · ${turn.agent}` : ''}`
 const parts = turn.nestedSteps === 0 ? '' : `, ${count(turn.nestedSteps)} more in the agents it started`
@@ -25,5 +27,5 @@ const parts = turn.nestedSteps === 0 ? '' : `, ${count(turn.nestedSteps)} more i
   <Fragment slot="meta">{time(turn.startedAt)} · {duration(turn.durationMs)} · {plural(turn.steps.length, 'step')}{parts}</Fragment>
   <TimeSplit slot="flush" modelMs={turn.modelMs} toolMs={turn.toolMs} idleMs={turn.idleMs} durationMs={turn.durationMs} />
   {turn.context !== null && <ContextSplit slot="flush" first={turn.context.first} last={turn.context.last} isSame={turn.context.isSame} />}
-  <StepTree slot="flush" turn={turn} selected={selected} range={range} />
+  <StepTree slot="flush" turn={turn} selected={selected} range={range} harnesses={harnesses} />
 </Card>

@@ -8,7 +8,7 @@ import {
   type IChildTurn,
   type ISession,
   type ITurn,
-  type SessionCache,
+  type ISessionCache,
 } from './session'
 
 export interface IThreadTurn {
@@ -70,7 +70,7 @@ export const promptOf = (text: string): Opening => {
 
 const isSaid = (text: string | null): text is string => (text ?? '').trim() !== ''
 
-const threadTurn = (cache: SessionCache, session: ISession, turn: ITurn): IThreadTurn => {
+const threadTurn = (cache: ISessionCache, session: ISession, turn: ITurn): IThreadTurn => {
   const first = turn.messages[0]
   const reply = turn.messages.findLast((message) => message.actor === 'assistant' && isSaid(message.text))
   const opening = first?.actor === 'user' && isSaid(first.text) ? promptOf(first.text) : null
@@ -105,7 +105,7 @@ const threadTurn = (cache: SessionCache, session: ISession, turn: ITurn): IThrea
 
 // A resumed session is continued from several turns, so an agent holds only the
 // turns placed under this one.
-const spawnsOf = (cache: SessionCache, underTurnId: string, children: readonly IChildTurn[]): ISpawn[] =>
+const spawnsOf = (cache: ISessionCache, underTurnId: string, children: readonly IChildTurn[]): ISpawn[] =>
   [...Map.groupBy(children, (child) => child.sessionId)].map(([sessionId, ofSession]): ISpawn => {
     const session = sessionOf(cache, sessionId)
     const turnIds = new Set(ofSession.map((child) => child.turnId))
@@ -113,7 +113,7 @@ const spawnsOf = (cache: SessionCache, underTurnId: string, children: readonly I
     const turns = placed.map((turn) => threadTurn(cache, session, turn))
 
     return {
-      ...agentRef(session, underTurnId),
+      ...agentRef(cache.harnesses, session, underTurnId),
       outcome: session.outcome,
       steps: sumBy(turns, (turn) => turn.steps),
       failed: sumBy(turns, (turn) => turn.failed),
@@ -122,7 +122,10 @@ const spawnsOf = (cache: SessionCache, underTurnId: string, children: readonly I
     }
   })
 
-export const thread = (cache: SessionCache, sessionId: string): { agent: string; turns: IThreadTurn[] } => {
+export const thread = (cache: ISessionCache, sessionId: string): { agent: string; turns: IThreadTurn[] } => {
   const session = sessionOf(cache, sessionId)
-  return { agent: agentName(session), turns: session.turns.map((turn) => threadTurn(cache, session, turn)) }
+  return {
+    agent: agentName(cache.harnesses, session),
+    turns: session.turns.map((turn) => threadTurn(cache, session, turn)),
+  }
 }
