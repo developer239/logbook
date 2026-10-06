@@ -1,5 +1,5 @@
-import { LogBookError } from '@log-book/core'
-import { DEFAULT_LABEL_MODEL, isLabelModelId } from '@log-book/engine'
+import { isLabelModelId, LogBookError } from '@log-book/core'
+import { DEFAULT_LABEL_MODEL } from '@log-book/engine'
 import { DEMO_ERROR_CODES } from '../errors.js'
 import { createStream, type IRandomStream } from '../random.js'
 import { dayStart, HOUR_MS, MINUTE_MS } from './calendar.js'

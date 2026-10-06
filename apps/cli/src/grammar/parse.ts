@@ -1,5 +1,5 @@
 import { parseArgs, type ParseArgsOptionsConfig } from 'node:util'
-import { isLabelModelId } from '@log-book/engine'
+import { isLabelModelId, LABEL_MODEL_RULE } from '@log-book/core'
 import { COMMANDS, type ICommandSpec, type IOptionSpec } from './commands.js'
 
 export type OptionValue = string | number | boolean
@@ -111,10 +111,7 @@ const typedValue = (option: IOptionSpec, value: string): OptionValue => {
     throw new UsageLine(`--${option.name} must be a date as YYYY-MM-DD, got ${value}`)
   }
   if (option.kind === 'model' && !isLabelModelId(value)) {
-    throw new UsageLine(
-      `--${option.name} must start with a letter or digit and hold only letters, digits, . _ - : or @ ` +
-        `(at most 128 characters), got ${JSON.stringify(value)}`
-    )
+    throw new UsageLine(`--${option.name} ${LABEL_MODEL_RULE}, got ${JSON.stringify(value)}`)
   }
   return value
 }

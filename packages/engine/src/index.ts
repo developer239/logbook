@@ -18,7 +18,7 @@ export type { ISyncAdapterResult, ISyncResult, SyncProgress } from './sync/sync.
 export { ITEM_CONTENTS, type IItemPart } from './labels/item-contents.js'
 export type { ILabelFacts } from './labels/facts.js'
 export type { ILabelRunReport, ILabelRunTaskCounts, LabelRunResult } from './labels/label-run.js'
-export { DEFAULT_LABEL_MODEL, isLabelModelId } from './labels/model.js'
+export { DEFAULT_LABEL_MODEL } from './labels/model.js'
 export type { LabelPlan } from './labels/plan.js'
 export type { ILabelPreview } from './labels/preview.js'
 export { LABEL_INPUT_RATES, type ILabelInputRate } from './labels/rates.js'

@@ -1,8 +1,8 @@
-import { ERROR_CODES, LogBookError } from '@log-book/core'
+import { ERROR_CODES, isLabelModelId, LogBookError } from '@log-book/core'
 import { WarehouseStore } from '@log-book/warehouse'
 import { detectClaude, type ClaudeMissing } from '../claude/detect.js'
 import { buildLabelFacts, type ILabelFacts } from './facts.js'
-import { DEFAULT_LABEL_MODEL, isLabelModelId } from './model.js'
+import { DEFAULT_LABEL_MODEL } from './model.js'
 import { labelRunTasks } from './tasks/all-tasks.js'
 
 export type LabelPlan =

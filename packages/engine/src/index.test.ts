@@ -23,7 +23,6 @@ describe('@log-book/engine', () => {
       'LABEL_TASK_NAMES',
       'LABEL_TASKS',
       'DEFAULT_LABEL_MODEL',
-      'isLabelModelId',
       'ITEM_CONTENTS',
     ]
 

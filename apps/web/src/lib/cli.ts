@@ -2,6 +2,8 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { CliError } from './errors'
 
+export type { ChildProcess }
+
 // The host's child registry, as the web app uses it: it starts `logbook <args>` and stops it with the host.
 export interface IChildRegistry {
   spawn: (args: readonly string[]) => ChildProcess
@@ -19,7 +21,14 @@ const CLI_VARIABLE = 'LOGBOOK_CLI'
 const STDERR_LINES = 20
 
 // The exit codes the web app acts on, from logbook's contract.
-export const EXIT = { success: 0, alreadyRunning: 3, updatedWhileRunning: 9, partialFailure: 10 } as const
+export const EXIT = {
+  success: 0,
+  alreadyRunning: 3,
+  missingPrerequisite: 7,
+  updatedWhileRunning: 9,
+  partialFailure: 10,
+  interrupted: 130,
+} as const
 
 const UPDATED_WHILE_RUNNING = 'Log Book was updated while running. Press Ctrl+C and start logbook again.'
 
@@ -40,21 +49,24 @@ const entry = (): string => {
 // The last STDERR_LINES lines of stderr, without the empty one after its final newline.
 const tailOf = (stderr: string): string[] => stderr.replace(/\n$/u, '').split('\n').slice(-STDERR_LINES)
 
-// Runs `logbook <args>` and waits for it: through the host's registry when the page has one, or as a child of this
-// process under astro dev. Either way an argument array and no shell, this process's environment and directory, stdin
-// ignored and never detached.
-export const runLogbook = async (args: readonly string[], children?: IChildRegistry): Promise<ICliRun> => {
+// Starts `logbook <args>` without waiting for it: through the host's registry when the page has one, or as a child of
+// this process under astro dev. Either way an argument array and no shell, this process's environment and directory,
+// stdin ignored and never detached.
+export const startLogbook = (args: readonly string[], children?: IChildRegistry): ChildProcess => {
   const path = entry()
-  const child =
-    children === undefined
-      ? spawn(process.execPath, [path, ...args], {
-          env: process.env,
-          cwd: process.cwd(),
-          stdio: ['ignore', 'pipe', 'pipe'],
-          shell: false,
-          detached: false,
-        })
-      : children.spawn(args)
+  return children === undefined
+    ? spawn(process.execPath, [path, ...args], {
+        env: process.env,
+        cwd: process.cwd(),
+        stdio: ['ignore', 'pipe', 'pipe'],
+        shell: false,
+        detached: false,
+      })
+    : children.spawn(args)
+}
+
+// What a started child writes, once it has closed.
+export const outputOf = async (child: ChildProcess): Promise<ICliRun> => {
   let stdout = ''
   let stderr = ''
   child.stdout?.on('data', (chunk: Buffer) => {
@@ -71,12 +83,19 @@ export const runLogbook = async (args: readonly string[], children?: IChildRegis
   })
 }
 
+// Runs `logbook <args>` and waits for it.
+export const runLogbook = async (args: readonly string[], children?: IChildRegistry): Promise<ICliRun> =>
+  outputOf(startLogbook(args, children))
+
+// The last line of a child's stderr with text on it.
+export const lastLineOf = (run: ICliRun): string | null => run.stderr.findLast((text) => text.trim() !== '') ?? null
+
 // The error a failed command ends a write with: the update sentence for a logbook updated meanwhile, otherwise the
 // command and its last non-empty stderr line.
 export const failureOf = (command: string, run: ICliRun): CliError => {
   if (run.code === EXIT.updatedWhileRunning) {
     return new CliError(UPDATED_WHILE_RUNNING)
   }
-  const last = run.stderr.findLast((text) => text.trim() !== '') ?? `exit ${String(run.code)}`
+  const last = lastLineOf(run) ?? `exit ${String(run.code)}`
   return new CliError(`logbook ${command} failed: ${last}`)
 }
