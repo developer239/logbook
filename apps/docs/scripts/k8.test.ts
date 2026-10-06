@@ -67,6 +67,17 @@ describe('checkK8', () => {
     expect(lines).toStrictEqual([])
   })
 
+  it('passes a label the page sets in capitals, as the captured text holds it', async () => {
+    // Act
+    const lines = await linesFor(
+      '<Ui page="/conversations/:id">Session map</Ui>\n',
+      both('conversation', SHOWCASE, 'SESSION MAP\nby time\n')
+    )
+
+    // Assert
+    expect(lines).toStrictEqual([])
+  })
+
   it('fails a label in no capture of its page, naming the docs page, its line, the label and the page', async () => {
     // Act
     const lines = await linesFor(
