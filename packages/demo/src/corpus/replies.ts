@@ -107,6 +107,7 @@ export const REPLIES: IReplyCorpus = {
       codes: ['holds'],
       texts: [
         'I will leave the wording, but I still think the tag should wait: [[the late fee test has not run on main]].',
+        'The check found nothing new, so I am keeping my approach: [[{file} is the right place for the change]].',
       ],
     },
     reverses: {

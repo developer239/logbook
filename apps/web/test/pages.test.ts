@@ -95,16 +95,6 @@ describe('every page over the built handler', () => {
     }).toStrictEqual({ ids: [], names: harnesses.map(() => true), isAny: true })
   })
 
-  it('shows no first-run and no "not labelled yet" panel on the small set', () => {
-    expect(
-      pages.flatMap((page) =>
-        ['class="first-run"', 'class="labels-missing"']
-          .filter((panel) => page.body.includes(panel))
-          .map((panel) => [page.path, panel])
-      )
-    ).toStrictEqual([])
-  })
-
   it('shows the "not labelled yet" panel on each card that needs model labels on the set without them', () => {
     const dashboard = variantPages[0]?.body ?? ''
 

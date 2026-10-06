@@ -40,6 +40,7 @@ export type ReactionName =
   | 'fix-in-code'
   | 'tests-first'
   | 'rates-in-repo'
+  | 'check-first'
   // The rich set's story: the developer corrects a "done" said without running the tests, and praises a small change.
   | 'claimed-untested'
   | 'small-and-clean'
@@ -290,6 +291,16 @@ export const PROMPTS: IPromptCorpus = {
           { reaction: 'correction', about: 'last turn', target: 'tools', reach: 'everywhere', hasSteps: true },
         ],
         prompt: 'no web search for this, ever: the rates are in the repo. ok, go on',
+      },
+    ],
+    'check-first': [
+      {
+        act: 'question',
+        reactions: [
+          { reaction: 'praise', about: 'last turn', target: 'communication', reach: 'once', hasSteps: false },
+        ],
+        prompt:
+          'that summary was easy to follow, thanks. are you sure about the approach, or should another agent check it?',
       },
     ],
   },
