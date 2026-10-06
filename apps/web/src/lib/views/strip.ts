@@ -6,7 +6,8 @@ import type { IRange } from '../range'
 
 export interface IStat {
   label: string
-  value: string
+  // None where the stat needs labels a model has not given yet.
+  value: string | null
   href: string
   sub: string
   change: string | null
@@ -37,7 +38,7 @@ const isShareUp = (share: { now: number | null; before: number | null }): boolea
 const shareChange = (share: { now: number | null; before: number | null }, since: string): string | null =>
   share.now === null || share.before === null ? null : change(share.now, share.before, points, since)
 
-export const stripStats = (range: IRange, current: IStrip, previous: IStrip | null): IStat[] => {
+export const stripStats = (range: IRange, current: IStrip, previous: IStrip | null, isLabelled: boolean): IStat[] => {
   const done = sharesOf(doneShare, current, previous)
   const wrongNow = sharesOf(wrongShare, current, previous)
 
@@ -62,11 +63,17 @@ export const stripStats = (range: IRange, current: IStrip, previous: IStrip | nu
     },
     {
       label: 'Finished',
-      value: count(current.done),
       href: conversationsHref(filterOf('outcome', ['done']), range),
-      sub: done.now === null ? 'no conversations' : `${percent(done.now)} of ${count(current.conversations)} done`,
-      change: shareChange(done, range.since),
-      isUp: isShareUp(done),
+      // Whether a conversation finished is a model's label.
+      ...(isLabelled
+        ? {
+            value: count(current.done),
+            sub:
+              done.now === null ? 'no conversations' : `${percent(done.now)} of ${count(current.conversations)} done`,
+            change: shareChange(done, range.since),
+            isUp: isShareUp(done),
+          }
+        : { value: null, sub: 'not labelled yet', change: null, isUp: false }),
       tone: '',
     },
     {

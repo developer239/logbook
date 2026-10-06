@@ -16,8 +16,8 @@ const strip = (fields: Partial<IStrip>): IStrip => ({
   ...fields,
 })
 
-const stat = (label: string, current: IStrip, previous: IStrip | null): IStat => {
-  const found = stripStats(range, current, previous).find((entry) => entry.label === label)
+const stat = (label: string, current: IStrip, previous: IStrip | null, isLabelled = true): IStat => {
+  const found = stripStats(range, current, previous, isLabelled).find((entry) => entry.label === label)
   if (found === undefined) {
     throw new Error(`No stat ${label}`)
   }
@@ -53,8 +53,28 @@ describe('stripStats', () => {
     expect(stat('Calls that went wrong', strip({ calls: 0, failed: 0, realResults: 0 }), null).sub).toBe('no calls')
   })
 
+  it('should show no finished share until a model has labelled outcomes, and keep the calls that went wrong', () => {
+    const before = strip({ conversations: 5, done: 1 })
+
+    expect({
+      finished: stat('Finished', strip({}), before, false),
+      wrong: stat('Calls that went wrong', strip({}), before, false).value,
+    }).toStrictEqual({
+      finished: {
+        label: 'Finished',
+        value: null,
+        href: '/conversations?q=outcome%3Adone&range=7d',
+        sub: 'not labelled yet',
+        change: null,
+        isUp: false,
+        tone: '',
+      },
+      wrong: '10',
+    })
+  })
+
   it('should link each figure to what it counts', () => {
-    const hrefs = stripStats(range, strip({}), null).map((entry) => entry.href)
+    const hrefs = stripStats(range, strip({}), null, true).map((entry) => entry.href)
 
     expect(hrefs).toEqual([
       '/conversations?range=7d',

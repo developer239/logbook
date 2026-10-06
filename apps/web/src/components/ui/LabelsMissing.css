@@ -1,0 +1,10 @@
+.labels-missing {
+  margin: 0;
+  padding: var(--space-2) 0 var(--space-3);
+  color: var(--text-2);
+}
+
+.labels-missing__command {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
