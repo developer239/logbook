@@ -5,6 +5,7 @@ import FirstRun from '../components/first-run/FirstRun.astro'
 import PageProblem from '../components/ui/PageProblem.astro'
 import type { PageProblem as TPageProblem } from '../lib/load'
 import { syncControl } from '../lib/state'
+import { labelControl } from '../lib/views/label-control'
 import '../styles/tokens.css'
 import '../styles/base.css'
 import './Layout.css'
@@ -40,6 +41,7 @@ const firstRun = typeof problem === 'object' ? problem : null
       current={current}
       range={range}
       sync={syncControl()}
+      label={labelControl()}
       conversation={conversation}
       back={back}
       canSync={firstRun?.canSync ?? true}

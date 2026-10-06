@@ -182,3 +182,22 @@
     flex-wrap: nowrap;
   }
 }
+
+.top-bar__label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+.top-bar__label-text {
+  min-width: 0;
+}
+
+.top-bar__label-link {
+  flex: none;
+  color: var(--accent);
+}

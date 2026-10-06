@@ -132,6 +132,11 @@ const recordPanel = (record: ISyncRecord | undefined): IFirstRun => {
   }
 }
 
+const hasSessions = (): boolean => get<{ one: number }>('SELECT 1 AS one FROM session LIMIT 1') !== undefined
+
+// Whether the warehouse can be read and holds a session, so there is something to label.
+export const hasSomethingToLabel = (): boolean => unreadable() === null && hasSessions()
+
 // The first check that applies decides: a warehouse the app cannot read, then one with no session yet; null is a
 // warehouse with sessions, which the page reads.
 export const firstRun = (now = Date.now()): IFirstRun | null => {
@@ -141,7 +146,7 @@ export const firstRun = (now = Date.now()): IFirstRun | null => {
     return unreadableState
   }
 
-  if (get<{ one: number }>('SELECT 1 AS one FROM session LIMIT 1') !== undefined) {
+  if (hasSessions()) {
     return null
   }
 
