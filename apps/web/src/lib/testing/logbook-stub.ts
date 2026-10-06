@@ -73,6 +73,10 @@ export interface ILogbookStub {
   calls: () => Promise<string[][]>
 }
 
+// How long a stub may take to start and write its pid: over a second on the slowest runner (Intel macOS), well inside
+// the web project's test timeout.
+export const STUB_START_TIMEOUT_MS = 5000
+
 // Writes the stub into `directory` and points LOGBOOK_CLI at it.
 export const logbookStub = async (directory: string): Promise<ILogbookStub> => {
   const path = join(directory, 'logbook-stub.mjs')
@@ -102,11 +106,14 @@ export const logbookStub = async (directory: string): Promise<ILogbookStub> => {
       }
     },
     pid: async () => {
-      await vi.waitFor(() => {
-        if (!existsSync(pidFile)) {
-          throw new Error('The stub has not written its pid yet')
-        }
-      })
+      await vi.waitFor(
+        () => {
+          if (!existsSync(pidFile)) {
+            throw new Error('The stub has not written its pid yet')
+          }
+        },
+        { timeout: STUB_START_TIMEOUT_MS }
+      )
       return Number(await readFile(pidFile, 'utf8'))
     },
     release: async () => {
