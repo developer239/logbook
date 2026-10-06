@@ -40,6 +40,7 @@ const LIST = [
 // its own, which starts a worker by path and reads a prompt.
 const WORKSPACE = {
   'LICENSE.md': 'The license\n',
+  'apps/docs/site.ts': "export const SITE_URL = 'https://example.com/logbook/'\n",
   'packages/ci/src/rules/public-packages.json': JSON.stringify(LIST),
   'packages/core/package.json': JSON.stringify({ name: '@log-book/core', exports: { '.': exportOf('index') } }),
   'packages/core/dist/index.js': 'export const core = 1\n',
@@ -121,6 +122,7 @@ describe('stageLibraries', () => {
       engines: { node: '>=24' },
       exports: { '.': exportOf('index') },
       files: ['dist/'],
+      homepage: 'https://example.com/logbook/',
       repository: {
         type: 'git',
         url: 'git+https://github.com/developer239/logbook.git',
