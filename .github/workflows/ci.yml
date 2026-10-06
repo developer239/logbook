@@ -94,7 +94,8 @@ jobs:
       - name: 15. Package checks
         run: pnpm check:package
       # What users install: every staged package packed and installed offline, then the end-to-end suite against the
-      # installed logbook, in the order of the same seed as step 13.
+      # installed logbook, in the order of the same seed as step 13, and its offline test file again inside a network
+      # namespace with only loopback up.
       - name: 16. Installed smoke
         env:
           SEED: ${{ steps.seed.outputs.seed }}
