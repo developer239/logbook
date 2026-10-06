@@ -143,6 +143,30 @@ describe('first-run panels in the built handler', () => {
     }).toStrictEqual({ headline: true, line: true })
   })
 
+  it("shows a harness's notice holding markup as text, directly after the harness's line", async () => {
+    // Arrange
+    record('ok')
+    insert(warehouse.db, 'harness', {
+      id: 'example',
+      name: 'Example Harness',
+      default_agent: 'helper',
+      filter_alias: 'ex',
+      is_found: 1,
+      checked_at: AT,
+      location: '~/.example/data',
+      location_variables: '[]',
+      notice: '<img src=x>',
+    })
+
+    // Act
+    const { body } = await fetchPage(built.origin, '/')
+
+    // Assert
+    expect(body).toMatch(
+      /Example Harness<\/b>\s*<span>found at ~\/.example\/data<\/span>\s*<span class="first-run__notice">&lt;img src=x&gt;<\/span>/u
+    )
+  })
+
   it('shows the missing warehouse panel, with its path, on every page of an app that never opened one', async () => {
     // Arrange
     const missing = join(warehouse.path, '..', 'missing', 'warehouse.db')

@@ -29,6 +29,11 @@
   color: var(--text-2);
 }
 
+/* A harness's drift notice: a line of its own under the harness's line, in its tone. */
+.first-run__notice {
+  flex-basis: 100%;
+}
+
 .first-run__name {
   font-weight: 600;
   color: var(--text-1);

@@ -19,10 +19,12 @@ export type FirstRunKind =
   | 'sync-failed'
   | 'never-synced'
 
-// A harness descriptor's display name, then what discovery found for it.
+// A harness descriptor's display name, then what discovery found for it, and on a line of its own under it the
+// harness's drift notice, if the last sync stored one.
 export interface IHarnessLine {
   name: string
   text: string
+  notice: string | null
 }
 
 // What every page shows in its place while the warehouse has nothing to show, with the one action that moves on.
@@ -71,15 +73,15 @@ export const harnessLine = (harness: IHarness): IHarnessLine => {
   const variable = harness.locationVariables[0]
 
   if (harness.problem !== null) {
-    return { name: harness.name, text: harness.problem }
+    return { name: harness.name, text: harness.problem, notice: harness.notice }
   }
 
   if (harness.isFound) {
-    return { name: harness.name, text: `found${at}` }
+    return { name: harness.name, text: `found${at}`, notice: harness.notice }
   }
 
   const elsewhere = variable === undefined ? '' : `; set ${variable} if ${harness.name} keeps its data elsewhere`
-  return { name: harness.name, text: `not found${at}${elsewhere}` }
+  return { name: harness.name, text: `not found${at}${elsewhere}`, notice: harness.notice }
 }
 
 const unreadablePanel = (): IFirstRun | null => {
@@ -193,17 +195,26 @@ const RUNNING: Record<SyncLockOperation, { label: string; title: string }> = {
   sync: { label: 'Syncing…', title: SYNC_TITLE },
 }
 
-const lastSync = (record: ISyncRecord | undefined, now: number): ISyncControl => {
+// Each harness's drift notice, harnesses in the order of their display names. A notice is information, not a problem:
+// it changes no label, tone or button.
+const notices = (): string[] =>
+  [...harnessesOf().values()]
+    .toSorted((left, right) => left.name.localeCompare(right.name))
+    .flatMap((harness) => (harness.notice === null ? [] : [harness.notice]))
+
+// A title the record decides, followed by each notice, one per line: a line feed in a title shows as a line break.
+const lastSync = (record: ISyncRecord | undefined, now: number, driftNotices: readonly string[]): ISyncControl => {
   if (record === undefined) {
     return { label: 'Never synced', title: SYNC_TITLE, tone: 'hollow', isRunning: false }
   }
 
   const when = ago(record.endedAt ?? record.startedAt, now)
-  const title = record.error ?? SYNC_TITLE
+  const withNotices = (first: string): string => [first, ...driftNotices].join('\n')
+  const title = withNotices(record.error ?? SYNC_TITLE)
 
   switch (record.endedAt === null ? null : record.outcome) {
     case 'ok':
-      return { label: `Synced ${when}`, title: SYNC_TITLE, tone: 'good', isRunning: false }
+      return { label: `Synced ${when}`, title: withNotices(SYNC_TITLE), tone: 'good', isRunning: false }
     case 'partial':
       return { label: `Synced ${when}, with problems`, title, tone: 'problem', isRunning: false }
     case 'failed':
@@ -213,8 +224,9 @@ const lastSync = (record: ISyncRecord | undefined, now: number): ISyncControl =>
   }
 }
 
-// A held lock says what runs now, the newest record only how the last sync ended, so the lock decides first. A
-// warehouse the app cannot read has no record to read.
+// A held lock says what runs now, the newest record only how the last sync ended, so the lock decides first; a running
+// sync rewrites the notices as it goes, so the lock states show none. A warehouse the app cannot read has no record
+// to read.
 export const syncControl = (now = Date.now()): ISyncControl => {
   const lock = readSyncLock(resolveWarehousePath())
 
@@ -223,5 +235,9 @@ export const syncControl = (now = Date.now()): ISyncControl => {
     return { label: `${label} (since ${elapsed(now - lock.startedAt)})`, title, tone: 'slow', isRunning: true }
   }
 
-  return lastSync(unreadable() === null ? newestRecord() : undefined, now)
+  if (unreadable() !== null) {
+    return lastSync(undefined, now, [])
+  }
+
+  return lastSync(newestRecord(), now, notices())
 }

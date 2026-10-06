@@ -9,6 +9,9 @@ import { emptyWarehouse, insert, type ITestWarehouse } from './testing/warehouse
 import { MINUTE } from './time'
 
 const RUN_IN_TERMINAL = 'Run logbook sync in a terminal to see the full output.'
+// Drift notices in the engine's sentence shapes, for an invented harness; the app shows any text as written.
+const VERSION_NOTICE = 'Recorded by Example Harness 9.1.0; this Log Book is tested with 9.0.'
+const TWO_SENTENCES = `${VERSION_NOTICE} Example Harness data was written in format 0042_example_change; this Log Book is tested up to 0041_example_start.`
 
 const START = Date.UTC(2026, 8, 14, 10)
 
@@ -147,8 +150,9 @@ describe('first run, after a sync', () => {
         {
           name: 'Example Harness',
           text: 'not found at ~/.example/data; set EXAMPLE_HOME if Example Harness keeps its data elsewhere',
+          notice: null,
         },
-        { name: 'Sample Harness', text: 'not found' },
+        { name: 'Sample Harness', text: 'not found', notice: null },
       ],
       notes: [],
       canSync: true,
@@ -165,7 +169,39 @@ describe('first run, after a sync', () => {
     const shown = state.firstRun()
 
     // Assert
-    expect(shown?.harnesses).toStrictEqual([{ name: 'Example Harness', text: 'found at ~/.example/data' }])
+    expect(shown?.harnesses).toStrictEqual([
+      { name: 'Example Harness', text: 'found at ~/.example/data', notice: null },
+    ])
+  })
+
+  it("puts a found harness's two-sentence notice under its line, and nothing under a harness without one", () => {
+    // Arrange
+    record('ok')
+    harness({ id: 'example', name: 'Example Harness', is_found: 1, location: '~/.example/data', notice: TWO_SENTENCES })
+    harness({ id: 'sample', name: 'Sample Harness' })
+
+    // Act
+    const shown = state.firstRun()
+
+    // Assert
+    expect(shown?.harnesses).toStrictEqual([
+      { name: 'Example Harness', text: 'found at ~/.example/data', notice: TWO_SENTENCES },
+      { name: 'Sample Harness', text: 'not found', notice: null },
+    ])
+  })
+
+  it("puts a harness's notice under its problem after a partial sync", () => {
+    // Arrange
+    record('partial', 'Example Harness could not be read')
+    harness({ id: 'example', name: 'Example Harness', problem: 'could not read ~/.example', notice: VERSION_NOTICE })
+
+    // Act
+    const shown = state.firstRun()
+
+    // Assert
+    expect(shown?.harnesses).toStrictEqual([
+      { name: 'Example Harness', text: 'could not read ~/.example', notice: VERSION_NOTICE },
+    ])
   })
 
   it("shows a harness's problem after a partial sync, and the record's error under the list", () => {

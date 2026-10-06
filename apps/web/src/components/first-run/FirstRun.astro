@@ -20,6 +20,7 @@ const { firstRun, back } = Astro.props
           <li class="first-run__harness">
             <b class="first-run__name">{harness.name}</b>
             <span>{harness.text}</span>
+            {harness.notice !== null && <span class="first-run__notice">{harness.notice}</span>}
           </li>
         ))}
       </ul>

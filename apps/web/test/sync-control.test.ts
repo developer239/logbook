@@ -7,6 +7,11 @@ import { mountBuiltHandler, type IBuiltHandler } from './built-handler'
 
 const SYNC_TITLE = 'Import what changed since the last sync'
 const MINUTE = 60_000
+// Drift notices in the engine's sentence shapes, for two invented harnesses whose ids sort the other way round from
+// their display names.
+const EXAMPLE_NOTICE = 'Recorded by Example Harness 9.1.0; this Log Book is tested with 9.0.'
+const ZETA_NOTICE =
+  'Zeta Harness data was written in format 0042_example_change; this Log Book is tested up to 0041_example_start.'
 
 let warehouse: ITestWarehouse
 let built: IBuiltHandler
@@ -19,6 +24,32 @@ let held: IHeldLock | undefined
 const record = (outcome: string | null, error: string | null, isEnded = true): void => {
   const at = Date.now() - 5 * MINUTE
   insert(warehouse.db, 'sync_run', { started_at: at - 1000, ended_at: isEnded ? at : null, outcome, error })
+}
+
+// A harness's descriptor row with its drift notice, as a sync writes it.
+const harness = (id: string, name: string, notice: string | null): void => {
+  insert(warehouse.db, 'harness', {
+    id,
+    name,
+    default_agent: 'helper',
+    filter_alias: id,
+    is_found: 1,
+    checked_at: Date.now(),
+    location_variables: '[]',
+    notice,
+  })
+}
+
+// A notice that would close the attribute and add an element if it were not escaped.
+const MARKUP_NOTICE = '"><img src=x>'
+
+// An attribute's value as the browser reads it.
+const attributeText = (value: string): string =>
+  value.replaceAll('&quot;', '"').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&')
+
+const twoNotices = (): void => {
+  harness('alpha', 'Zeta Harness', ZETA_NOTICE)
+  harness('beta', 'Example Harness', EXAMPLE_NOTICE)
 }
 
 // The top bar's Sync control as the page renders it.
@@ -57,7 +88,7 @@ beforeAll(async () => {
 afterEach(() => {
   held?.release()
   held = undefined
-  warehouse.db.exec('DELETE FROM sync_run')
+  warehouse.db.exec('DELETE FROM sync_run; DELETE FROM harness')
 })
 
 afterAll(async () => {
@@ -149,5 +180,79 @@ describe('the Sync control in the built handler', () => {
 
     // Assert
     expect(shown).toStrictEqual({ label, title, tone: 'slow', isDisabled: true })
+  })
+  it('follows the title of a good sync with each notice on a line of its own, by display name', async () => {
+    // Arrange
+    record('ok', null)
+    twoNotices()
+
+    // Act
+    const shown = await control()
+
+    // Assert
+    expect(shown).toStrictEqual({
+      label: 'Synced 5 min ago',
+      title: `${SYNC_TITLE}\n${EXAMPLE_NOTICE}\n${ZETA_NOTICE}`,
+      tone: 'good',
+      isDisabled: false,
+    })
+  })
+
+  it.for([
+    ['partial', 'Synced 5 min ago, with problems'],
+    ['failed', 'Sync failed 5 min ago'],
+  ] as const)("follows a %s sync's error with the notices", async ([outcome, label]) => {
+    // Arrange
+    record(outcome, 'the disk is full')
+    twoNotices()
+
+    // Act
+    const shown = await control()
+
+    // Assert
+    expect(shown).toStrictEqual({
+      label,
+      title: `the disk is full\n${EXAMPLE_NOTICE}\n${ZETA_NOTICE}`,
+      tone: 'problem',
+      isDisabled: false,
+    })
+  })
+
+  it('shows the title alone when no harness has a notice', async () => {
+    // Arrange
+    record('ok', null)
+    harness('alpha', 'Zeta Harness', null)
+    harness('beta', 'Example Harness', null)
+
+    // Act
+    const shown = await control()
+
+    // Assert
+    expect(shown.title).toBe(SYNC_TITLE)
+  })
+
+  it.for(['sync', 'compact'] as const)('shows no notice while the lock is held as %s', async (operation) => {
+    // Arrange
+    record('ok', null)
+    twoNotices()
+    held = takeSyncLock(warehouse.path, operation, { pid: holderPid })
+
+    // Act
+    const shown = await control()
+
+    // Assert
+    expect([EXAMPLE_NOTICE, ZETA_NOTICE].filter((notice) => String(shown.title).includes(notice))).toStrictEqual([])
+  })
+
+  it('renders a notice holding markup as text in the title, which a quote in it cannot leave', async () => {
+    // Arrange
+    record('ok', null)
+    harness('beta', 'Example Harness', MARKUP_NOTICE)
+
+    // Act
+    const shown = await control()
+
+    // Assert
+    expect(attributeText(String(shown.title))).toBe(`${SYNC_TITLE}\n${MARKUP_NOTICE}`)
   })
 })
