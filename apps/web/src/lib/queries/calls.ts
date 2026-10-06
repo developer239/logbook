@@ -4,12 +4,12 @@ import { countBy, sumBy } from '../lists'
 import type { IRange } from '../range'
 import { CALL_AT, failureLabel, purposeLabel } from '../sql'
 import { SECOND } from '../time'
-import { normalName, toolName } from '../tools'
 import { all, get, syncedAt } from '../warehouse'
 import type { ISqlCondition } from './paged'
 
 export interface IFailedCall {
   id: string
+  // The name without its server's prefix, as the adapter recorded it.
   name: string
   family: string
   at: number
@@ -18,7 +18,7 @@ export interface IFailedCall {
 
 export const failedCalls = (from: number, to: number): IFailedCall[] =>
   all(
-    `SELECT tc.id, tc.name, tc.family, ${CALL_AT} AS at, ${failureLabel('tc')} AS label
+    `SELECT tc.id, tc.bare_name AS name, tc.family, ${CALL_AT} AS at, ${failureLabel('tc')} AS label
      FROM tool_call tc WHERE tc.status = 'error' AND ${CALL_AT} >= ? AND ${CALL_AT} < ?`,
     from,
     to
@@ -85,6 +85,7 @@ export const isProblem = (family: string, label: string): ISqlCondition => {
 }
 
 export interface ICallLike {
+  // The name without its server's prefix.
   name: string
   family: string
   purpose: string | null
@@ -100,21 +101,20 @@ export const SLOW_FACTOR = 10
 export const SLOW_FLOOR_MS = 30 * SECOND
 export const USUAL_MIN_CALLS = 20
 
-const WAITING_FAMILIES = new Set(['subagent', 'dispatch', 'question'])
-const WAITING_TOOLS = new Set(['monitor', 'oc_wait_runs', 'orch_wait', 'taskoutput', 'sleep'])
+// Calls that wait on something else by design: another agent, the human, or a wait itself.
+const WAITING_FAMILIES = new Set(['subagent', 'dispatch', 'question', 'wait'])
 const WAITING_PURPOSE = 'wait for something'
 
 let baselineCache: { syncedAt: number | null; usual: Map<string, number> } | undefined
 
 export const slowKey = (call: ICallLike): string =>
-  call.family === 'shell' ? `${toolName(call.name)} · ${purposeName(call.purpose) ?? 'other'}` : toolName(call.name)
+  call.family === 'shell' ? `${call.name} · ${purposeName(call.purpose) ?? 'other'}` : call.name
 
-const isWaiting = (call: ICallLike): boolean =>
-  WAITING_FAMILIES.has(call.family) || WAITING_TOOLS.has(normalName(call.name)) || call.purpose === WAITING_PURPOSE
+const isWaiting = (call: ICallLike): boolean => WAITING_FAMILIES.has(call.family) || call.purpose === WAITING_PURPOSE
 
 const timedCalls = (from: number, to: number): ITimedCall[] =>
   all<ITimedCall>(
-    `SELECT tc.id, tc.name, tc.family, tc.ended_at - tc.started_at AS durationMs, tc.started_at AS at,
+    `SELECT tc.id, tc.bare_name AS name, tc.family, tc.ended_at - tc.started_at AS durationMs, tc.started_at AS at,
        ${purposeLabel('tc')} AS purpose
      FROM tool_call tc WHERE tc.started_at IS NOT NULL AND tc.ended_at IS NOT NULL
        AND tc.started_at >= ? AND tc.started_at < ?`,

@@ -196,13 +196,11 @@ describe('calledPlugins', () => {
       { name: 'jira_get_issue', plugin: 'jira', calls: 1, definitionTokens: null },
       { name: 'oc_run', plugin: 'opencode', calls: 1, definitionTokens: 1200 },
       { name: 'oc_run', plugin: 'opencode', calls: 1, definitionTokens: 1200 },
-      { name: 'old_tool', plugin: null, calls: 1, definitionTokens: null },
     ])
 
     expect(plugins).toEqual([
       { plugin: 'opencode', tools: [{ name: 'oc_run', calls: 2, definitionTokens: 1200 }] },
       { plugin: 'jira', tools: [{ name: 'jira_get_issue', calls: 1, definitionTokens: null }] },
-      { plugin: null, tools: [{ name: 'old_tool', calls: 1, definitionTokens: null }] },
     ])
   })
 })

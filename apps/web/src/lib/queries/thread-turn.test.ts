@@ -69,6 +69,8 @@ describe('sessionOf', () => {
       id: 'c-bash-fail',
       messageId: 'm-me-2',
       name: 'Bash',
+      bareName: 'Bash',
+      server: null,
       family: 'shell',
       status: 'error',
       inputJson: '{"command":"npm test"}',
@@ -136,7 +138,7 @@ describe('thread', () => {
       durationMs: 4 * MINUTE,
     })
     expect(turns[0]?.spawned[0]?.turns.map((row) => [row.prompt?.text, row.harnessLines])).toEqual([
-      ['Review the widget', ['Base directory for this skill: /skills/writing']],
+      ['Review the widget', ['Skill: writing']],
     ])
   })
 

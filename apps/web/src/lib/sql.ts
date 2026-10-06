@@ -55,9 +55,8 @@ export const retryLoop = (call: string): string => `COUNT(*) >= 3 AND SUM(${call
 export const literal = (value: string): string =>
   `replace(replace(replace(${value}, '\\', '\\\\'), '%', '\\%'), '_', '\\_')`
 
-// Binds the name twice.
-export const toolIs = (name: string): string =>
-  `(lower(${name}) = lower(?) OR lower(${name}) LIKE 'mcp\\_\\_%\\_\\_' || ${literal('lower(?)')} ESCAPE '\\')`
+// A call of the tool by its name without its server's prefix, in any case.
+export const toolIs = (call: string): string => `lower(${call}.bare_name) = lower(?)`
 
 export const failureLabel = (call: string): string =>
   `CASE WHEN ${call}.status <> 'error' THEN NULL

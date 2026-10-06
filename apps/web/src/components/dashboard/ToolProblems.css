@@ -45,64 +45,6 @@
   color: var(--problem);
 }
 
-.tool-problems__bugs {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4) var(--space-4);
-}
-
-.tool-problems__bugs-title {
-  grid-column: 1 / -1;
-  margin: 0;
-  font-size: var(--text-ui);
-  font-weight: 600;
-}
-
-.tool-problems__bugs-aside {
-  font-weight: 400;
-  color: var(--text-2);
-}
-
-.tool-problems__bug {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'tool state'
-    'tally tally';
-  gap: 0.125rem var(--space-3);
-  padding: 0.625rem 0.875rem;
-  background: var(--surface-2);
-  transition: background var(--fast);
-}
-
-.tool-problems__bug:hover {
-  background: var(--surface-3);
-}
-
-.tool-problems__bug-tool {
-  grid-area: tool;
-  overflow: hidden;
-  color: var(--text-1);
-  text-overflow: ellipsis;
-}
-
-.tool-problems__bug-tally {
-  grid-area: tally;
-  font-size: var(--text-sm);
-  color: var(--text-2);
-}
-
-.tool-problems__bug-state {
-  grid-area: state;
-  font-size: var(--text-sm);
-}
-
-@media (min-width: 48rem) {
-  .tool-problems__bugs {
-    padding: var(--space-3) 1.125rem var(--space-4);
-  }
-}
-
 @media (min-width: 75rem) {
   .tool-problems__line {
     flex-wrap: nowrap;

@@ -30,7 +30,11 @@ export interface IMessageRow {
 export interface IToolRow {
   id: string
   messageId: string
+  // The name as the harness recorded it, and without its server's prefix.
   name: string
+  bareName: string
+  // The MCP server that offers the tool; null for the harness's own.
+  server: string | null
   family: string
   status: string
   inputJson: string
@@ -57,6 +61,14 @@ export interface ITurn extends ITurnRow {
   tools: IToolRow[]
 }
 
+export interface ISkillLoad {
+  at: number
+  name: string
+  chars: number
+  // The call that loaded it, when one did.
+  toolCallId: string | null
+}
+
 export interface IChildTurn {
   sessionId: string
   turnId: string
@@ -76,8 +88,11 @@ export interface ISession {
   messageById: Map<string, IMessageRow>
   tools: IToolRow[]
   toolsByMessage: Map<string, IToolRow[]>
+  // Every skill the session loaded, as its skill-loaded events recorded it.
+  skillLoads: ISkillLoad[]
   callsByName: Map<string, number>
-  // By the tool's full name, Claude Code only; the latest size where a tool was recorded more than once.
+  // By the tool's full name, as the session's tools-loaded events recorded it; the latest size where a tool was
+  // recorded more than once.
   definitionTokens: Map<string, number>
   // By the prompt's message id, the most pressing first.
   reactions: Map<string, string[]>
@@ -192,7 +207,7 @@ export const sessionOf = (cache: ISessionCache, sessionId: string): ISession => 
   )
 
   const tools = all<IToolRow>(
-    `SELECT tc.id, tc.message_id AS messageId, tc.name, tc.family, tc.status, tc.input_json AS inputJson,
+    `SELECT tc.id, tc.message_id AS messageId, tc.name, tc.bare_name AS bareName, tc.server, tc.family, tc.status, tc.input_json AS inputJson,
        tc.started_at AS startedAt, tc.ended_at AS endedAt,
        (SELECT p.text FROM part p WHERE p.tool_call_id = tc.id AND p.kind = 'tool_result' LIMIT 1) AS output,
        ${purposeLabel('tc')} AS purpose, ${failureLabel('tc')} AS label
@@ -220,6 +235,12 @@ export const sessionOf = (cache: ISessionCache, sessionId: string): ISession => 
     messageById: new Map(messages.map((message) => [message.id, message])),
     tools,
     toolsByMessage: Map.groupBy(tools, (tool) => tool.messageId),
+    skillLoads: all<ISkillLoad>(
+      `SELECT e.at, json_extract(e.data_json, '$.name') AS name, json_extract(e.data_json, '$.chars') AS chars,
+         json_extract(e.data_json, '$.toolCallId') AS toolCallId
+       FROM event e WHERE e.session_id = ? AND e.kind = 'skill-loaded' ORDER BY e.at, e.id`,
+      sessionId
+    ),
     callsByName: countBy(tools, (tool) => tool.name),
     definitionTokens: new Map(
       all<{ name: string; chars: number }>(

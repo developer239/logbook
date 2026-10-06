@@ -1,7 +1,6 @@
 import type { ISqliteDb } from '@log-book/core'
 import { parseRange, type IRange } from '../range'
 import { DAY, MINUTE, SECOND } from '../time'
-import { parseMcpName, toolName } from '../tools'
 import { insert } from './warehouse'
 
 // A small, invented set of conversations that exercises every query: one
@@ -24,7 +23,7 @@ interface ILabel {
   version?: number
 }
 
-const label = (db: ISqliteDb, row: ILabel): void => {
+export const label = (db: ISqliteDb, row: ILabel): void => {
   insert(db, 'label', {
     record_type: row.recordType,
     record_id: row.recordId,
@@ -153,6 +152,9 @@ interface IToolCallRow {
   sessionId: string
   messageId: string
   name: string
+  // The name without its server's prefix, and the server, as an adapter records them; the name and none by default.
+  bareName?: string
+  server?: string
   family: string
   status?: 'completed' | 'error'
   input?: string
@@ -163,14 +165,14 @@ interface IToolCallRow {
   result?: string
 }
 
-const toolCall = (db: ISqliteDb, row: IToolCallRow): void => {
+export const toolCall = (db: ISqliteDb, row: IToolCallRow): void => {
   insert(db, 'tool_call', {
     id: row.id,
     session_id: row.sessionId,
     message_id: row.messageId,
     name: row.name,
-    bare_name: toolName(row.name),
-    server: parseMcpName(row.name)?.server ?? null,
+    bare_name: row.bareName ?? row.name,
+    server: row.server ?? null,
     family: row.family,
     input_json: row.input ?? '{}',
     status: row.status ?? 'completed',
@@ -306,7 +308,15 @@ export const seedRows = (db: ISqliteDb): void => {
     seq: 3,
     actor: 'harness',
     at: START + 8 * MINUTE,
-    text: 'Base directory for this skill: /skills/writing\nWrite plainly.',
+    text: 'Skill: writing\nWrite plainly.',
+  })
+  // The harness recorded the skill that message loads, at the message's own time.
+  insert(db, 'event', {
+    id: 'ev-skill',
+    session_id: 'ses-agent',
+    kind: 'skill-loaded',
+    at: START + 8 * MINUTE,
+    data_json: JSON.stringify({ name: 'writing', chars: 61, toolCallId: null }),
   })
 
   message(db, {
@@ -402,7 +412,7 @@ export const seedRows = (db: ISqliteDb): void => {
     sessionId: 'ses-me',
     messageId: 'm-me-2',
     name: 'ToolSearch',
-    family: 'builtin',
+    family: 'tool-search',
     startedAt: null,
     result: '(tool reference: mcp__opencode__notes_add)',
   })
@@ -462,7 +472,9 @@ export const seedRows = (db: ISqliteDb): void => {
     sessionId: 'ses-me',
     messageId: 'm-me-5',
     name: 'mcp__opencode__notes_add',
-    family: 'cookbook:notes',
+    bareName: 'notes_add',
+    server: 'opencode',
+    family: 'mcp:opencode',
     input: '{"text":"hi"}',
     startedAt: START + 11 * MINUTE + 30 * SECOND,
     result: 'saved',

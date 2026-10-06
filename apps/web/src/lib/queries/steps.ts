@@ -2,7 +2,6 @@ import { ParamError } from '../errors'
 import { causeOf } from '../labels'
 import type { IRange } from '../range'
 import { CALL_AT, callAt, failureLabel, purposeLabel, retryLoop, titleOf, toolIs, turnOfCall } from '../sql'
-import { toolName } from '../tools'
 import { all } from '../warehouse'
 import { hasCause, isProblem, isRealResult, isSlow, slowKey, usualTime } from './calls'
 import { allOf, type ISqlCondition, pagedRows } from './paged'
@@ -58,7 +57,7 @@ const PAGE_SIZE = 100
 
 type CallRow = Omit<IStepRow, 'cause' | 'usualMs' | 'title' | 'turnId'> & { label: string | null }
 
-const COLUMNS = `tc.id, tc.session_id AS sessionId, tc.name, tc.family, tc.status, tc.input_json AS inputJson,
+const COLUMNS = `tc.id, tc.session_id AS sessionId, tc.bare_name AS name, tc.family, tc.status, tc.input_json AS inputJson,
   ${CALL_AT} AS at, tc.ended_at - tc.started_at AS durationMs,
   ${purposeLabel('tc')} AS purpose, ${failureLabel('tc')} AS label`
 
@@ -74,7 +73,7 @@ const conditionsOf = (query: IStepsQuery, range: IRange): ISqlCondition => {
     ...(query.cause === null ? [] : [hasCause('tc.family', label, [query.cause])]),
     ...(query.real ? [isRealResult('tc.family', label)] : []),
     ...(query.slow === null ? [] : [{ sql: 'tc.started_at IS NOT NULL AND tc.ended_at IS NOT NULL', params: [] }]),
-    ...(query.tool === null ? [] : [{ sql: toolIs('tc.name'), params: [query.tool, query.tool] }]),
+    ...(query.tool === null ? [] : [{ sql: toolIs('tc'), params: [query.tool] }]),
     ...(query.loop
       ? [
           {
@@ -124,7 +123,6 @@ export const steps = (
   return {
     rows: shown.map(({ label: _label, ...call }) => ({
       ...call,
-      name: toolName(call.name),
       title: byId.get(call.id)?.title ?? null,
       turnId: byId.get(call.id)?.turnId ?? null,
       usualMs: call.durationMs === null ? null : usualTime(call),

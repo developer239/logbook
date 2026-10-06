@@ -116,7 +116,7 @@ describe('retryLoops', () => {
 
 describe('toolProblems', () => {
   it('should group the failures that were a problem by cause as shown, the commonest first', () => {
-    const { causes, failed, realResults, bugs } = problems.toolProblems(everything())
+    const { causes, failed, realResults } = problems.toolProblems(everything())
 
     expect(causes.map((cause) => [cause.cause, cause.calls, cause.roseFrom])).toEqual([
       ['Called the tool wrong', 2, null],
@@ -126,7 +126,6 @@ describe('toolProblems', () => {
     expect(causes[0]?.tools.toSorted()).toEqual(['Bash', 'Edit'])
     expect(failed).toBe(4)
     expect(realResults).toBe(1)
-    expect(bugs).toEqual([])
   })
 
   it('should count the failures of the last seven days, all of them in the week', () => {
@@ -171,14 +170,14 @@ describe('effort', () => {
 })
 
 describe('toolTokens', () => {
-  it('should estimate what a cookbook tool costs: its calls and the definition a session recorded loading', () => {
+  it('should estimate what a plugin tool costs under its recorded server: its calls and the definition a session recorded loading', () => {
     const notes = toolTokens
       .toolTokens(everything())
-      .find((row) => row.name === 'notes_add' && row.source.name === 'notes')
+      .find((row) => row.name === 'notes_add' && row.source.name === 'opencode')
 
     expect(notes).toEqual({
       name: 'notes_add',
-      source: { kind: 'plugin', name: 'notes' },
+      source: { kind: 'plugin', name: 'opencode' },
       calls: 1,
       typicalTokens: 5,
       totalTokens: 5,
@@ -186,7 +185,7 @@ describe('toolTokens', () => {
     })
   })
 
-  it('should not take another server tool for the cookbook tool it is named like', () => {
+  it('should not take a tool of another server for the one it is named like', () => {
     const docs = toolTokens.toolTokens(everything()).find((row) => row.source.name === 'claude_ai_Docs')
 
     expect(docs).toMatchObject({ name: 'notes_add', calls: 1, definitionTokens: null })

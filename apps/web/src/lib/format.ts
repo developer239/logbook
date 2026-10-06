@@ -120,7 +120,7 @@ export const when = (at: number, now: number = Date.now()): string => {
   return day(at, now)
 }
 
-export const day = (at: number, now: number = Date.now()): string => {
+const day = (at: number, now: number = Date.now()): string => {
   const date = new Date(at)
   const label = `${MONTHS[date.getMonth()] ?? ''} ${String(date.getDate())}`
   return date.getFullYear() === new Date(now).getFullYear() ? label : `${label} ${String(date.getFullYear())}`

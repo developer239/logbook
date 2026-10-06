@@ -3,14 +3,13 @@ import { typical } from '../format'
 import { sum } from '../lists'
 import type { IRange } from '../range'
 import { CALL_AT } from '../sql'
-import { isCookbookFamily, normalName, skillNameOf, SKILL_BODY, SKILL_TOOL, toolName } from '../tools'
 import { all } from '../warehouse'
 
 // The warehouse counts tokens per model request, not per call, so a call's cost
 // is estimated from the text it puts in the context: what the model wrote to
-// call it and what came back. A skill is counted by the text it loads, from the
-// skill tool (OpenCode) or the message Claude Code injects, which a slash
-// command loads as well. A tool's definition size is what the sessions in the
+// call it and what came back. A skill is counted by the text each load put in
+// the context, as its skill-loaded event recorded it, and by the request of the
+// call that loaded it. A tool's definition size is what the sessions in the
 // range recorded loading for it.
 
 export interface IToolSource {
@@ -31,17 +30,8 @@ export interface IToolTokens {
 const BUILT_IN: IToolSource = { kind: 'built-in', name: 'Built in' }
 const SKILLS: IToolSource = { kind: 'skills', name: 'Skills' }
 
-const sourceOf = (family: string, name: string): IToolSource => {
-  if (isCookbookFamily(family)) {
-    return { kind: 'plugin', name: toolName(name).split('_')[0] ?? toolName(name) }
-  }
-
-  if (family.startsWith('mcp:')) {
-    return { kind: 'plugin', name: family.slice('mcp:'.length) }
-  }
-
-  return BUILT_IN
-}
+// A call that recorded an MCP server groups under it; every other call is the harness's own.
+const sourceOf = (server: string | null): IToolSource => (server === null ? BUILT_IN : { kind: 'plugin', name: server })
 
 interface IGroup {
   name: string
@@ -67,12 +57,25 @@ const definitionSizes = (range: IRange): Map<string, number> => {
 const largest = (known: number | null, size: number | undefined): number | null =>
   size === undefined ? known : Math.max(known ?? 0, size)
 
+interface ICallRow {
+  id: string
+  name: string
+  bareName: string
+  server: string | null
+  requestChars: number
+  chars: number
+}
+
+interface ISkillLoad {
+  name: string
+  chars: number
+  toolCallId: string | null
+}
+
 export const toolTokens = (range: IRange): IToolTokens[] => {
   const definitions = definitionSizes(range)
-  const calls = all<{ name: string; family: string; harness: string; skill: string | null; chars: number }>(
-    `SELECT tc.name, tc.family, (SELECT s.harness FROM session s WHERE s.id = tc.session_id) AS harness,
-       CASE WHEN lower(tc.name) = '${SKILL_TOOL}' THEN COALESCE(json_extract(tc.input_json, '$.skill'),
-         json_extract(tc.input_json, '$.name'), json_extract(tc.input_json, '$.id')) END AS skill,
+  const calls = all<ICallRow>(
+    `SELECT tc.id, tc.name, tc.bare_name AS bareName, tc.server, length(tc.input_json) AS requestChars,
        length(tc.input_json) + COALESCE((SELECT SUM(length(p.text)) FROM part p
          WHERE p.tool_call_id = tc.id AND p.kind = 'tool_result'), 0) AS chars
      FROM tool_call tc WHERE ${CALL_AT} >= ? AND ${CALL_AT} < ?`,
@@ -80,11 +83,10 @@ export const toolTokens = (range: IRange): IToolTokens[] => {
     range.to
   )
 
-  const bodies = all<{ head: string; chars: number }>(
-    `SELECT substr(p.text, 1, instr(p.text || char(10), char(10)) - 1) AS head, length(p.text) AS chars
-     FROM part p JOIN message m ON m.id = p.message_id
-     WHERE m.actor = 'harness' AND p.kind = 'text' AND p.text LIKE '${SKILL_BODY}%'
-       AND m.created_at >= ? AND m.created_at < ?`,
+  const loads = all<ISkillLoad>(
+    `SELECT json_extract(e.data_json, '$.name') AS name, json_extract(e.data_json, '$.chars') AS chars,
+       json_extract(e.data_json, '$.toolCallId') AS toolCallId
+     FROM event e WHERE e.kind = 'skill-loaded' AND e.at >= ? AND e.at < ?`,
     range.from,
     range.to
   )
@@ -97,30 +99,26 @@ export const toolTokens = (range: IRange): IToolTokens[] => {
     return known
   }
 
-  for (const call of calls) {
-    if (call.skill === null) {
-      // A cookbook tool is one tool whichever harness calls it, so it is told by
-      // its name without the MCP server's; another server may name a tool alike.
-      const isCookbookCall = isCookbookFamily(call.family)
-      const group = add(`tool:${isCookbookCall ? normalName(call.name) : call.name.toLowerCase()}`, {
-        name: toolName(call.name),
-        source: sourceOf(call.family, call.name),
-      })
+  // A call that loaded a skill is part of that load, counted with the skill below.
+  const loadingCalls = new Set(loads.flatMap((load) => (load.toolCallId === null ? [] : [load.toolCallId])))
+  const requestOf = new Map(calls.map((call) => [call.id, call.requestChars]))
 
-      group.sizes.push(call.chars)
-      group.definitionChars = largest(group.definitionChars, definitions.get(call.name.toLowerCase()))
-    } else if (call.harness === 'claude-code') {
-      // A Claude Code skill call only announces the skill; its text is the
-      // message after it, counted below.
-      add(`skill:${call.skill}`, { name: call.skill, source: SKILLS }).extra += call.chars
-    } else {
-      add(`skill:${call.skill}`, { name: call.skill, source: SKILLS }).sizes.push(call.chars)
-    }
+  for (const call of calls.filter((candidate) => !loadingCalls.has(candidate.id))) {
+    // One tool by its server and its name without the server's prefix, whatever case a harness gives it.
+    const group = add(`tool:${call.server ?? ''}:${call.bareName.toLowerCase()}`, {
+      name: call.bareName,
+      source: sourceOf(call.server),
+    })
+
+    group.sizes.push(call.chars)
+    group.definitionChars = largest(group.definitionChars, definitions.get(call.name.toLowerCase()))
   }
 
-  for (const body of bodies) {
-    const name = skillNameOf(body.head)
-    add(`skill:${name}`, { name, source: SKILLS }).sizes.push(body.chars)
+  for (const load of loads) {
+    const group = add(`skill:${load.name}`, { name: load.name, source: SKILLS })
+
+    group.sizes.push(load.chars)
+    group.extra += load.toolCallId === null ? 0 : (requestOf.get(load.toolCallId) ?? 0)
   }
 
   return [...groups.values()]
