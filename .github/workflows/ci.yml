@@ -399,6 +399,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
         run: gh release edit "v$VERSION" --repo "$GITHUB_REPOSITORY" --prerelease
+      # A line for a warehouse migration and one for each labelling task with a new prompt version since the previous
+      # tag, read from files at both commits, so no engine code runs here. The first release has no previous tag.
+      - name: 4. Announce migrations and task versions
+        if: steps.version.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          previous=$(git tag --list 'v[0-9]*' --merged "v$VERSION^" --sort=-v:refname | head -1)
+          lines=$(node packages/ci/dist/index.js release-notes "$previous" "$GITHUB_SHA")
+          if [ -z "$lines" ]; then
+            echo "Nothing to announce since ${previous:-the first commit}."
+            exit 0
+          fi
+          notes="$RUNNER_TEMP/release-notes.md"
+          gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" --json body --jq .body > "$notes"
+          while IFS= read -r line; do
+            printf '\n%s\n' "$line"
+          done <<< "$lines" >> "$notes"
+          gh release edit "v$VERSION" --repo "$GITHUB_REPOSITORY" --notes-file "$notes"
+          echo "Appended to the notes of v$VERSION:"
+          echo "$lines"
 
   # The exact packages checks built and tested, published to next; packages/ci/src/rules/publish-job.yaml is its
   # template, which check:release holds it to.
