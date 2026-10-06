@@ -93,13 +93,19 @@ const median = (values: readonly number[]): number => {
 const isScriptedRun = (step: TCallStep): boolean =>
   step.family === 'shell' && String(step.input.command).startsWith('claude -p ')
 
+const familyKey = ({ writer, step }: IWrittenStep & { step: TCallStep }): string => `${String(writer)}:${step.family}`
+
+// The median duration of each writer's calls of each family, computed once.
+const usualDurations = new Map(
+  Object.entries(Object.groupBy(calls, familyKey)).map(([key, group = []]) => [
+    key,
+    median(group.map(({ step }) => durationOf(step))),
+  ])
+)
+
 // Longer than 30 seconds and ten times the median of its writer's calls of its family, in a family the card keeps.
 const isSlow = (call: IWrittenStep & { step: TCallStep }): boolean => {
-  const usual = median(
-    calls
-      .filter((other) => other.writer === call.writer && other.step.family === call.step.family)
-      .map((other) => durationOf(other.step))
-  )
+  const usual = usualDurations.get(familyKey(call)) ?? 0
   const duration = durationOf(call.step)
   return (
     !NOT_SLOW.has(call.step.family) &&
