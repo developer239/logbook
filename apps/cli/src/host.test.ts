@@ -1,9 +1,13 @@
+import type { ChildProcess } from 'node:child_process'
+import { EventEmitter } from 'node:events'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { WarehouseStore } from '@log-book/warehouse'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { IChildRegistry } from './child-registry.js'
 import { errorReport } from './errors.js'
 import { hostFilePath, writeHostFile } from './host-file.js'
 import {
@@ -52,6 +56,9 @@ const recordingSteps = (calls: string[], runningPort: number | null = null): ISt
   detect: () => {
     calls.push('detect')
   },
+  sync: () => {
+    calls.push('sync')
+  },
 })
 
 // Signals the test sends by hand.
@@ -92,6 +99,7 @@ describe('startHost', () => {
       'serve',
       'recordHost',
       'detect',
+      'sync',
     ])
   })
 
@@ -331,5 +339,86 @@ describe('bindHost', () => {
         line: `Port ${String(port)} on 127.0.0.1 is in use by another program. Start Log Book on another port: logbook --port ${String(port + 1)}`,
       }
     )
+  })
+})
+
+// Runs the host with stand-ins for the web app, detection and the registry, until it serves; then stops it.
+const serveOnce = async (values: Readonly<Record<string, number | boolean>>): Promise<number> => {
+  const warehouse = await warehouseIn()
+  vi.stubEnv('LOGBOOK_DB', warehouse)
+  vi.stubEnv('XDG_DATA_HOME', directory)
+  vi.stubEnv('LOGBOOK_CLI', '')
+  vi.stubEnv('LOGBOOK_HOST_VERSION', '')
+  let spawns = 0
+  const registry: IChildRegistry = {
+    spawn: () => {
+      spawns += 1
+      return Object.assign(new EventEmitter(), { stderr: new EventEmitter() }) as unknown as ChildProcess
+    },
+    logOf: () => join(directory, 'sync.log'),
+    terminate: async () => Promise.resolve(),
+    stop: async () => Promise.resolve(),
+    kill: () => undefined,
+  }
+  const stop = new EventEmitter()
+  const sources: IHostSources = {
+    openWarehouse: WarehouseStore.open,
+    environment: () => ({ variables: {}, homeDir: directory, cwd: directory, platform: 'linux' }),
+    loadWebApp: async () =>
+      Promise.resolve({
+        guard: { checkRequest: () => ({ isAccepted: true }), responseHeaders: () => ({}) },
+        handler: (_req, res) => {
+          res.end()
+        },
+        clientDirectory: directory,
+      }),
+    detect: async () => new Promise(() => undefined),
+    createRegistry: () => registry,
+    signals: (listener) => {
+      stop.on('signal', listener)
+      return () => stop.off('signal', listener)
+    },
+  }
+  let stdout = ''
+  const running = createHostRunner(sources)({
+    command: 'start',
+    values: { port: 0, interval: 5, ...values },
+    positionals: [],
+    version: '0.0.0-development',
+    io: {
+      argv: [],
+      env: {},
+      home: directory,
+      stdout: (text) => {
+        stdout += text
+      },
+      stderr: () => undefined,
+      isStderrTty: false,
+      signal: new AbortController().signal,
+    },
+  })
+  await vi.waitFor(() => {
+    expect(stdout).toContain('Press Ctrl+C to stop.')
+  })
+  stop.emit('signal')
+  await running
+  return spawns
+}
+
+describe('the host runner and its syncs', () => {
+  it('starts no sync with --no-sync', async () => {
+    // Act
+    const spawns = await serveOnce({ 'no-sync': true })
+
+    // Assert
+    expect(spawns).toBe(0)
+  })
+
+  it('starts the first sync once it serves', async () => {
+    // Act
+    const spawns = await serveOnce({})
+
+    // Assert
+    expect(spawns).toBe(1)
   })
 })

@@ -10,7 +10,7 @@ import type { CommandRunner } from './run-cli.js'
 export type SyncMessage =
   | { type: 'progress'; adapter: string; done: number; total: number; reread: boolean }
   | { type: 'phase'; name: 'derivations' }
-  | { type: 'done'; imported: number; unchanged: number; ms: number }
+  | { type: 'done'; imported: number; unchanged: number; ms: number; problems: readonly string[] }
 
 type SendMessage = (message: SyncMessage) => void
 
@@ -102,6 +102,7 @@ const doneMessage = (result: ISyncResult): SyncMessage => ({
   imported: result.adapters.reduce((sum, adapter) => sum + adapter.imported, 0),
   unchanged: result.adapters.reduce((sum, adapter) => sum + adapter.unchanged, 0),
   ms: result.durationMs,
+  problems: result.problems,
 })
 
 // The parent's channel when it forked this process with one; no flag decides it.

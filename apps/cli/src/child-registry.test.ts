@@ -46,7 +46,7 @@ describe('createChildRegistry', () => {
   it('starts logbook with the CLI entry and an argument array, no shell, not detached, in the host environment', () => {
     // Arrange
     const started: IStarted[] = []
-    const registry = createChildRegistry({ ...HOST_ENV }, fakeSpawn(started))
+    const registry = createChildRegistry({ ...HOST_ENV }, { start: fakeSpawn(started) })
 
     // Act
     registry.spawn(['sync', 'a b'])
@@ -85,7 +85,7 @@ describe('createChildRegistry', () => {
   it('sends SIGTERM to every child on stop, and resolves once they have ended', async () => {
     // Arrange
     const started: IStarted[] = []
-    const registry = createChildRegistry({ ...HOST_ENV }, fakeSpawn(started))
+    const registry = createChildRegistry({ ...HOST_ENV }, { start: fakeSpawn(started) })
     registry.spawn(['sync'])
     registry.spawn(['labels', 'run'])
 
@@ -104,7 +104,7 @@ describe('createChildRegistry', () => {
     // Arrange
     vi.useFakeTimers()
     const started: IStarted[] = []
-    const registry = createChildRegistry({ ...HOST_ENV }, fakeSpawn(started))
+    const registry = createChildRegistry({ ...HOST_ENV }, { start: fakeSpawn(started) })
     registry.spawn(['sync'])
 
     // Act
@@ -122,7 +122,7 @@ describe('createChildRegistry', () => {
     // Arrange
     vi.useFakeTimers()
     const started: IStarted[] = []
-    const registry = createChildRegistry({ ...HOST_ENV }, fakeSpawn(started))
+    const registry = createChildRegistry({ ...HOST_ENV }, { start: fakeSpawn(started) })
     registry.spawn(['sync'])
     void registry.stop()
 
@@ -136,7 +136,7 @@ describe('createChildRegistry', () => {
   it('forgets a child that has ended, so a stop sends it nothing', async () => {
     // Arrange
     const started: IStarted[] = []
-    const registry = createChildRegistry({ ...HOST_ENV }, fakeSpawn(started))
+    const registry = createChildRegistry({ ...HOST_ENV }, { start: fakeSpawn(started) })
     registry.spawn(['sync'])
     started[0]?.exit()
 

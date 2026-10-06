@@ -353,7 +353,7 @@ describe('logbook sync', () => {
       ])
       expect(messages).toHaveLength(22)
       expect(messages.at(-2)).toStrictEqual({ type: 'phase', name: 'derivations' })
-      expect(messages.at(-1)).toStrictEqual({ type: 'done', imported: 412, unchanged: 0, ms: 31_000 })
+      expect(messages.at(-1)).toStrictEqual({ type: 'done', imported: 412, unchanged: 0, ms: 31_000, problems: [] })
     })
 
     it('sends progress, phase and done in order to a parent that forked it with a channel, and writes stderr too', async () => {
@@ -367,7 +367,7 @@ describe('logbook sync', () => {
         { type: 'progress', adapter: 'claude-code', done: 2, total: 3, reread: false },
         { type: 'progress', adapter: 'claude-code', done: 3, total: 3, reread: false },
         { type: 'phase', name: 'derivations' },
-        { type: 'done', imported: 2, unchanged: 1, ms: 1200 },
+        { type: 'done', imported: 2, unchanged: 1, ms: 1200, problems: [] },
       ])
       expect(lines(result.stderr)).toStrictEqual([
         'Claude Code: 1 of 3 checked',

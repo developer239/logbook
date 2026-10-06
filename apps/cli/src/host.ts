@@ -12,9 +12,11 @@ import { errorReport, exitCodeOf, PortTakenError } from './errors.js'
 import { ADAPTERS } from './grammar.js'
 import { deleteHostFile, hostFilePath, isLogBookAt, runningHost, writeHostFile } from './host-file.js'
 import { closeServer, createRequestListener, HOST_ADDRESS, listen, portOf, type IWebApp } from './host-server.js'
+import { createHostSyncs, type IHostSyncs } from './host-sync.js'
 import { hostLabellingLine } from './labelling-lines.js'
 import { requiredIntegerOf } from './option-values.js'
 import type { CommandRunner } from './run-cli.js'
+import { createSyncLogs, type ISyncLogs } from './sync-logs.js'
 import { WEB_BUILD } from './web-build.js'
 
 const HOST_COLUMN = 13
@@ -41,8 +43,8 @@ export interface IServing {
   kill: () => void
 }
 
-// The steps of the start this command owns, by their number in the start sequence. Opening the browser (8), the
-// first sync (10) and the schedule (11) take their places between them.
+// The steps of the start this command owns, by their number in the start sequence. Opening the browser (8) takes its
+// place between them.
 export interface IStartSteps {
   // 2: the paths, before anything opens the warehouse.
   resolvePaths: () => IHostPaths
@@ -53,11 +55,13 @@ export interface IStartSteps {
   // 5: the version, the warehouse line and the discovery lines.
   announce: (opened: IOpenedWarehouse) => Promise<void>
   // 6: the children's environment, the server on 127.0.0.1 and the URL.
-  serve: () => Promise<IServing>
+  serve: (paths: IHostPaths) => Promise<IServing>
   // 7: the host file, with the bound port.
   recordHost: (paths: IHostPaths, serving: IServing) => void
   // 9: labelling detection, in the background; it never delays the URL.
   detect: () => void
+  // 10 and 11: the first sync, then a sync every interval, in the background.
+  sync: () => void
 }
 
 export type StartOutcome =
@@ -72,9 +76,10 @@ export const startHost = async (steps: IStartSteps): Promise<StartOutcome> => {
   }
   const opened = await steps.migrate(paths)
   await steps.announce(opened)
-  const serving = await steps.serve()
+  const serving = await steps.serve(paths)
   steps.recordHost(paths, serving)
   steps.detect()
+  steps.sync()
   return { kind: 'serving', paths, serving }
 }
 
@@ -131,7 +136,7 @@ export interface IHostSources {
   environment: () => IAdapterEnvironment
   loadWebApp: () => Promise<IWebApp>
   detect: (signal: AbortSignal) => Promise<ClaudeDetection>
-  createRegistry: (env: NodeJS.ProcessEnv) => IChildRegistry
+  createRegistry: (env: NodeJS.ProcessEnv, syncLogs: ISyncLogs) => IChildRegistry
   signals: StopSignals
 }
 
@@ -164,7 +169,7 @@ const DEFAULT_SOURCES: IHostSources = {
   loadWebApp,
   detect: async (signal) =>
     createEngine({ adapters: ADAPTERS, warehousePath: resolveWarehousePath() }).labels.detect({ signal }),
-  createRegistry: (env) => createChildRegistry(env),
+  createRegistry: (env, syncLogs) => createChildRegistry(env, { syncLogs }),
   signals: processSignals,
 }
 
@@ -176,6 +181,7 @@ export const createHostRunner =
   (sources: IHostSources = DEFAULT_SOURCES): CommandRunner =>
   async ({ io, values, version }) => {
     const detection = new AbortController()
+    let syncs: IHostSyncs | null = null
     const report = (error: unknown): void => {
       io.stderr(line(errorReport(error, { version, home: io.home, command: 'start' }).line))
     }
@@ -207,11 +213,22 @@ export const createHostRunner =
         ]
         io.stdout(line(lines.join('\n')))
       },
-      serve: async () => {
+      serve: async ({ dataDirectory }) => {
         // In the host's own environment, so every child inherits both, those the web app starts included.
         process.env[CLI_ENTRY_VARIABLE] = CLI_ENTRY
         process.env[HOST_VERSION_VARIABLE] = version
-        const children = sources.createRegistry(process.env)
+        const children = sources.createRegistry(process.env, createSyncLogs(dataDirectory))
+        // --no-sync serves the warehouse as it is; the Sync button still runs a sync on demand.
+        syncs =
+          values['no-sync'] === true
+            ? null
+            : createHostSyncs({
+                children,
+                intervalMinutes: requiredIntegerOf(values, 'interval'),
+                home: io.home,
+                stdout: io.stdout,
+                progress: { write: io.stderr, isTty: io.isStderrTty, now: Date.now },
+              })
         const app = await sources.loadWebApp()
         const server = await bindHost(
           createRequestListener(app, version, { children }, report),
@@ -224,10 +241,15 @@ export const createHostRunner =
           port: portOf(server),
           stop: async () => {
             detection.abort()
+            if (syncs?.isSyncing() === true) {
+              io.stdout(line('Stopping (waiting for the sync to finish its current step)...'))
+            }
+            syncs?.stop()
             await Promise.all([children.stop(), closeServer(server)])
           },
           kill: () => {
             detection.abort()
+            syncs?.stop()
             children.kill()
           },
         }
@@ -237,6 +259,9 @@ export const createHostRunner =
       },
       detect: () => {
         void announceDetection()
+      },
+      sync: () => {
+        syncs?.start().catch(report)
       },
     })
     if (outcome.kind === 'already running') {
