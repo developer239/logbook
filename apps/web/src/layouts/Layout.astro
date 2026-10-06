@@ -14,6 +14,8 @@ type Props = Pick<ComponentProps<typeof TopBar>, 'current' | 'range' | 'conversa
   title: string
   problem?: TPageProblem | null
   back?: string
+  // A page that shows something still running reloads itself until it ends.
+  isReloading?: boolean
 }
 
 const {
@@ -23,6 +25,7 @@ const {
   conversation,
   problem = null,
   back = `${Astro.url.pathname}${Astro.url.search}`,
+  isReloading = false,
 } = Astro.props
 
 const firstRun = typeof problem === 'object' ? problem : null
@@ -34,7 +37,7 @@ const firstRun = typeof problem === 'object' ? problem : null
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} · Log Book</title>
-    {firstRun?.isReloading === true && <meta http-equiv="refresh" content="5" />}
+    {(isReloading || firstRun?.isReloading === true) && <meta http-equiv="refresh" content="5" />}
   </head>
   <body>
     <TopBar

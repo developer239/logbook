@@ -139,7 +139,7 @@ describe('the run', () => {
       whileStopping: { pid, isStopSent: true },
       after: {
         run: null,
-        runExit: { pid, code: null, lastLine: null, at: expect.any(Number) as number },
+        runExit: { pid, code: 130, lastLine: null, at: expect.any(Number) as number },
         planExit: null,
         isUpdated: false,
       },

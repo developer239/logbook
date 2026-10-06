@@ -1,0 +1,73 @@
+---
+import { MODEL_HELP, STARTING, STOP_TITLE, STOPPING, UPDATED, startTitle, type IPlanPart, type LabelsPart } from '../../lib/views/labels-page'
+import Button from '../ui/Button.astro'
+import './Labels.css'
+
+interface Props {
+  // The Label control's text for the last run, where there is one.
+  lastRun: string | null
+  part: LabelsPart
+  plan: IPlanPart | null
+  // The progress lines of the running run, once its record exists.
+  progress: string[] | null
+  // The Label control's line, for maintenance and a run elsewhere before its record.
+  line: string
+}
+
+const { lastRun, part, plan, progress, line } = Astro.props
+---
+
+<section class="labels" data-labels-part={part}>
+  <h1 class="labels__heading">Label with your Claude Code</h1>
+  {lastRun !== null && <p class="labels__last">{lastRun}</p>}
+  {part === 'starting' && <p class="labels__line">{STARTING}</p>}
+  {part === 'stopping' && <p class="labels__line">{STOPPING}</p>}
+  {part === 'updated' && <p class="labels__line">{UPDATED}</p>}
+  {(part === 'maintenance' || (part === 'running-elsewhere' && progress === null)) && <p class="labels__line">{line}</p>}
+  {
+    progress !== null && (
+      <pre class="labels__progress" set:text={progress.join('\n')} />
+    )
+  }
+  {
+    plan !== null && (
+      <>
+        {plan.lines.map((text) => (
+          <p class="labels__line">{text}</p>
+        ))}
+        {plan.model !== null && (
+          <>
+            <form class="labels__model" method="get" action="/labels" data-labels-model>
+              <label class="labels__field">
+                Model <input class="labels__input" type="text" name="model" value={plan.model} required />
+              </label>
+              <p class="labels__help">{MODEL_HELP}</p>
+            </form>
+            <form method="post" action="/labels">
+              <input type="hidden" name="model" value={plan.model} />
+              <Button variant="accent" type="submit" title={startTitle(plan.model)}>
+                Start labelling
+              </Button>
+            </form>
+          </>
+        )}
+      </>
+    )
+  }
+  {
+    (part === 'starting' || part === 'running-here' || part === 'stopping') && (
+      <form method="post" action="/labels/stop">
+        <input type="hidden" name="back" value="/labels" />
+        <Button variant="soft" type="submit" title={STOP_TITLE} disabled={part === 'stopping'}>
+          Stop
+        </Button>
+      </form>
+    )
+  }
+</section>
+
+<script>
+  import { watchModelField } from '../../scripts/labels-model'
+
+  watchModelField()
+</script>
