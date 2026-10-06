@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it } from 'vitest'
+import { parse, stringify } from 'yaml'
 import { gitWorkspaces } from '../testing/git-workspace.js'
 import { releaseFindings } from './release.js'
 
@@ -34,12 +36,36 @@ const RELEASE_CONFIG = {
   ],
 }
 
-// The guard's findings on a workspace with a private manifest and the exact release configuration, with these files
-// planted over it and those whose value is null removed.
+// The publish job's template, as the repository holds it.
+const TEMPLATE_FILE = 'packages/ci/src/rules/publish-job.yaml'
+const TEMPLATE_TEXT = readFileSync(new URL('../rules/publish-job.yaml', import.meta.url), 'utf8')
+const CI = '.github/workflows/ci.yml'
+const PUBLISH_STEP = 4
+
+interface IStep {
+  uses?: string
+  run?: string
+}
+
+// A fresh copy of the template's job, to change before planting it.
+const publishJob = (): { env: Record<string, string>; steps: IStep[] } & Record<string, unknown> =>
+  parse(TEMPLATE_TEXT) as { env: Record<string, string>; steps: IStep[] } & Record<string, unknown>
+
+// ci.yml with top-level permissions, the publish job given and any other jobs.
+const ciWorkflow = (publish: unknown, jobs: Record<string, unknown> = {}): string =>
+  stringify({ name: 'CI', on: 'push', permissions: { contents: 'read' }, jobs: { ...jobs, publish } })
+
+// The 1-based line of the first line of a text holding this phrase.
+const lineHolding = (text: string, phrase: string): number =>
+  text.split('\n').findIndex((line) => line.includes(phrase)) + 1
+
+// The guard's findings on a workspace with a private manifest, the exact release configuration and the publish job's
+// template, with these files planted over it and those whose value is null removed.
 const findings = async (files: Readonly<Record<string, string | null>>): Promise<string[]> => {
   const planted = {
     'apps/example/package.json': PRIVATE,
     '.releaserc.json': JSON.stringify(RELEASE_CONFIG, null, 2),
+    [TEMPLATE_FILE]: TEMPLATE_TEXT,
     ...files,
   }
   return releaseFindings(
@@ -179,5 +205,135 @@ describe('the release guard', () => {
 
     // Assert
     expect(found).toStrictEqual([finding])
+  })
+
+  describe('the publish job', () => {
+    it("passes ci.yml's job publish equal to the template", async () => {
+      // Act
+      const found = await findings({ [CI]: ciWorkflow(publishJob()) })
+
+      // Assert
+      expect(found).toStrictEqual([])
+    })
+
+    it('passes the job with its actions pinned to other full commit SHAs', async () => {
+      // Arrange
+      const job = publishJob()
+      const [setupNode, downloadArtifact] = job.steps
+      job.steps = [
+        { ...setupNode, uses: `actions/setup-node@${'a'.repeat(40)}` },
+        { ...downloadArtifact, uses: `actions/download-artifact@${'b'.repeat(40)}` },
+        ...job.steps.slice(2),
+      ]
+
+      // Act
+      const found = await findings({ [CI]: ciWorkflow(job) })
+
+      // Assert
+      expect(found).toStrictEqual([])
+    })
+
+    it.each([
+      ['an extra step', (job: ReturnType<typeof publishJob>) => ({ ...job, steps: [...job.steps, { run: 'ls' }] })],
+      [
+        'actions/checkout added',
+        (job: ReturnType<typeof publishJob>) => ({
+          ...job,
+          steps: [{ uses: `actions/checkout@${'c'.repeat(40)}` }, ...job.steps],
+        }),
+      ],
+    ])('fails with %s', async (_case, change) => {
+      // Act
+      const found = await findings({ [CI]: ciWorkflow(change(publishJob())) })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${CI}: job publish: steps differs from ${TEMPLATE_FILE} [release-guard/publish-job]`,
+      ])
+    })
+
+    it.each([
+      ['a version tag', 'v4'],
+      ['a 7-character SHA', '8207627'],
+    ])('fails with actions/setup-node pinned to %s', async (_case, ref) => {
+      // Arrange
+      const job = publishJob()
+      job.steps = [{ ...job.steps[0], uses: `actions/setup-node@${ref}` }, ...job.steps.slice(1)]
+
+      // Act
+      const found = await findings({ [CI]: ciWorkflow(job) })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${CI}: job publish: actions/setup-node@${ref} is not a full commit SHA [release-guard/publish-job]`,
+      ])
+    })
+
+    it('fails with the npm integrity changed', async () => {
+      // Arrange
+      const job = publishJob()
+      job.env = { ...job.env, NPM_INTEGRITY: `sha512-${'A'.repeat(86)}==` }
+
+      // Act
+      const found = await findings({ [CI]: ciWorkflow(job) })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${CI}: job publish: env.NPM_INTEGRITY differs from ${TEMPLATE_FILE} [release-guard/publish-job]`,
+      ])
+    })
+
+    it('fails with --tag latest', async () => {
+      // Arrange
+      const job = publishJob()
+      job.steps = job.steps.map((step, index) =>
+        index === PUBLISH_STEP ? { ...step, run: (step.run ?? '').replace('--tag next', '--tag latest') } : step
+      )
+      const text = ciWorkflow(job)
+
+      // Act
+      const found = await findings({ [CI]: text })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${CI}: job publish: steps[${String(PUBLISH_STEP)}].run differs from ${TEMPLATE_FILE} [release-guard/publish-job]`,
+        `${CI}:${String(lineHolding(text, '--tag latest'))}: --tag latest [release-guard/no-publish-text]`,
+      ])
+    })
+
+    it('fails on npm publish in another job', async () => {
+      // Arrange
+      const text = ciWorkflow(publishJob(), {
+        build: { 'runs-on': 'ubuntu-latest', 'steps': [{ run: 'npm publish ./package' }] },
+      })
+
+      // Act
+      const found = await findings({ [CI]: text })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${CI}:${String(lineHolding(text, 'npm publish ./package'))}: npm publish [release-guard/no-publish-text]`,
+      ])
+    })
+
+    it('fails on id-token: write and environment: npm-next on another job', async () => {
+      // Act
+      const found = await findings({
+        [CI]: ciWorkflow(publishJob(), {
+          build: {
+            'runs-on': 'ubuntu-latest',
+            'environment': 'npm-next',
+            'permissions': { 'id-token': 'write' },
+            'steps': [{ run: 'ls' }],
+          },
+        }),
+      })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${CI}: job build: id-token: write [release-guard/no-id-token]`,
+        `${CI}: job build: environment npm-next [release-guard/no-npm-environment]`,
+      ])
+    })
   })
 })
