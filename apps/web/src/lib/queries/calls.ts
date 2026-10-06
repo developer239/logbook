@@ -4,7 +4,7 @@ import { countBy, sumBy } from '../lists'
 import type { IRange } from '../range'
 import { CALL_AT, failureLabel, purposeLabel } from '../sql'
 import { SECOND } from '../time'
-import { all, get, syncedAt } from '../warehouse'
+import { all, dataVersion, get } from '../warehouse'
 import type { ISqlCondition } from './paged'
 
 export interface IFailedCall {
@@ -105,7 +105,7 @@ export const USUAL_MIN_CALLS = 20
 const WAITING_FAMILIES = new Set(['subagent', 'dispatch', 'question', 'wait'])
 const WAITING_PURPOSE = 'wait for something'
 
-let baselineCache: { syncedAt: number | null; usual: Map<string, number> } | undefined
+let baselineCache: { dataVersion: number; usual: Map<string, number> } | undefined
 
 export const slowKey = (call: ICallLike): string =>
   call.family === 'shell' ? `${call.name} · ${purposeName(call.purpose) ?? 'other'}` : call.name
@@ -123,11 +123,11 @@ const timedCalls = (from: number, to: number): ITimedCall[] =>
   ).filter((call) => !isWaiting(call))
 
 const usualTimes = (): Map<string, number> => {
-  const synced = syncedAt()
+  const version = dataVersion()
 
-  if (baselineCache?.syncedAt !== synced) {
+  if (baselineCache?.dataVersion !== version) {
     baselineCache = {
-      syncedAt: synced,
+      dataVersion: version,
       usual: new Map(
         [...Map.groupBy(timedCalls(0, Number.MAX_SAFE_INTEGER), slowKey)]
           .filter(([, calls]) => calls.length >= USUAL_MIN_CALLS)

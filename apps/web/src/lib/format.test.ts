@@ -6,6 +6,7 @@ import {
   clip,
   count,
   duration,
+  elapsed,
   oneInTen,
   pct,
   plural,
@@ -19,6 +20,7 @@ import {
   wait,
   when,
 } from './format'
+import { DAY, HOUR, MINUTE, SECOND } from './time'
 
 const at = (text: string): number => new Date(text).getTime()
 
@@ -69,8 +71,28 @@ describe('format', () => {
     expect(when(at('2026-10-01T17:02:00'), now)).toBe('Yesterday 17:02')
     expect(when(at('2026-09-30T15:20:00'), now)).toBe('Wed 30, 15:20')
     expect(when(at('2026-09-22T10:00:00'), now)).toBe('Sep 22')
-    expect(ago(at('2026-10-02T11:56:00'), now)).toBe('4 minutes ago')
-    expect(ago(at('2026-10-02T11:00:00'), now)).toBe('1 hour ago')
+    expect(ago(at('2026-10-02T11:56:00'), now)).toBe('4 min ago')
+    expect(ago(at('2026-10-02T11:00:00'), now)).toBe('1 h ago')
+  })
+
+  it('should write an elapsed time in whole minutes, hours or days, and a point in time as that ago', () => {
+    const now = at('2026-10-02T12:00:00')
+
+    expect(
+      [0, 59 * SECOND, 4 * MINUTE, 59 * MINUTE, HOUR, 23 * HOUR, DAY, 3 * DAY].map((ms) => [
+        elapsed(ms),
+        ago(now - ms, now),
+      ])
+    ).toEqual([
+      ['1 min', '1 min ago'],
+      ['1 min', '1 min ago'],
+      ['4 min', '4 min ago'],
+      ['59 min', '59 min ago'],
+      ['1 h', '1 h ago'],
+      ['23 h', '23 h ago'],
+      ['1 d', '1 d ago'],
+      ['3 d', '3 d ago'],
+    ])
   })
 
   it('should take the typical value and the one 1 in 10 exceed, and clip on whole characters', () => {

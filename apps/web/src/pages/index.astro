@@ -49,7 +49,7 @@ if (!page.ok) {
 }
 ---
 
-<Layout title="Dashboard" current="dashboard" range={page.ok ? page.data.range : null} syncedAt={page.syncedAt} problem={page.ok ? null : page.problem}>
+<Layout title="Dashboard" current="dashboard" range={page.ok ? page.data.range : null} problem={page.ok ? null : page.problem}>
   {
     page.ok && (
       <>

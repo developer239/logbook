@@ -4,11 +4,12 @@ import TopBar from '../components/TopBar.astro'
 import FirstRun from '../components/first-run/FirstRun.astro'
 import PageProblem from '../components/ui/PageProblem.astro'
 import type { PageProblem as TPageProblem } from '../lib/load'
+import { syncControl } from '../lib/state'
 import '../styles/tokens.css'
 import '../styles/base.css'
 import './Layout.css'
 
-type Props = Pick<ComponentProps<typeof TopBar>, 'current' | 'range' | 'syncedAt' | 'conversation'> & {
+type Props = Pick<ComponentProps<typeof TopBar>, 'current' | 'range' | 'conversation'> & {
   title: string
   problem?: TPageProblem | null
   back?: string
@@ -18,7 +19,6 @@ const {
   title,
   current,
   range,
-  syncedAt,
   conversation,
   problem = null,
   back = `${Astro.url.pathname}${Astro.url.search}`,
@@ -39,7 +39,7 @@ const firstRun = typeof problem === 'object' ? problem : null
     <TopBar
       current={current}
       range={range}
-      syncedAt={syncedAt}
+      sync={syncControl()}
       conversation={conversation}
       back={back}
       canSync={firstRun?.canSync ?? true}

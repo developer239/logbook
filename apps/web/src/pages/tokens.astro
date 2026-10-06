@@ -21,7 +21,7 @@ if (!page.ok) {
 }
 ---
 
-<Layout title="Tokens by tool" current={null} range={page.ok ? page.data.range : null} syncedAt={page.syncedAt} problem={page.ok ? null : page.problem}>
+<Layout title="Tokens by tool" current={null} range={page.ok ? page.data.range : null} problem={page.ok ? null : page.problem}>
   {
     page.ok && (
       <>
