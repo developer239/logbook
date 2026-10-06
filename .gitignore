@@ -17,6 +17,9 @@ packages/demo/out/
 apps/cli/package/
 apps/cli/build/
 
+# the npm modules each web build inlined, which the CLI's stage reads
+apps/web/build/
+
 # staged library packages and the publish order the release jobs read
 packages/*/package/
 build/

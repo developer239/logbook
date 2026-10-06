@@ -1,6 +1,6 @@
 {
   "extends": "astro/tsconfigs/strictest",
-  "include": ["src/**/*", "test/**/*"],
+  "include": ["src/**/*", "test/**/*", "record-modules.mjs"],
   "exclude": ["dist"],
   "compilerOptions": {
     "types": ["node"]

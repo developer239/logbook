@@ -1,5 +1,6 @@
 import node from '@astrojs/node'
 import { defineConfig, passthroughImageService } from 'astro/config'
+import { recordModules } from './record-modules.mjs'
 import { guardDevServer } from './src/lib/dev-guard.ts'
 
 export default defineConfig({
@@ -13,6 +14,8 @@ export default defineConfig({
   // its place.
   server: { host: '127.0.0.1', allowedHosts: true },
   devToolbar: { enabled: false },
+  // Records the npm modules each build inlines, in build/modules.json, from which the CLI's stage writes their notices.
+  integrations: [recordModules()],
   // The default service ships a sharp loader behind /_image that the CLI's tarball cannot hold; no page uses
   // astro:assets images.
   image: { service: passthroughImageService() },
