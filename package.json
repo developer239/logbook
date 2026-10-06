@@ -38,7 +38,8 @@
     "docs:generate": "pnpm --filter @log-book/docs generate",
     "docs:check": "pnpm --silent --filter @log-book/docs check",
     "docs:sync-readme": "pnpm --silent --filter @log-book/docs sync-readme",
-    "docs:capture": "pnpm --silent --filter @log-book/docs capture"
+    "docs:capture": "pnpm --silent --filter @log-book/docs capture",
+    "docs:text-changes": "pnpm --silent --filter @log-book/docs text-changes"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",
