@@ -47,7 +47,13 @@ const SIDEBAR: DefaultTheme.SidebarItem[] = [
       { text: 'Syncing and empty states', link: '/ui/states' },
     ],
   },
-  { text: 'Labelling', items: [{ text: 'What it sends', link: '/labelling/what-it-sends' }] },
+  {
+    text: 'Labelling',
+    items: [
+      { text: 'How labelling works', link: '/labelling/' },
+      { text: 'What it sends', link: '/labelling/what-it-sends' },
+    ],
+  },
   { text: 'Privacy', items: [{ text: 'What Log Book sends, and where', link: '/privacy/' }] },
   {
     text: 'Reference',
