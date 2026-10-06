@@ -24,6 +24,7 @@
     "@log-book/web": "workspace:*"
   },
   "devDependencies": {
+    "@log-book/demo": "workspace:*",
     "vitest": "catalog:"
   },
   "bin": {

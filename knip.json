@@ -51,6 +51,9 @@
         ".vitepress/**/*.{ts,mts,vue}"
       ]
     },
+    "apps/cli": {
+      "project": ["src/**/*.ts", "test/**/*.ts"]
+    },
     "apps/web": {
       "entry": ["src/pages/**/*.astro", "src/scripts/*.ts"],
       "project": ["src/**/*.{ts,astro}", "test/**/*.ts"]
