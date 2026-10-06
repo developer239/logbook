@@ -1,9 +1,10 @@
 import { join } from 'node:path'
 import { SCHEMA_VERSION } from '@log-book/warehouse'
-import { createTestWarehouse, insert, type ITestWarehouse } from '@log-book/warehouse/testing'
+import { createTestWarehouse } from '@log-book/warehouse/testing'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type * as Errors from './errors'
 import type * as Load from './load'
+import { copyDemo, type ITestWarehouse } from './testing/warehouse'
 
 // The warehouse is opened once per module, so each case imports load afresh
 // against the warehouse it names.
@@ -17,22 +18,11 @@ let current: ITestWarehouse
 let warehouse = ''
 
 beforeAll(async () => {
-  current = await createTestWarehouse()
+  current = await copyDemo('demoSmall')
   warehouse = current.path
-
-  insert(current.db, 'session', {
-    id: 'example:demo-0001',
-    harness: 'example',
-    source_id: 'demo-0001',
-    origin: 'interactive',
-    is_scripted: 0,
-    started_at: 42,
-    ended_at: 42,
-  })
 })
 
 afterAll(async () => {
-  vi.unstubAllEnvs()
   await current.remove()
 })
 

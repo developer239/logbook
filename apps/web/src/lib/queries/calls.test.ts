@@ -1,120 +1,270 @@
-import type { ISqliteDb } from '@log-book/core'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { everything, seedRows, START } from '../testing/rows'
-import { insert, seedWarehouse, type ITestWarehouse } from '../testing/warehouse'
+import type { IBuiltDemo } from '@log-book/demo'
+import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest'
+import {
+  allTime,
+  callRowsOf,
+  callsOf,
+  failedCallsOf,
+  familyOf,
+  idOf,
+  purposeLabelOf,
+  type IPlacedStep,
+  type TCallStep,
+} from '../../../test/plan-facts'
+import { typical } from '../format'
+import { causeOf } from '../labels'
+import { copyDemo, insert, type ITestWarehouse } from '../testing/warehouse'
 import { MINUTE, SECOND } from '../time'
 import type * as Calls from './calls'
 
-// Twenty quick Reads give Read a usual time; one took five minutes.
-const seed = (db: ISqliteDb): void => {
-  seedRows(db)
-
-  for (let index = 0; index < 20; index += 1) {
-    insert(db, 'tool_call', {
-      id: `c-quick-${String(index)}`,
-      session_id: 'ses-me',
-      message_id: 'm-me-2',
-      name: 'Read',
-      bare_name: 'Read',
-      family: 'file',
-      input_json: '{}',
-      status: 'completed',
-      started_at: START + 20 * MINUTE + index * SECOND,
-      ended_at: START + 20 * MINUTE + index * SECOND + SECOND,
-    })
-  }
-
-  insert(db, 'tool_call', {
-    id: 'c-slow',
-    session_id: 'ses-me',
-    message_id: 'm-me-2',
-    name: 'Read',
-    bare_name: 'Read',
-    family: 'file',
-    input_json: '{}',
-    status: 'completed',
-    started_at: START + 25 * MINUTE,
-    ended_at: START + 30 * MINUTE,
-  })
-}
-
+let demo: IBuiltDemo
 let warehouse: ITestWarehouse
 let calls: typeof Calls
 
+interface ITimed {
+  id: string
+  name: string
+  family: string
+  purpose: string | null
+  durationMs: number
+  at: number
+}
+
+// Odd rows on top of the copy: enough quick calls of a planned read tool to give it a usual time, then one that took
+// five minutes.
+const SLOW_CALL = 'slow-read'
+let odd: ITimed[] = []
+
+const readCall = (): IPlacedStep<TCallStep> => {
+  const read = callsOf(demo).find((placed) => placed.step.family === 'read')
+  if (read === undefined) {
+    throw new Error('The small set plans no read call')
+  }
+  return read
+}
+
 beforeAll(async () => {
-  warehouse = await seedWarehouse(seed)
+  demo = inject('demoSmall')
+  warehouse = await copyDemo('demoSmall')
   calls = await import('./calls')
+  const read = readCall()
+  const row = warehouse.db
+    .prepare('SELECT session_id, message_id, name, bare_name, family FROM tool_call WHERE id = ?')
+    .get(idOf(demo, read.step.key)) as {
+    session_id: string
+    message_id: string
+    name: string
+    bare_name: string
+    family: string
+  }
+  const timed = (id: string, at: number, durationMs: number): ITimed => ({
+    id,
+    name: row.bare_name,
+    family: row.family,
+    purpose: null,
+    durationMs,
+    at,
+  })
+  odd = [
+    ...Array.from({ length: calls.USUAL_MIN_CALLS }, (_, index) =>
+      timed(`quick-read-${String(index)}`, read.step.startAt + index * SECOND, SECOND)
+    ),
+    timed(SLOW_CALL, read.step.startAt + MINUTE, 5 * MINUTE),
+  ]
+  for (const call of odd) {
+    insert(warehouse.db, 'tool_call', {
+      id: call.id,
+      session_id: row.session_id,
+      message_id: row.message_id,
+      name: row.name,
+      bare_name: row.bare_name,
+      family: row.family,
+      input_json: '{}',
+      status: 'completed',
+      started_at: call.at,
+      ended_at: call.at + call.durationMs,
+    })
+  }
 })
 
 afterAll(async () => {
   await warehouse.remove()
 })
 
+const recordedName = (id: string): string =>
+  (warehouse.db.prepare('SELECT bare_name FROM tool_call WHERE id = ?').get(id) as { bare_name: string }).bare_name
+
+// Every timed call that does not wait on something by design, the planned ones and the odd ones.
+const timedCalls = (): ITimed[] =>
+  [
+    ...callRowsOf(demo).flatMap((placed): ITimed[] => {
+      const { step } = placed
+      if (step.kind !== 'call') {
+        return [
+          {
+            id: idOf(demo, step.key),
+            name: recordedName(idOf(demo, step.key)),
+            family: step.kind === 'spawn' ? 'subagent' : 'skill',
+            purpose: null,
+            durationMs: step.endAt - step.startAt,
+            at: step.startAt,
+          },
+        ]
+      }
+      return step.endAt === null
+        ? []
+        : [
+            {
+              id: idOf(demo, step.key),
+              name: recordedName(idOf(demo, step.key)),
+              family: familyOf(step),
+              purpose: purposeLabelOf(demo, step),
+              durationMs: step.endAt - step.startAt,
+              at: step.startAt,
+            },
+          ]
+    }),
+    ...odd,
+  ].filter(
+    (call) =>
+      !['subagent', 'dispatch', 'question', 'wait'].includes(call.family) && call.purpose !== 'wait for something'
+  )
+
+const usualTimes = (): Map<string, number> =>
+  new Map(
+    [...Map.groupBy(timedCalls(), calls.slowKey)]
+      .filter(([, ofKey]) => ofKey.length >= calls.USUAL_MIN_CALLS)
+      .map(([key, ofKey]) => [key, typical(ofKey.map((call) => call.durationMs))])
+  )
+
+const causeCounts = (): Map<string, number> =>
+  new Map(
+    [
+      ...Map.groupBy(
+        failedCallsOf(demo).flatMap((call) => {
+          const cause = causeOf(call.family, call.label)
+          return cause === null ? [] : [cause]
+        }),
+        (cause) => cause
+      ),
+    ].map(([cause, ofCause]) => [cause, ofCause.length])
+  )
+
+const byId = (left: (string | null)[], right: (string | null)[]): number =>
+  String(left[0]).localeCompare(String(right[0]))
+
 describe('failedCalls', () => {
-  it('should list every failed call with its label as the cookbook wrote it', () => {
+  it('should list every failed call with the label its failure reads by', () => {
     const failed = calls.failedCalls(0, Number.MAX_SAFE_INTEGER)
 
-    expect(
-      failed.toSorted((left, right) => left.id.localeCompare(right.id)).map((call) => [call.id, call.label])
-    ).toEqual([
-      ['c-bash-fail', 'command mistake'],
-      ['c-edit-1', 'edit mismatch'],
-      ['c-edit-2', 'invalid call'],
-      ['c-edit-3', null],
-      ['c-test-fail', 'real result'],
-    ])
+    expect(failed.map((call) => [call.id, call.label]).toSorted(byId)).toEqual(
+      failedCallsOf(demo)
+        .map((call) => [call.id, call.label])
+        .toSorted(byId)
+    )
   })
 
   it('should leave out the calls of another range', () => {
-    expect(calls.failedCalls(START + 11 * MINUTE, START + 12 * MINUTE).map((call) => call.id)).toEqual(['c-test-fail'])
+    const [first] = failedCallsOf(demo)
+    if (first === undefined) {
+      throw new Error('The small set plans no failed call')
+    }
+    const at = first.step.startAt
+
+    expect(
+      calls
+        .failedCalls(at, at + 1)
+        .map((call) => call.id)
+        .toSorted()
+    ).toEqual(
+      failedCallsOf(demo)
+        .filter((call) => call.step.startAt === at)
+        .map((call) => call.id)
+        .toSorted()
+    )
   })
 })
 
 describe('causeCounts', () => {
   it('should count failed calls by cause as shown, leaving out real results', () => {
-    expect(calls.causeCounts(0, Number.MAX_SAFE_INTEGER)).toEqual(
-      new Map([
-        ['Called the tool wrong', 2],
-        ["Edit didn't match the file", 1],
-        ['Not labelled yet', 1],
-      ])
-    )
+    expect(calls.causeCounts(0, Number.MAX_SAFE_INTEGER)).toEqual(causeCounts())
   })
 })
 
 describe('failuresWithCause', () => {
   it('should count the failed calls of a cause as shown, whichever labels lead to it', () => {
-    expect(calls.failuresWithCause('Called the tool wrong')).toBe(2)
-    expect(calls.failuresWithCause('Not labelled yet')).toBe(1)
+    const expected = causeCounts()
+
+    expect({
+      counts: new Map([...expected.keys()].map((cause) => [cause, calls.failuresWithCause(cause)])),
+      isAny: expected.size > 0,
+    }).toEqual({ counts: expected, isAny: true })
   })
 
   it('should count none for a name that is no cause as shown', () => {
-    expect(calls.failuresWithCause('Tool bug')).toBe(0)
     expect(calls.failuresWithCause('Made up')).toBe(0)
   })
 })
 
 describe('slowCalls', () => {
   it('should group the calls well over their tool usual time by tool', () => {
-    const slow = calls.slowCalls(everything())
+    const usual = usualTimes()
+    const slow = timedCalls().flatMap((call) => {
+      const usualMs = usual.get(calls.slowKey(call))
+      return usualMs === undefined || call.durationMs <= Math.max(calls.SLOW_FLOOR_MS, calls.SLOW_FACTOR * usualMs)
+        ? []
+        : [{ call, usualMs }]
+    })
+    const groups = [...Map.groupBy(slow, (entry) => calls.slowKey(entry.call))].map(([key, entries]) => {
+      const usualMs = entries[0]?.usualMs ?? 0
+      return {
+        key,
+        calls: entries.length,
+        overMs: Math.max(calls.SLOW_FLOOR_MS, calls.SLOW_FACTOR * usualMs),
+        usualMs,
+        longestMs: Math.max(...entries.map((entry) => entry.call.durationMs)),
+      }
+    })
 
-    expect(slow).toEqual({
-      groups: [{ key: 'Read', calls: 1, overMs: 30 * SECOND, usualMs: SECOND, longestMs: 5 * MINUTE }],
-      total: 1,
+    const found = calls.slowCalls(allTime(demo))
+
+    expect({ ...found, isSlowRead: slow.some((entry) => entry.call.id === SLOW_CALL) }).toEqual({
+      groups: groups.toSorted(
+        (left, right) => right.longestMs / Math.max(right.usualMs, 1) - left.longestMs / Math.max(left.usualMs, 1)
+      ),
+      total: slow.length,
+      isSlowRead: true,
     })
   })
 
   it('should have a usual time only for a tool with enough timed calls', () => {
-    expect(calls.usualTime({ name: 'Read', family: 'file', purpose: null })).toBe(SECOND)
-    expect(calls.usualTime({ name: 'Edit', family: 'file', purpose: null })).toBeNull()
+    const counts = Map.groupBy(timedCalls(), calls.slowKey)
+    const seldom = timedCalls().find((call) => (counts.get(calls.slowKey(call))?.length ?? 0) < calls.USUAL_MIN_CALLS)
+    const read = odd[0]
+    if (seldom === undefined || read === undefined) {
+      throw new Error('The small set has no tool too seldom called to have a usual time')
+    }
+
+    expect({ read: calls.usualTime(read), seldom: calls.usualTime(seldom) }).toStrictEqual({
+      read: usualTimes().get(calls.slowKey(read)),
+      seldom: null,
+    })
   })
 
   it('should call a call slow only against a usual time, and over the floor', () => {
-    const read = { name: 'Read', family: 'file', purpose: null }
+    const read = odd[0]
+    const seldom = timedCalls().find(
+      (call) => (Map.groupBy(timedCalls(), calls.slowKey).get(calls.slowKey(call))?.length ?? 0) < calls.USUAL_MIN_CALLS
+    )
+    if (read === undefined || seldom === undefined) {
+      throw new Error('The small set has no tool too seldom called to have a usual time')
+    }
 
-    expect(calls.isSlow(read, 5 * MINUTE)).toBe(true)
-    expect(calls.isSlow(read, 20 * SECOND)).toBe(false)
-    expect(calls.isSlow({ ...read, name: 'Edit' }, 5 * MINUTE)).toBe(false)
-    expect(calls.isSlow(read, null)).toBe(false)
+    expect({
+      slow: calls.isSlow(read, 5 * MINUTE),
+      underFloor: calls.isSlow(read, calls.SLOW_FLOOR_MS - SECOND),
+      seldom: calls.isSlow(seldom, 5 * MINUTE),
+      untimed: calls.isSlow(read, null),
+    }).toStrictEqual({ slow: true, underFloor: false, seldom: false, untimed: false })
   })
 })

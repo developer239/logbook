@@ -1,16 +1,16 @@
 import { SCHEMA_VERSION, WarehouseStore } from '@log-book/warehouse'
 import { afterEach, describe, expect, inject, it } from 'vitest'
-import { copyWarehouse, insert, type ICopiedWarehouse } from '../src/lib/testing/warehouse'
+import { copyWarehouse, insert, type ITestWarehouse } from '../src/lib/testing/warehouse'
 
-const copies: ICopiedWarehouse[] = []
+const copies: ITestWarehouse[] = []
 
-const copyOf = async (path: string): Promise<ICopiedWarehouse> => {
+const copyOf = async (path: string): Promise<ITestWarehouse> => {
   const copy = await copyWarehouse(path)
   copies.push(copy)
   return copy
 }
 
-const count = (copy: ICopiedWarehouse, sql: string): unknown => (copy.db.prepare(sql).get() as { count: number }).count
+const count = (copy: ITestWarehouse, sql: string): unknown => (copy.db.prepare(sql).get() as { count: number }).count
 
 afterEach(async () => {
   await Promise.all(copies.splice(0).map(async (copy) => copy.remove()))

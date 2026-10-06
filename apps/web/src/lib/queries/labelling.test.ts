@@ -4,7 +4,7 @@ import type { ISqliteDb } from '@log-book/core'
 import { takeLabelsLock, type IHeldLock, type LabelsLockOperation } from '@log-book/warehouse'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import type { IChildExit, ILabellingProcess, PlanResult } from '../labelling'
-import { insert, seedWarehouse, type ITestWarehouse } from '../testing/warehouse'
+import { emptyWarehouse, insert, type ITestWarehouse } from '../testing/warehouse'
 import type * as Labelling from './labelling'
 
 const AT = Date.UTC(2026, 9, 5, 12)
@@ -87,9 +87,8 @@ const startHolder = (): ChildProcess =>
   spawn(process.execPath, ['-e', 'setInterval(() => {}, 60000)'], { stdio: 'ignore' })
 
 beforeAll(async () => {
-  warehouse = await seedWarehouse((seeded) => {
-    db = seeded
-  })
+  warehouse = await emptyWarehouse()
+  ;({ db } = warehouse)
   labelling = await import('./labelling')
   holder = startHolder()
   const gone = spawn(process.execPath, ['-e', ''], { stdio: 'ignore' })

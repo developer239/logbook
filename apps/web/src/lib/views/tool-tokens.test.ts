@@ -17,7 +17,7 @@ const tool = (name: string, source: IToolSource, fields: Partial<IToolTokens> = 
 
 describe('cardTools', () => {
   it('should scale the bars by the tool that cost the most', () => {
-    const rows = [tool('read', BUILT_IN, { totalTokens: 900 }), tool('oc_run', plugin('oc'), { totalTokens: 50 })]
+    const rows = [tool('read', BUILT_IN, { totalTokens: 900 }), tool('launch', plugin('tasks'), { totalTokens: 50 })]
 
     expect(cardTools(rows)).toMatchObject({ called: 2, most: 900 })
   })
@@ -41,12 +41,12 @@ describe('pluginGroups', () => {
   it('should put plugins first and scale their bars against each other', () => {
     const rows = [
       tool('read', BUILT_IN, { totalTokens: 5000 }),
-      tool('oc_run', plugin('oc'), { totalTokens: 300 }),
+      tool('launch', plugin('tasks'), { totalTokens: 300 }),
       tool('jira_get', plugin('jira'), { totalTokens: 700 }),
     ]
     const { groups, mostPlugin } = pluginGroups(rows)
 
-    expect(groups.map((group) => group.source.name)).toEqual(['jira', 'oc', 'Built in'])
+    expect(groups.map((group) => group.source.name)).toEqual(['jira', 'tasks', 'Built in'])
     expect(mostPlugin).toBe(700)
   })
 
@@ -58,9 +58,9 @@ describe('pluginGroups', () => {
 describe('toolGroups', () => {
   it('should total the calls and tokens of a plugin and add up its definitions', () => {
     const [group] = toolGroups([
-      tool('oc_run', plugin('oc'), { calls: 4, totalTokens: 400, definitionTokens: 50 }),
-      tool('oc_old', plugin('oc'), { calls: 2, totalTokens: 60 }),
-      tool('oc_idle', plugin('oc'), { calls: 1, totalTokens: 5, definitionTokens: 30 }),
+      tool('launch', plugin('tasks'), { calls: 4, totalTokens: 400, definitionTokens: 50 }),
+      tool('oc_old', plugin('tasks'), { calls: 2, totalTokens: 60 }),
+      tool('oc_idle', plugin('tasks'), { calls: 1, totalTokens: 5, definitionTokens: 30 }),
     ])
 
     expect(group).toMatchObject({ calls: 7, totalTokens: 465, definitionTokens: 80 })
