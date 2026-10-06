@@ -36,7 +36,8 @@
     "docs:build": "pnpm --filter @log-book/docs build",
     "docs:preview": "pnpm --filter @log-book/docs preview",
     "docs:generate": "pnpm --filter @log-book/docs generate",
-    "docs:check": "pnpm --silent --filter @log-book/docs check"
+    "docs:check": "pnpm --silent --filter @log-book/docs check",
+    "docs:sync-readme": "pnpm --silent --filter @log-book/docs sync-readme"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",
