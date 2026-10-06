@@ -1,0 +1,44 @@
+.first-run {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 44rem;
+  padding: var(--space-6) 0;
+  font-size: var(--text-body);
+}
+
+.first-run__headline {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.first-run__harnesses {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.first-run__harness {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+  color: var(--text-2);
+}
+
+.first-run__name {
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.first-run__note {
+  margin: 0;
+  color: var(--text-2);
+}
+
+.first-run__sync {
+  margin-top: var(--space-2);
+}

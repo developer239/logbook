@@ -1,0 +1,39 @@
+---
+import type { IFirstRun } from '../../lib/state'
+import Button from '../ui/Button.astro'
+import './FirstRun.css'
+
+interface Props {
+  firstRun: IFirstRun
+  back: string
+}
+
+const { firstRun, back } = Astro.props
+---
+
+<section class="first-run" data-first-run={firstRun.kind}>
+  <p class="first-run__headline">{firstRun.headline}</p>
+  {
+    firstRun.harnesses.length > 0 && (
+      <ul class="first-run__harnesses">
+        {firstRun.harnesses.map((harness) => (
+          <li class="first-run__harness">
+            <b class="first-run__name">{harness.name}</b>
+            <span>{harness.text}</span>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  {firstRun.notes.map((note) => <p class="first-run__note">{note}</p>)}
+  {
+    firstRun.canSync && (
+      <form class="first-run__sync" method="post" action="/sync">
+        <input type="hidden" name="back" value={back} />
+        <Button variant="accent" type="submit">
+          Sync
+        </Button>
+      </form>
+    )
+  }
+</section>

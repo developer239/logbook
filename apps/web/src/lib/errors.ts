@@ -11,10 +11,6 @@ export class NotFoundError extends Error {
   public readonly status = 404
 }
 
-export class WarehouseError extends Error {
-  public readonly status = 503
-}
-
 // A logbook child the web app started failed; its message says how.
 export class CliError extends Error {
   public readonly status = 500

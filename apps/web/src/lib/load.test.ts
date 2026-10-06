@@ -27,6 +27,15 @@ beforeAll(async () => {
     parser_version: 1,
     imported_at: 42,
   })
+  insert(current.db, 'session', {
+    id: 'example:demo-0001',
+    harness: 'example',
+    source_id: 'demo-0001',
+    origin: 'interactive',
+    is_scripted: 0,
+    started_at: 42,
+    ended_at: 42,
+  })
 })
 
 afterAll(async () => {
@@ -55,17 +64,33 @@ describe('load', () => {
     expect(page).toMatchObject({ ok: false, problem: 'No conversation abc', status: 404 })
   })
 
-  it('should answer a missing warehouse with 503 and the way to fix it', async () => {
+  it('should answer a missing warehouse with its first-run panel and 503', async () => {
     const missing = join(warehouse, '..', 'missing.db')
     const { load } = await importAt(missing)
 
     const page = load(() => 1)
 
-    expect(page).toMatchObject({ ok: false, status: 503, syncedAt: null })
-    expect(page.ok ? '' : page.problem).toBe(`There is no warehouse at ${missing} yet.`)
+    expect(page).toMatchObject({
+      ok: false,
+      status: 503,
+      syncedAt: null,
+      problem: { kind: 'no-warehouse', headline: `There is no warehouse at ${missing} yet. Sync creates it.` },
+    })
   })
 
-  it('should answer a warehouse at another schema version with 503 and the versions', async () => {
+  it('should answer a warehouse with no session with its first-run panel, before the page reads', async () => {
+    const empty = await createTestWarehouse()
+    const { load } = await importAt(empty.path)
+
+    const page = load(() => {
+      throw new Error('the page read an empty warehouse')
+    })
+    await empty.remove()
+
+    expect(page).toMatchObject({ ok: false, status: 200, problem: { kind: 'never-synced' } })
+  })
+
+  it('should answer a warehouse at another schema version with its first-run panel and 503', async () => {
     const newer = await createTestWarehouse()
     newer.db.exec(`PRAGMA user_version = ${String(SCHEMA_VERSION + 1)}`)
 
@@ -74,10 +99,7 @@ describe('load', () => {
     const page = load(() => 1)
     await newer.remove()
 
-    expect(page).toMatchObject({ ok: false, status: 503, syncedAt: null })
-    expect(page.ok ? '' : page.problem).toBe(
-      `This warehouse is at schema ${String(SCHEMA_VERSION + 1)}; this Log Book reads ${String(SCHEMA_VERSION)}.`
-    )
+    expect(page).toMatchObject({ ok: false, status: 503, syncedAt: null, problem: { kind: 'newer-schema' } })
   })
 
   it('should throw what is not a problem a page can show', async () => {

@@ -7,50 +7,40 @@ import {
   WarehouseVersionError,
   type IWarehouseReader,
 } from '@log-book/warehouse'
-import { WarehouseError } from './errors'
 
 type TSqlParam = string | number | null
 
 let reader: IWarehouseReader | undefined
 
-const versionProblem = (version: number): WarehouseError =>
-  new WarehouseError(`This warehouse is at schema ${String(version)}; this Log Book reads ${String(SCHEMA_VERSION)}.`)
+// What keeps the app from reading the warehouse: no file at its path, or another schema version than this build reads.
+export type TUnreadable = { kind: 'missing'; path: string } | { kind: 'version'; version: number }
 
-// Opened read-only once per process; a missing file and another version are a page's problem line, and the next
-// page tries again.
 const open = (): IWarehouseReader => {
-  const path = resolveWarehousePath()
+  reader ??= WarehouseStore.openReadOnlySync(resolveWarehousePath())
+  return reader
+}
+
+// Opened read-only once per process; a missing file and another version leave it closed, and the next page tries
+// again. A newer logbook in a terminal can migrate the file while the app runs, so the version is read on every call
+// (load makes one before a page reads anything).
+export const unreadable = (): TUnreadable | null => {
   try {
-    return WarehouseStore.openReadOnlySync(path)
+    const version = open().get<{ user_version: number }>('PRAGMA user_version')?.user_version ?? 0
+    return version === SCHEMA_VERSION ? null : { kind: 'version', version }
   } catch (error) {
     if (error instanceof WarehouseVersionError) {
-      throw versionProblem(error.warehouseVersion)
+      return { kind: 'version', version: error.warehouseVersion }
     }
     if (error instanceof LogBookError && error.code === WAREHOUSE_ERROR_CODES.WAREHOUSE_NOT_FOUND) {
-      throw new WarehouseError(`There is no warehouse at ${path} yet.`)
+      return { kind: 'missing', path: resolveWarehousePath() }
     }
     throw error
   }
 }
 
-const warehouse = (): IWarehouseReader => {
-  reader ??= open()
-  return reader
-}
+export const all = <TRow>(sql: string, ...params: TSqlParam[]): TRow[] => open().all<TRow>(sql, ...params)
 
-// A newer logbook in a terminal can migrate the warehouse while the app runs, so a page checks its schema once
-// before it reads anything (load does).
-export const checkSchema = (): void => {
-  const version = warehouse().get<{ user_version: number }>('PRAGMA user_version')?.user_version ?? 0
-  if (version !== SCHEMA_VERSION) {
-    throw versionProblem(version)
-  }
-}
-
-export const all = <TRow>(sql: string, ...params: TSqlParam[]): TRow[] => warehouse().all<TRow>(sql, ...params)
-
-export const get = <TRow>(sql: string, ...params: TSqlParam[]): TRow | undefined =>
-  warehouse().get<TRow>(sql, ...params)
+export const get = <TRow>(sql: string, ...params: TSqlParam[]): TRow | undefined => open().get<TRow>(sql, ...params)
 
 export const syncedAt = (): number | null =>
   get<{ at: number | null }>('SELECT MAX(imported_at) AS at FROM source_state')?.at ?? null
