@@ -25,7 +25,7 @@ describe('the ci command dispatcher', () => {
       code: 2,
       stdout: '',
       stderr:
-        'No command named nope; the commands are deps, fixtures, release-guard, network, package, literals, tests, installed, release, demo-captures, stage-cli, stage-libraries.\n',
+        'No command named nope; the commands are deps, fixtures, release-guard, network, package, literals, tests, installed, schema-delta, release-notes, release, demo-captures, stage-cli, stage-libraries.\n',
     })
   })
 
@@ -50,7 +50,7 @@ describe('the ci command dispatcher', () => {
       code: 2,
       stdout: '',
       stderr:
-        'No command given; the commands are deps, fixtures, release-guard, network, package, literals, tests, installed, release, demo-captures, stage-cli, stage-libraries.\n',
+        'No command given; the commands are deps, fixtures, release-guard, network, package, literals, tests, installed, schema-delta, release-notes, release, demo-captures, stage-cli, stage-libraries.\n',
     })
   })
 })

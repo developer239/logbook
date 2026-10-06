@@ -8,6 +8,7 @@ import { networkFindings } from './checks/network.js'
 import { packageFindings } from './checks/package.js'
 import { releaseFindings } from './checks/release.js'
 import { checkTests } from './checks/tests.js'
+import { releaseNotes, schemaVersionAt } from './release/release-notes.js'
 import { releaseVersion } from './release/release-version.js'
 import { stageCli } from './stage/stage-cli.js'
 import { stageLibraries } from './stage/stage-libraries.js'
@@ -22,6 +23,27 @@ export interface ICiIo {
 type CiCommand = (args: readonly string[], io: ICiIo) => Promise<number>
 
 const WRONG_ARGUMENTS = 2
+
+// A command that prints lines read from two git refs of the repository in the working directory; a refusal is its one
+// line on stderr and exit 1.
+const fromTwoRefs =
+  (usage: string, linesOf: (root: string, from: string, to: string) => Promise<string[]>): CiCommand =>
+  async (args, io) => {
+    const [from, to] = args
+    if (args.length !== 2 || from === undefined || to === undefined || to === '') {
+      io.stderr(`This command takes ${usage}; got ${args.length === 0 ? 'none' : args.join(' ')}.\n`)
+      return WRONG_ARGUMENTS
+    }
+    try {
+      for (const line of await linesOf(process.cwd(), from, to)) {
+        io.stdout(`${line}\n`)
+      }
+      return 0
+    } catch (error) {
+      io.stderr(`${error instanceof Error ? error.message : String(error)}\n`)
+      return 1
+    }
+  }
 
 // A check over the repository in the working directory: each finding on its own line, exit 1 when there is any.
 const check =
@@ -77,6 +99,13 @@ const COMMANDS: Readonly<Record<string, CiCommand>> = {
     }
     return checkInstalled(process.cwd(), seed, io)
   },
+  // The warehouse schema version at each of two refs, read from the warehouse's source.
+  'schema-delta': fromTwoRefs('<from ref> <to ref>', async (root, from, to) => [
+    `${from}: schema ${String(await schemaVersionAt(root, from))}`,
+    `${to}: schema ${String(await schemaVersionAt(root, to))}`,
+  ]),
+  // The lines the release job appends to a release's notes; an empty previous tag is the first release's.
+  'release-notes': fromTwoRefs('<previous tag> <release ref>', releaseNotes),
   'release': async (args, io) =>
     releaseVersion(args, { stderr: io.stderr, env: process.env, cwd: process.cwd(), release: semanticRelease }),
   // Prints `pnpm demo:scan` arguments for each demo entry of the committed capture manifest, for the demo job.
