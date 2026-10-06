@@ -475,6 +475,15 @@
       }
     },
     {
+      "files": ["apps/docs/capture/bin/*.mjs"],
+      "rules": {
+        "typescript/no-unsafe-argument": "off",
+        "typescript/no-unsafe-call": "off",
+        "typescript/no-unsafe-member-access": "off",
+        "typescript/no-unsafe-return": "off"
+      }
+    },
+    {
       "files": ["apps/web/src/locals.d.ts"],
       "rules": {
         "naming/declaration-naming": [
