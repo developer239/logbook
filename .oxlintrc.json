@@ -480,7 +480,7 @@
       }
     },
     {
-      "files": ["packages/demo/test/small-build.ts"],
+      "files": ["packages/demo/test/small-build.ts", "apps/web/test/demo-sets.ts"],
       "rules": {
         "naming/declaration-naming": [
           "error",
