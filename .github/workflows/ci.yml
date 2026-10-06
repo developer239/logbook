@@ -93,9 +93,6 @@ jobs:
         run: pnpm run stage
       - name: 15. Package checks
         run: pnpm check:package
-      - name: Temporary diagnosis
-        if: failure()
-        run: grep -noE '.{0,400}setup-pnpm.{0,160}' apps/cli/package/dist/web/server/entry.mjs || true
       # What users install: every staged package packed and installed offline, then the end-to-end suite against the
       # installed logbook, in the order of the same seed as step 13, and its offline test file again inside a network
       # namespace with only loopback up.
