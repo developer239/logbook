@@ -24,7 +24,8 @@ describe('the ci command dispatcher', () => {
     expect(result).toStrictEqual({
       code: 2,
       stdout: '',
-      stderr: 'No command named nope; the commands are deps, fixtures, release, network, literals, tests, stage-cli.\n',
+      stderr:
+        'No command named nope; the commands are deps, fixtures, release, network, literals, tests, stage-cli, stage-libraries.\n',
     })
   })
 
@@ -48,7 +49,8 @@ describe('the ci command dispatcher', () => {
     expect(result).toStrictEqual({
       code: 2,
       stdout: '',
-      stderr: 'No command given; the commands are deps, fixtures, release, network, literals, tests, stage-cli.\n',
+      stderr:
+        'No command given; the commands are deps, fixtures, release, network, literals, tests, stage-cli, stage-libraries.\n',
     })
   })
 })

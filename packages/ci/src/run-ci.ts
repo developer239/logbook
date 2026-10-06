@@ -5,6 +5,7 @@ import { networkFindings } from './checks/network.js'
 import { releaseFindings } from './checks/release.js'
 import { checkTests } from './checks/tests.js'
 import { stageCli } from './stage/stage-cli.js'
+import { stageLibraries } from './stage/stage-libraries.js'
 
 // Where a command writes: findings and refusals go to stderr, one line each.
 export interface ICiIo {
@@ -66,6 +67,14 @@ const COMMANDS: Readonly<Record<string, CiCommand>> = {
       return WRONG_ARGUMENTS
     }
     await stageCli(process.cwd())
+    return 0
+  },
+  'stage-libraries': async (args, io) => {
+    if (args.length > 0) {
+      io.stderr(`This command takes no arguments; got ${args.join(' ')}.\n`)
+      return WRONG_ARGUMENTS
+    }
+    await stageLibraries(process.cwd())
     return 0
   },
 }

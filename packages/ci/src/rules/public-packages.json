@@ -1,0 +1,58 @@
+[
+  {
+    "name": "@log-book/core",
+    "directory": "packages/core",
+    "description": "Domain-free helpers every Log Book package may need",
+    "exports": ["."],
+    "workspaceOnly": [],
+    "assets": []
+  },
+  {
+    "name": "@log-book/warehouse",
+    "directory": "packages/warehouse",
+    "description": "The Log Book warehouse schema and the only code that opens the warehouse file",
+    "exports": ["."],
+    "workspaceOnly": ["./testing"],
+    "assets": []
+  },
+  {
+    "name": "@log-book/adapter-api",
+    "directory": "packages/adapter-api",
+    "description": "The contract between the Log Book engine and a harness adapter",
+    "exports": ["."],
+    "workspaceOnly": ["./testing", "./conformance", "./source-writer"],
+    "assets": []
+  },
+  {
+    "name": "@log-book/adapter-claude-code",
+    "directory": "packages/adapter-claude-code",
+    "description": "Everything Log Book knows about Claude Code",
+    "exports": ["."],
+    "workspaceOnly": ["./source-writer"],
+    "assets": []
+  },
+  {
+    "name": "@log-book/adapter-opencode",
+    "directory": "packages/adapter-opencode",
+    "description": "Everything Log Book knows about OpenCode",
+    "exports": ["."],
+    "workspaceOnly": ["./source-writer"],
+    "assets": []
+  },
+  {
+    "name": "@log-book/engine",
+    "directory": "packages/engine",
+    "description": "Log Book's sync, derivations, labelling and reports",
+    "exports": ["."],
+    "workspaceOnly": ["./testing"],
+    "assets": ["dist/prompts/", "dist/rewrite/rewrite-process.js"]
+  },
+  {
+    "name": "@log-book/cli",
+    "directory": "apps/cli",
+    "description": "",
+    "exports": [],
+    "workspaceOnly": ["./grammar"],
+    "assets": []
+  }
+]
