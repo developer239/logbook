@@ -13,6 +13,7 @@ import {
   PUBLISH_ORDER,
   STAGED,
 } from '../stage/stage-libraries.js'
+import { contentRuleFindings, type IStagedPackage } from './package-content.js'
 
 const run = promisify(execFile)
 const MAX_LISTING_BYTES = 64 * 1024 * 1024
@@ -200,27 +201,45 @@ const fileFindings = (entry: IPublicPackage, files: readonly string[]): string[]
     ]
   })
 
-const packageFindingsOf = async (root: string, entry: IPublicPackage, homepage: string): Promise<string[]> => {
+// Rules 1 and 2 of one staged package, and what rules 3 to 6 read of it.
+const packageFindingsOf = async (
+  root: string,
+  entry: IPublicPackage,
+  homepage: string
+): Promise<{ findings: string[]; packed: IStagedPackage }> => {
   const directory = join(root, stagedOf(entry))
   const staged = await manifestAt(join(directory, 'package.json'))
   const files = await packedFiles(directory)
   const subpaths = await subpathFindings(root, entry)
+  const packed = {
+    name: entry.name,
+    directory: stagedOf(entry),
+    isCli: isCli(entry),
+    files,
+    dependencies: isRecord(staged.dependencies) ? Object.keys(staged.dependencies) : [],
+  }
   if (isCli(entry)) {
-    return [
-      ...fieldFindings(entry, staged, await cliManifestOf(root), CLI_OWN_RULES),
-      ...cliFindings(entry, staged),
-      ...subpaths,
-      ...fileFindings(entry, files),
-    ]
+    return {
+      findings: [
+        ...fieldFindings(entry, staged, await cliManifestOf(root), CLI_OWN_RULES),
+        ...cliFindings(entry, staged),
+        ...subpaths,
+        ...fileFindings(entry, files),
+      ],
+      packed,
+    }
   }
   const { manifest: expected } = await libraryStageOf(root, entry, homepage)
-  return [
-    ...fieldFindings(entry, staged, expected, LIBRARY_OWN_RULES),
-    ...exportFindings(entry, staged, expected),
-    ...dependencyFindings(entry, staged, await ownImportsOf(directory, files)),
-    ...subpaths,
-    ...fileFindings(entry, files),
-  ]
+  return {
+    findings: [
+      ...fieldFindings(entry, staged, expected, LIBRARY_OWN_RULES),
+      ...exportFindings(entry, staged, expected),
+      ...dependencyFindings(entry, staged, await ownImportsOf(directory, files)),
+      ...subpaths,
+      ...fileFindings(entry, files),
+    ],
+    packed,
+  }
 }
 
 // The staged directories present under packages/ and apps/.
@@ -284,7 +303,8 @@ const orderFindings = async (
   ]
 }
 
-// `pnpm check:package`: the staged packages' manifests, their packed files, and the staged set and its publish order.
+// `pnpm check:package`: the staged packages' manifests, their packed files, what they bundle, import and hold, and the
+// staged set and its publish order.
 export const packageFindings = async (root: string): Promise<string[]> => {
   const listed = await publicPackagesIn(root)
   const present = await stagedDirectories(root)
@@ -298,7 +318,11 @@ export const packageFindings = async (root: string): Promise<string[]> => {
     ...present
       .filter((directory) => !listed.some((entry) => stagedOf(entry) === directory))
       .map((directory) => `${directory}: staged, but ${PUBLIC_PACKAGES} does not list it [package/set]`),
-    ...perPackage.flat(),
+    ...perPackage.flatMap(({ findings }) => findings),
+    ...(await contentRuleFindings(
+      root,
+      perPackage.map(({ packed }) => packed)
+    )),
     ...(await orderFindings(root, listed, present)),
   ]
 }

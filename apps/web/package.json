@@ -3,7 +3,7 @@
   "version": "0.0.0-development",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && tsc -p tsconfig.guard.json",
+    "build": "env -i PATH=\"$PATH\" astro build && tsc -p tsconfig.guard.json",
     "typecheck": "tsc --noEmit --runExternalCode"
   },
   "license": "PolyForm-Noncommercial-1.0.0",

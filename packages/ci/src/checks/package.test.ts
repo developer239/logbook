@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { KNOWN_TOOL_NAMES, OWNER_LITERALS } from '../rules/owner-literals.js'
 import { gitWorkspaces } from '../testing/git-workspace.js'
 import { packageFindings } from './package.js'
 
@@ -8,6 +9,13 @@ const DESCRIPTION = 'Log Book shows where the time went.'
 const REPOSITORY = 'git+https://github.com/developer239/logbook.git'
 const BUGS = 'https://github.com/developer239/logbook/issues'
 const INDEX = { types: './dist/index.d.ts', default: './dist/index.js' }
+// A corpus mark of the right form, built here so this file holds no whole mark.
+const MARK = `log-book-demo-corpus-${'0123456789abcdef'.repeat(2)}`
+const SERVER_CHUNK = 'apps/cli/package/dist/web/server/chunks/page.mjs'
+const ALLOWLIST = 'packages/ci/src/rules/licence-allowlist.ts'
+const NO_OP_SERVICE =
+  "Astro's image optimisation path: the web app's Astro configuration must keep the no-op image service " +
+  '(passthroughImageService()), since the default one needs @img/* packages no user has installed [package/imports]'
 
 // A planted module's import of a workspace package, its specifier apart from `from` so the dependency rule does not read
 // the test as importing it.
@@ -126,6 +134,19 @@ const STAGED_WORKSPACE: Readonly<Record<string, string>> = {
   'apps/cli/package/dist/cli.mjs': 'export {}\n',
   'apps/cli/package/dist/web/guard.js': 'export {}\n',
   'build/publish-order.txt': 'packages/core/package\npackages/adapter-example/package\napps/cli/package\n',
+  'apps/cli/build/metafile.json': json({
+    inputs: { 'packages/core/dist/index.js': {}, 'node_modules/tiny/index.js': {} },
+    outputs: {},
+  }),
+  'apps/cli/build/bundled-packages.json': json([
+    { name: 'tiny', version: '1.0.0', license: 'MIT', licenseFile: 'node_modules/tiny/LICENSE' },
+  ]),
+  'apps/cli/package/THIRD-PARTY-NOTICES.md': 'The notices.\n\n## tiny 1.0.0\n\nLicense: MIT\n',
+  'apps/cli/package/dist/web/server/entry.mjs': "import { page } from './chunks/page.mjs'\nexport { page }\n",
+  [SERVER_CHUNK]: "import { readFile } from 'node:fs'\nconst path = require('path')\nexport const page = 1\n",
+  'apps/cli/package/dist/web/client/fonts/Geist-Variable.woff2': 'a font\n',
+  'apps/cli/package/dist/web/client/fonts/Geist-OFL.txt': 'Open Font License\n',
+  'packages/demo/src/corpus/corpus-mark.json': json({ mark: MARK }),
 }
 
 const workspaces = gitWorkspaces()
@@ -401,6 +422,186 @@ describe('packageFindings', () => {
         'build/publish-order.txt: @log-book/adapter-example comes before @log-book/core, which it depends on ' +
           '[package/publish-order]',
       ])
+    })
+  })
+
+  describe('bundle composition', () => {
+    it.each([
+      ['packages/demo/dist/index.js', 'the demo'],
+      ['packages/warehouse/dist/testing/index.js', 'a /testing/ path'],
+      ['packages/ci/dist/index.js', 'the CI tooling'],
+    ])('fails on a metafile holding %s', async (input, what) => {
+      // Act
+      const findings = await findingsWith({
+        'apps/cli/build/metafile.json': json({ inputs: { 'packages/core/dist/index.js': {}, [input]: {} } }),
+      })
+
+      // Assert
+      expect(findings).toStrictEqual([`@log-book/cli: dist/cli.mjs bundles ${input}, ${what} [package/bundle]`])
+    })
+
+    it.each([
+      ['GPL-3.0-only', false],
+      ['(MIT OR Apache-2.0)', true],
+      ['MIT AND GPL-3.0-only', false],
+      ['(MIT AND ISC) OR GPL-3.0-only', true],
+    ])('judges a bundled package licensed %s by the allowlist: allowed %s', async (license, isAllowed) => {
+      // Act
+      const findings = await findingsWith({
+        'apps/cli/build/bundled-packages.json': json([
+          { name: 'tiny', version: '1.0.0', license, licenseFile: 'node_modules/tiny/LICENSE' },
+        ]),
+      })
+
+      // Assert
+      expect(findings).toStrictEqual(
+        isAllowed
+          ? []
+          : [
+              `@log-book/cli: bundles tiny 1.0.0, licensed ${license}, which the allowlist in ${ALLOWLIST} does not ` +
+                "hold; a new licence is the owner's decision [package/licence]",
+            ]
+      )
+    })
+  })
+
+  describe('imports', () => {
+    it.each([
+      ['require', 'require("@img/sharp-libvips-dev/lib")'],
+      ["a bundler's renamed require", '__require("@img/sharp-libvips-dev/lib")'],
+    ])(
+      'fails on a server chunk that requires the image path through %s, naming the no-op service',
+      async (_how, call) => {
+        // Act
+        const findings = await findingsWith({ [SERVER_CHUNK]: `const libvips = ${call}\nexport const page = 1\n` })
+
+        // Assert
+        expect(findings).toStrictEqual([
+          `@log-book/cli: dist/web/server/chunks/page.mjs imports @img/sharp-libvips-dev/lib, ${NO_OP_SERVICE}`,
+        ])
+      }
+    )
+
+    it('fails on a CLI file importing an npm package, and passes prose and templates that follow from', async () => {
+      // Act
+      const findings = await findingsWith({
+        [SERVER_CHUNK]: [
+          "import pad from 'left-pad'",
+          '// tell "go on" from "stop after the batches in flight"',
+          'const text = `Import \\`finalize\\` from \\`astro\\``',
+          'export const page = pad',
+          '',
+        ].join('\n'),
+      })
+
+      // Assert
+      expect(findings).toStrictEqual([
+        '@log-book/cli: dist/web/server/chunks/page.mjs imports left-pad, which is neither relative nor a Node ' +
+          'built-in [package/imports]',
+      ])
+    })
+
+    it('fails on a library file importing an npm package', async () => {
+      // Act
+      const findings = await findingsWith({
+        'packages/core/package/dist/index.js': `${importOf('pad', 'left-pad')}\nexport const core = pad\n`,
+      })
+
+      // Assert
+      expect(findings).toStrictEqual([
+        '@log-book/core: dist/index.js imports left-pad, which is neither relative, a Node built-in nor a @log-book/ ' +
+          'package its manifest lists [package/imports]',
+      ])
+    })
+
+    it('fails on a library file importing a @log-book package its manifest does not list', async () => {
+      // Act
+      const findings = await findingsWith({
+        'packages/core/package/dist/index.js': `${importOf('adapter', '@log-book/adapter-example')}\nexport const core = 1\n`,
+      })
+
+      // Assert
+      expect(findings).toStrictEqual([
+        '@log-book/core: dist/index.js imports @log-book/adapter-example, which is neither relative, a Node ' +
+          'built-in nor a @log-book/ package its manifest lists [package/imports]',
+      ])
+    })
+  })
+
+  describe('notices', () => {
+    it('fails on a bundled package without a section in the notices', async () => {
+      // Act
+      const findings = await findingsWith({ 'apps/cli/package/THIRD-PARTY-NOTICES.md': 'The notices.\n' })
+
+      // Assert
+      expect(findings).toStrictEqual([
+        '@log-book/cli: THIRD-PARTY-NOTICES.md has no section for tiny 1.0.0 [package/notices]',
+      ])
+    })
+
+    it('fails on fonts without their licence beside them', async () => {
+      // Act
+      const findings = await findingsWith({ 'apps/cli/package/dist/web/client/fonts/Geist-OFL.txt': null })
+
+      // Assert
+      expect(findings).toStrictEqual([
+        '@log-book/cli: dist/web/client/fonts/ holds fonts without Geist-OFL.txt [package/notices]',
+      ])
+    })
+  })
+
+  describe('content', () => {
+    it('fails on a packed file holding the demo corpus mark', async () => {
+      // Act
+      const findings = await findingsWith({ 'packages/core/package/dist/index.js': `export const mark = '${MARK}'\n` })
+
+      // Assert
+      expect(findings).toStrictEqual(['@log-book/core: dist/index.js holds the demo corpus mark [package/corpus-mark]'])
+    })
+
+    it('passes the CI workspace path and fails on any other home path, naming it', async () => {
+      // Act
+      const findings = await findingsWith({
+        [SERVER_CHUNK]: [
+          "const built = '/home/runner/work/logbook/logbook/apps/web'",
+          "const mac = '/Users/alex/work/logbook/apps/web'",
+          "const linux = '/home/alex/logbook'",
+          'export const page = [built, mac, linux]',
+          '',
+        ].join('\n'),
+      })
+
+      // Assert
+      expect(findings).toStrictEqual([
+        '@log-book/cli: dist/web/server/chunks/page.mjs holds the absolute home path /Users/alex/work/logbook/apps/web [package/home-path]',
+        '@log-book/cli: dist/web/server/chunks/page.mjs holds the absolute home path /home/alex/logbook [package/home-path]',
+      ])
+    })
+
+    it('fails on an owner literal, naming only the literal, and passes the known tool names', async () => {
+      // Arrange
+      const [literal = ''] = OWNER_LITERALS
+      const [tool = ''] = KNOWN_TOOL_NAMES
+
+      // Act
+      const findings = await findingsWith({
+        'packages/core/package/dist/index.js': `export const names = ['${tool}', 'my-${literal.toUpperCase()}-notes']\n`,
+      })
+
+      // Assert
+      expect(findings).toStrictEqual([
+        `@log-book/core: dist/index.js holds ${literal}, an owner-specific literal [package/owner-literal]`,
+      ])
+    })
+
+    it('stops, naming the corpus directory, when its JSON files hold no corpus mark', async () => {
+      // Act
+      const findings = findingsWith({ 'packages/demo/src/corpus/corpus-mark.json': json({ mark: 'none' }) })
+
+      // Assert
+      await expect(findings).rejects.toThrow(
+        "packages/demo/src/corpus: its JSON files hold 0 values of the corpus mark's form, not exactly one."
+      )
     })
   })
 })
