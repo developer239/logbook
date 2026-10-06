@@ -1,8 +1,13 @@
+import { execFile } from 'node:child_process'
 import { appendFile, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 import { trackedFiles } from '../tracked-files.js'
 
-interface IQuarantined {
+const run = promisify(execFile)
+const MAX_FILE_BYTES = 64 * 1024 * 1024
+
+export interface IQuarantined {
   file: string
   name: string
   issue: string
@@ -63,11 +68,11 @@ const scanLine = (file: string, lines: readonly string[], index: number, scan: I
   scanQuarantine(file, lines, index, scan)
 }
 
-// Every test file and Vitest configuration git tracks, scanned for retries, focused tests and unexplained skips.
-const scanTests = async (root: string): Promise<ITestScan> => {
-  const files = (await trackedFiles(root, ['.'])).filter((file) => TEST_FILE.test(file) || VITEST_CONFIG.test(file))
+const isScanned = (file: string): boolean => TEST_FILE.test(file) || VITEST_CONFIG.test(file)
+
+// These files, scanned for retries, focused tests and unexplained skips.
+const scanTexts = (files: readonly string[], texts: readonly string[]): ITestScan => {
   const scan: ITestScan = { findings: [], quarantined: [] }
-  const texts = await Promise.all(files.map(async (file) => readFile(join(root, file), 'utf8')))
   for (const [position, text] of texts.entries()) {
     const lines = text.split('\n')
     for (const index of lines.keys()) {
@@ -75,6 +80,24 @@ const scanTests = async (root: string): Promise<ITestScan> => {
     }
   }
   return scan
+}
+
+// Every test file and Vitest configuration git tracks.
+const scanTests = async (root: string): Promise<ITestScan> => {
+  const files = (await trackedFiles(root, ['.'])).filter(isScanned)
+  return scanTexts(files, await Promise.all(files.map(async (file) => readFile(join(root, file), 'utf8'))))
+}
+
+// The tests quarantined at a ref, read from the files git holds there, as check:tests finds them in the working tree.
+export const quarantinedAt = async (root: string, ref: string): Promise<IQuarantined[]> => {
+  const { stdout } = await run('git', ['ls-tree', '-r', '--name-only', ref], { cwd: root, maxBuffer: MAX_FILE_BYTES })
+  const files = stdout.split('\n').filter(isScanned)
+  const texts = await Promise.all(
+    files.map(
+      async (file) => (await run('git', ['show', `${ref}:${file}`], { cwd: root, maxBuffer: MAX_FILE_BYTES })).stdout
+    )
+  )
+  return scanTexts(files, texts).quarantined
 }
 
 const quarantineSection = (quarantined: readonly IQuarantined[]): string => {
