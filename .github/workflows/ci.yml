@@ -513,7 +513,35 @@ jobs:
       PACKAGES: ${{ needs.release.outputs.packages }}
       LATEST_BEFORE: ${{ needs.release.outputs.latest-before }}
       RECORDED_AT: ${{ needs.release.outputs.recorded-at }}
+      # How long verify waits for the registry to show the release; it took about 5 minutes for 1.0.0.
+      WAIT_SECONDS: 900
     steps:
+      # The registry shows a version some minutes after its upload, so verify judges it only once every package shows
+      # next at the version and its provenance, or once the wait is over; the checks then report whatever is missing.
+      - name: Wait for the registry
+        run: |
+          started=$(date +%s)
+          while :; do
+            waiting=''
+            for name in $(jq -r '.[]' <<< "$PACKAGES"); do
+              next=$(curl -fsS "https://registry.npmjs.org/-/package/$name/dist-tags" | jq -r '.next // ""')
+              code=$(curl -sS -o /dev/null -w '%{http_code}' "https://registry.npmjs.org/-/npm/v1/attestations/${name/\//%2f}@$VERSION")
+              if [ "$next" != "$VERSION" ] || [ "$code" != 200 ]; then
+                waiting="$waiting $name"
+              fi
+            done
+            waited=$(($(date +%s) - started))
+            if [ -z "$waiting" ]; then
+              echo "The registry shows $VERSION of every package after ${waited}s."
+              break
+            fi
+            if [ "$waited" -ge "$WAIT_SECONDS" ]; then
+              echo "After ${waited}s the registry still lacks $VERSION of:$waiting."
+              break
+            fi
+            echo "After ${waited}s still waiting for:$waiting"
+            sleep 30
+          done
       - name: Check the registry and the release
         run: |
           status=0
