@@ -153,6 +153,9 @@ importers:
       '@log-book/cli':
         specifier: workspace:*
         version: link:../cli
+      '@log-book/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.1

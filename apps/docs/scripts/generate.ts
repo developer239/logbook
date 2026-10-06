@@ -1,5 +1,7 @@
-import { access, mkdir, writeFile } from 'node:fs/promises'
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { COMMANDS, ENVIRONMENT, EXIT_CODES } from '@log-book/cli/grammar'
+import { ITEM_CONTENTS, LABEL_TASK_NAMES } from '@log-book/engine'
+import { callSitesOf, callSitesPage, itemContentsPage } from './privacy.js'
 import { cliPage, commandSlug, environmentPage, exitCodesPage, modelOptionPage, startOptionsPage } from './reference.js'
 import { WHAT_TO_DO } from './what-to-do.js'
 
@@ -7,6 +9,8 @@ import { WHAT_TO_DO } from './what-to-do.js'
 const SOURCE = new URL('../../src/', import.meta.url)
 const GENERATED = new URL('.generated/', SOURCE)
 const EXAMPLES = new URL('reference/examples/', SOURCE)
+// Read as a file, never imported.
+const CALL_SITES = new URL('../../../../packages/engine/network-call-sites.json', import.meta.url)
 
 // Every command's section includes its written examples, so a command without them stops the generation.
 const checkExamples = async (): Promise<void> => {
@@ -28,7 +32,8 @@ const checkExamples = async (): Promise<void> => {
   }
 }
 
-// Writes the reference pages' generated parts from the CLI's command table into src/.generated.
+// Writes the reference and privacy pages' generated parts into src/.generated: from the CLI's command table, the
+// engine's item contents and the network call-site file.
 const generate = async (): Promise<void> => {
   await checkExamples()
   await mkdir(GENERATED, { recursive: true })
@@ -38,6 +43,8 @@ const generate = async (): Promise<void> => {
     'model-option.md': modelOptionPage(COMMANDS),
     'exit-codes.md': exitCodesPage(EXIT_CODES, WHAT_TO_DO),
     'environment.md': environmentPage(ENVIRONMENT),
+    'item-contents.md': itemContentsPage(ITEM_CONTENTS, LABEL_TASK_NAMES),
+    'call-sites.md': callSitesPage(callSitesOf(await readFile(CALL_SITES, 'utf8'))),
   }
   await Promise.all(Object.entries(files).map(async ([name, text]) => writeFile(new URL(name, GENERATED), text)))
 }
