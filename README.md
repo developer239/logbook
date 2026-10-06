@@ -1,4 +1,4 @@
-Log Book shows where your coding agent's time went, from the sessions Claude Code and OpenCode already keep on your machine.
+See where your coding agent's time went, from the sessions data Claude Code and OpenCode already keep on your device.
 
 [![CI](https://github.com/developer239/logbook/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/developer239/logbook/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@log-book/cli?label=npm&color=cb3837)](https://www.npmjs.com/package/@log-book/cli)
@@ -16,15 +16,15 @@ npm install -g @log-book/cli
 logbook
 ```
 
-`logbook` syncs your sessions and opens the dashboard at `http://127.0.0.1:7314`. It needs Node.js 24.15 or newer on macOS or Linux; on Windows, run it inside WSL.
+Calling `logbook` automatically syncs your sessions and opens the dashboard at `http://127.0.0.1:7314`. It needs Node.js 24.15 or newer on macOS or Linux; on Windows, run it inside WSL.
 
-## What it shows
+## What you get
 
-- **Time per turn:** model time, tool time, and the time the agent waited for you.
+- **Every conversation:** the whole thread with its steps, subagents and tokens, from both agents in one list and their tool calls.
 - **Tool problems:** failed calls by cause, retry loops, and calls that ran far longer than usual.
 - **Reactions:** how often you corrected the agent, pushed back or praised it, and how each model's replies react to you.
+- **Time per turn:** model time, tool time, and the time the agent waited for you.
 - **Goals and outcomes:** what each conversation was for, and whether it got done.
-- **Every conversation:** the whole thread with its steps, subagents and tokens, from both agents in one list.
 
 ## Privacy
 
