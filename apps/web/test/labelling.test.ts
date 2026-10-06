@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { isProcessAlive, takeLabelsLock, type IHeldLock, type LabelsLockOperation } from '@log-book/warehouse'
 import { createTestWarehouse, insert, type ITestWarehouse } from '@log-book/warehouse/testing'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { logbookStub, type ILogbookStub } from '../src/lib/testing/logbook-stub'
+import { logbookStub, STUB_START_TIMEOUT_MS, type ILogbookStub } from '../src/lib/testing/logbook-stub'
 import { mountBuiltHandler, type IBuiltHandler } from './built-handler'
 
 const MINUTE = 60_000
@@ -477,9 +477,12 @@ describe('POST /labels and /labels/stop: a run started here', () => {
 
     // Act
     await post('/labels', '')
-    await vi.waitFor(async () => {
-      expect(await topBarLabel()).not.toBe('Starting labelling…')
-    })
+    await vi.waitFor(
+      async () => {
+        expect(await topBarLabel()).not.toBe('Starting labelling…')
+      },
+      { timeout: STUB_START_TIMEOUT_MS }
+    )
     if (code !== 7) {
       stub.answer(0, [], { stdout: JSON.stringify(PLAN) })
     }
