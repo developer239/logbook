@@ -6,7 +6,7 @@ The first line installs the `logbook` command, and the second starts Log Book. T
 
 ## Requirements
 
-- Node.js <Fact name="nodeFloor" /> or newer. From that version on, Node.js loads `node:sqlite` without a flag and with full-text search, which Log Book's warehouse needs. On an older Node.js, `logbook` stops before it starts and prints:
+- Node.js <Fact name="nodeFloor" /> or newer. From that version on, Node.js loads `node:sqlite`, which Log Book's warehouse needs, without a flag, with full-text search and without printing an experimental-feature warning. On an older Node.js, `logbook` stops before it starts and prints:
 
   ```text
   Log Book needs Node.js <floor> or newer; this is Node.js <version> at <path>. Install Node.js <floor> (https://nodejs.org) or switch to it with your version manager, then run logbook again.

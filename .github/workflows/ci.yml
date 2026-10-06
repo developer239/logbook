@@ -101,6 +101,104 @@ jobs:
           SEED: ${{ steps.seed.outputs.seed }}
         run: pnpm check:installed --seed "$SEED"
 
+  # The shim on Node older than the floor, with nothing installed and nothing built: it must stay parseable there and
+  # refuse with its one line.
+  shim:
+    name: shim (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Refusal on old Node
+        run: |
+          out="$RUNNER_TEMP/shim-stdout"
+          err="$RUNNER_TEMP/shim-stderr"
+          code=0
+          node apps/cli/bin/logbook.cjs --version > "$out" 2> "$err" || code=$?
+          version=$(node -p process.versions.node)
+          node_path=$(node -p process.execPath)
+          expected="$RUNNER_TEMP/shim-expected"
+          printf '%s\n' "Log Book needs Node.js 24.15 or newer; this is Node.js $version at $node_path. Install Node.js 24.15 (https://nodejs.org) or switch to it with your version manager, then run logbook again." > "$expected"
+          echo "Exit code: $code"
+          echo "stderr:"
+          cat "$err"
+          status=0
+          if [ "$code" -ne 5 ]; then
+            echo "::error::The shim exited $code on Node $version, not 5."
+            status=1
+          fi
+          if [ -s "$out" ]; then
+            echo "::error::The shim wrote to stdout on Node $version."
+            status=1
+          fi
+          if ! cmp -s "$expected" "$err"; then
+            echo "::error::The shim's stderr on Node $version is not the one refusal line."
+            diff "$expected" "$err" || true
+            status=1
+          fi
+          exit "$status"
+
+  # The packed CLI built, tested and installed on each supported runner, from the Node floor up; the format, lint and
+  # literal checks do not depend on the platform and stay in checks. On the Linux rows check:installed includes the
+  # offline run in a network namespace.
+  platforms:
+    name: platforms (${{ matrix.runner }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      # One platform's failure does not hide another's.
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            node: 24.15.0
+          - runner: ubuntu-24.04-arm
+            node: current
+          - runner: macos-latest
+            node: 24.15.0
+          - runner: macos-latest
+            node: current
+          - runner: macos-26-intel
+            node: 24
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          check-latest: true
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+      # The first eight hexadecimal digits of the head commit, so a re-run of the same commit shuffles the same way.
+      - name: Shuffle seed
+        id: seed
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          seed=$((16#${HEAD_SHA:0:8}))
+          echo "seed=$seed" >> "$GITHUB_OUTPUT"
+          echo "Shuffle seed: $seed"
+          {
+            echo "Shuffle seed: $seed"
+            echo
+            echo "Reproduce the test order with: \`pnpm test --sequence.shuffle --sequence.seed=$seed\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Unit to composition tests
+        env:
+          SEED: ${{ steps.seed.outputs.seed }}
+        run: pnpm test --sequence.seed="$SEED"
+      - name: Installed smoke
+        env:
+          SEED: ${{ steps.seed.outputs.seed }}
+        run: pnpm check:installed --seed "$SEED"
+
   # The demo dataset's checks that need a built set, and the scan of committed demo captures that packages/ci cannot
   # run itself, since it may not import the demo package. Its one test command is test:demo; its other steps are static
   # checks, so no check runs both here and in checks.

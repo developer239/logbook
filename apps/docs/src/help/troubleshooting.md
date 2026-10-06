@@ -4,10 +4,10 @@ Each entry is headed by the first words of a message as Log Book prints it, so y
 
 ## Install and start
 
-### Log Book needs Node.js 24 or newer
+### Log Book needs Node.js 24.15 or newer
 
 ```text
-Log Book needs Node.js 24 or newer; this is Node.js 22.11.0 at /usr/bin/node. Install Node.js 24 (https://nodejs.org) or switch to it with your version manager, then run logbook again.
+Log Book needs Node.js 24.15 or newer; this is Node.js 22.11.0 at /usr/bin/node. Install Node.js 24.15 (https://nodejs.org) or switch to it with your version manager, then run logbook again.
 ```
 
 The Node.js that runs `logbook` is older than Log Book needs. Install Node.js <Fact name="nodeFloor" /> or newer, or switch to it with your version manager, and run `logbook` again. [Install](/start/install#requirements) says why.

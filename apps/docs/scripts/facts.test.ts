@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { factOf, type Facts } from './facts.js'
 
-const FACTS: Facts = { defaultPort: '7314', defaultModel: 'claude-haiku-4-5', nodeFloor: '24' }
+const FACTS: Facts = { defaultPort: '7314', defaultModel: 'claude-haiku-4-5', nodeFloor: '24.15' }
 
 describe('factOf', () => {
   it('gives a fact by its name', () => {

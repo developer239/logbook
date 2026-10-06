@@ -128,7 +128,7 @@ describe('stageLibraries', () => {
       version: '0.0.0-development',
       license: 'PolyForm-Noncommercial-1.0.0',
       type: 'module',
-      engines: { node: '>=24' },
+      engines: { node: '>=24.15' },
       exports: { '.': exportOf('index') },
       files: ['dist/'],
       homepage: 'https://example.com/logbook/',
