@@ -99,8 +99,8 @@ const conditionOf = (harnesses: Harnesses, field: FilterField, values: string[])
     case 'tool':
       return {
         sql: `EXISTS (SELECT 1 FROM tool_call tc WHERE tc.session_id = s.id
-          AND (${values.map(() => toolIs('tc.name')).join(' OR ')}))`,
-        params: values.flatMap((value) => [value, value]),
+          AND (${values.map(() => toolIs('tc')).join(' OR ')}))`,
+        params: values,
       }
     case 'cause': {
       const cause = hasCause('tc.family', failureLabel('tc'), values)

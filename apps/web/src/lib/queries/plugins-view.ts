@@ -5,14 +5,13 @@ import {
   type IPluginServer,
   type IToolAnnouncement,
 } from '../plugins'
-import { parseMcpName, toolName } from '../tools'
 import { all } from '../warehouse'
-import { loadedNames, resultKind } from './context-events'
+import { loadedNames } from './context-events'
 import { messageOf, sessionOf, type ISession, type ISessionCache } from './session'
 
 export type PluginsView =
   | { offers: 'recorded'; servers: IPluginServer[] }
-  // OpenCode, and Claude Code before it announced the tools it offers.
+  // A session that recorded no tools-offered event: only the plugin tools it called are known.
   | { offers: 'unknown'; plugins: ICalledPlugin[]; definitions: 'recorded' | 'unrecorded' }
 
 const turnAt = (session: ISession, at: number): number | null => {
@@ -65,16 +64,20 @@ export const sessionPlugins = (cache: ISessionCache, sessionId: string): Plugins
   return {
     offers: 'unknown',
     plugins: calledPlugins(
-      session.tools
-        .filter((tool) => resultKind(tool) === 'plugins')
-        .map((tool) => ({
-          name: toolName(tool.name),
-          plugin: parseMcpName(tool.name)?.server ?? null,
-          calls: 1,
-          definitionTokens: session.definitionTokens.get(tool.name) ?? null,
-        }))
+      session.tools.flatMap((tool) =>
+        tool.server === null
+          ? []
+          : [
+              {
+                name: tool.bareName,
+                plugin: tool.server,
+                calls: 1,
+                definitionTokens: session.definitionTokens.get(tool.name) ?? null,
+              },
+            ]
+      )
     ),
-    // Only Claude Code records the definitions it loads.
-    definitions: session.harness === 'claude-code' ? 'recorded' : 'unrecorded',
+    // Whether the session recorded the definitions it loaded, by its own events.
+    definitions: session.definitionTokens.size > 0 ? 'recorded' : 'unrecorded',
   }
 }

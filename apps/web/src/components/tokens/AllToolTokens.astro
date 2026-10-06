@@ -26,9 +26,8 @@ const { rows, range } = Astro.props
   }
   <Fragment slot="note">
     What each call puts in the context, from its text at about {CHARS_PER_TOKEN} characters a token: the call and its result,
-    or the skill's text each time it loads. Every later request reads it again. A tool opens its calls. Definition is the largest
-    definition of the tool a conversation in this range recorded loading, which every request that carries it reads again,
-    whether or not it is called: Claude Code may hold a tool back until a search loads it. OpenCode records no
-    definitions.
+    or the skill's text each time it loads. Every later request reads it again. A tool opens its calls. A definition is what a tool's
+    name, description and input schema add to each request that carries it, whether or not it is called; this shows the
+    largest a conversation in this range recorded loading, and none where none was recorded.
   </Fragment>
 </Card>

@@ -5,7 +5,17 @@
 
 import { tokensOf } from './context'
 import { sumBy } from './lists'
-import { parseMcpName } from './tools'
+
+// A tools-offered event records each offered tool by its full name only, not by its server, so this one place reads
+// the server out of the name; every called tool carries the server its adapter recorded.
+const OFFERED_NAME = /^mcp__(?<server>.+?)__(?<tool>.+)$/u
+
+const offeredTool = (full: string): { server: string; tool: string } | null => {
+  const groups = OFFERED_NAME.exec(full)?.groups
+  return groups?.['server'] === undefined || groups['tool'] === undefined
+    ? null
+    : { server: groups['server'], tool: groups['tool'] }
+}
 
 export interface IToolAnnouncement {
   at: number
@@ -82,7 +92,7 @@ export const pluginServers = (inputs: IPluginInputs): IPluginServer[] | null => 
     const turn = isAtStart ? null : inputs.turnAt(announcement.at)
 
     for (const full of announcement.added) {
-      const mcp = parseMcpName(full)
+      const mcp = offeredTool(full)
 
       if (mcp === null) {
         continue
@@ -208,12 +218,12 @@ export interface ICalledTool {
 }
 
 export interface ICalledPlugin {
-  // Null for a tool outside every MCP server.
-  plugin: string | null
+  // The MCP server the calls recorded.
+  plugin: string
   tools: ICalledTool[]
 }
 
-export const calledPlugins = (calls: readonly (ICalledTool & { plugin: string | null })[]): ICalledPlugin[] =>
+export const calledPlugins = (calls: readonly (ICalledTool & { plugin: string })[]): ICalledPlugin[] =>
   [...Map.groupBy(calls, (call) => call.plugin)]
     .map(([plugin, ofPlugin]): ICalledPlugin => ({
       plugin,

@@ -5,7 +5,7 @@ import { all } from '../warehouse'
 
 export const TREND_REACTIONS = ['correction', 'pushback', 'praise'] as const
 
-// The cookbook's reply codes worth comparing models on: asking permission for what it could just do, dropping a
+// The reply codes worth comparing models on: asking permission for what it could just do, dropping a
 // position without a new reason, and pushing back.
 export const REPLY_HABITS = ['permission', 'caves', 'pushback'] as const
 
@@ -20,7 +20,7 @@ export interface IShare<TKind extends string> {
 }
 
 export interface IReactionTrend {
-  // Prompts in the range the cookbook labelled.
+  // Prompts in the range that were labelled.
   prompts: number
   reactions: IShare<(typeof TREND_REACTIONS)[number]>[]
 }

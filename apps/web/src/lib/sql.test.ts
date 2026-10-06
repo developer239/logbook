@@ -51,8 +51,8 @@ const isMatched = (text: string, said: string): boolean =>
 
 const toolsNamed = (name: string): string[] =>
   db
-    .prepare(`SELECT tc.name FROM tool_call tc WHERE ${toolIs('tc.name')} ORDER BY tc.name`)
-    .all(name, name)
+    .prepare(`SELECT tc.name FROM tool_call tc WHERE ${toolIs('tc')} ORDER BY tc.name`)
+    .all(name)
     .map((row) => String((row as TRow)['name']))
 
 const loopNames = (): string[] =>
@@ -105,21 +105,21 @@ describe('literal', () => {
 })
 
 describe('toolIs', () => {
-  it('should match a tool in any case and under any MCP server prefix', () => {
+  it('should match a tool by its name without its server, in any case and under any server', () => {
     call('c1', 'Read')
     call('c2', 'read')
-    call('c3', 'mcp__opencode__read')
-    call('c4', 'mcp__claude_ai_Docs__READ')
+    call('c3', 'mcp__opencode__read', { bare_name: 'read', server: 'opencode' })
+    call('c4', 'mcp__claude_ai_Docs__READ', { bare_name: 'READ', server: 'claude_ai_Docs' })
     call('c5', 'Reader')
-    call('c6', 'mcp__opencode__reader')
+    call('c6', 'mcp__opencode__reader', { bare_name: 'reader', server: 'opencode' })
     call('c7', 'unread')
 
     expect(toolsNamed('read')).toEqual(['Read', 'mcp__claude_ai_Docs__READ', 'mcp__opencode__read', 'read'])
   })
 
   it('should match an underscore in the name as an underscore', () => {
-    call('c1', 'mcp__opencode__oc_run')
-    call('c2', 'mcp__opencode__ocXrun')
+    call('c1', 'mcp__opencode__oc_run', { bare_name: 'oc_run', server: 'opencode' })
+    call('c2', 'mcp__opencode__ocXrun', { bare_name: 'ocXrun', server: 'opencode' })
 
     expect(toolsNamed('oc_run')).toEqual(['mcp__opencode__oc_run'])
   })

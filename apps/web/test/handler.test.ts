@@ -9,6 +9,7 @@ import { createTestWarehouse, insert, type ITestWarehouse } from '@log-book/ware
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { HOST_REFUSAL, ORIGIN_REFUSAL } from '../src/lib/guard'
 import { logbookStub } from '../src/lib/testing/logbook-stub'
+import { label, message, session, toolCall } from '../src/lib/testing/rows'
 
 type THandler = (req: IncomingMessage, res: ServerResponse, next?: (error?: unknown) => void) => void | Promise<void>
 
@@ -276,5 +277,94 @@ describe('harness names in the built handler', () => {
 
     // Assert
     expect(conversation).toContain('ghost')
+  })
+})
+
+describe('recorded tool fields in the built handler', () => {
+  const AT = Date.UTC(2026, 9, 5, 12)
+  const NOT_OFFERED = 'This session did not record which tools it was offered'
+
+  beforeAll(() => {
+    if (warehouse === undefined) {
+      throw new Error('The warehouse is made before every describe block')
+    }
+    const { db } = warehouse
+    for (const id of ['sample:demo-0001', 'other:demo-0001']) {
+      session(db, {
+        id,
+        harness: id.split(':')[0] ?? '',
+        origin: 'interactive',
+        title: 'File the bug',
+        startedAt: AT,
+        endedAt: AT + 60_000,
+      })
+      message(db, { id: `${id}/m1`, sessionId: id, seq: 0, actor: 'user', at: AT, text: 'File it' })
+      message(db, { id: `${id}/m2`, sessionId: id, seq: 1, actor: 'assistant', at: AT + 1000, text: 'Filing' })
+      toolCall(db, {
+        id: `${id}/create`,
+        sessionId: id,
+        messageId: `${id}/m2`,
+        name: 'mcp__tracker__create_issue',
+        bareName: 'create_issue',
+        server: 'tracker',
+        family: 'mcp:tracker',
+        startedAt: AT + 2000,
+      })
+    }
+    insert(db, 'event', {
+      id: 'sample:demo-0001/offered',
+      session_id: 'sample:demo-0001',
+      kind: 'tools-offered',
+      at: AT,
+      data_json: JSON.stringify({
+        added: ['mcp__tracker__create_issue'],
+        removed: [],
+        surfaced: [],
+        pendingServers: null,
+        needsAuthServers: null,
+        failedServers: null,
+      }),
+    })
+    toolCall(db, {
+      id: 'other:demo-0001/dispatch',
+      sessionId: 'other:demo-0001',
+      messageId: 'other:demo-0001/m2',
+      name: 'Dispatch',
+      family: 'dispatch',
+      status: 'error',
+      startedAt: AT + 3000,
+    })
+    label(db, {
+      recordType: 'tool_call',
+      recordId: 'other:demo-0001/dispatch',
+      labeller: 'rules',
+      name: 'cause',
+      value: 'aborted',
+    })
+  })
+
+  it('shows the offered tools when the session recorded them and the called ones otherwise, whatever its harness', async () => {
+    // Act
+    const [offered, called] = [
+      await page('/conversations/sample%3Ademo-0001?range=all'),
+      await page('/conversations/other%3Ademo-0001?range=all'),
+    ]
+
+    // Assert
+    expect({
+      offered: offered.includes('1 tool offered') && !offered.includes(NOT_OFFERED),
+      called: called.includes(NOT_OFFERED) && called.includes('tracker') && called.includes('create_issue'),
+    }).toStrictEqual({ offered: true, called: true })
+  })
+
+  it('counts a failed dispatch call under its cause in Tool problems, with no list of tools you maintain', async () => {
+    // Act
+    const dashboard = await page('/?range=all')
+
+    // Assert
+    expect({
+      isUnderCause: dashboard.includes('Stopped before finishing') && dashboard.includes('Dispatch'),
+      hasMaintained: dashboard.includes('tools you maintain'),
+    }).toStrictEqual({ isUnderCause: true, hasMaintained: false })
   })
 })

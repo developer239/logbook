@@ -23,7 +23,7 @@ const toolCount = sumBy(plugins, (plugin) => plugin.tools.length)
     plugins.map((plugin) => (
       <div>
         <div class="plugins__group-head">
-          <b class="plugins__group-name">{plugin.plugin ?? 'not in the cookbook now'}</b>
+          <b class="plugins__group-name">{plugin.plugin}</b>
           <span class="plugins__group-meta">{count(plugin.tools.length)} used</span>
         </div>
         <ul class="plugins__list">
@@ -39,10 +39,11 @@ const toolCount = sumBy(plugins, (plugin) => plugin.tools.length)
     ))
   }
   <p class="plugins__note">
+    This session did not record which tools it was offered, so only the plugin tools it called are listed.
     {
       definitions === 'unrecorded'
-        ? "OpenCode records neither which tools it offered nor their definitions; it sends every tool the agent's permissions allow in full on every request, so their sizes are unknown."
-        : 'This transcript is from before Claude Code recorded the tools it offered. Sizes are the definitions it recorded loading; unknown where it recorded none.'
+        ? 'It recorded no tool definitions either, so their sizes are unknown.'
+        : 'Sizes are the definitions it recorded loading; unknown where it recorded none.'
     }
   </p>
 </Plugins>

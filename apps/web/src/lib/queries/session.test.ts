@@ -19,6 +19,8 @@ const tool = (id: string, messageId: string): IToolRow => ({
   id,
   messageId,
   name: 'Read',
+  bareName: 'Read',
+  server: null,
   family: 'file',
   status: 'completed',
   inputJson: '{}',

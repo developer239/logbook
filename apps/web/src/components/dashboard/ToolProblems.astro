@@ -1,5 +1,5 @@
 ---
-import { count, day, pct, plural } from '../../lib/format'
+import { count, pct, plural } from '../../lib/format'
 import { stepsHref } from '../../lib/links'
 import type { IToolProblems } from '../../lib/queries/problems'
 import type { IRange } from '../../lib/range'
@@ -14,7 +14,7 @@ import './ToolProblems.css'
 
 type Props = IToolProblems & { range: IRange }
 
-const { range, causes, failed, realResults, bugs } = Astro.props
+const { range, causes, failed, realResults } = Astro.props
 const most = Math.max(1, ...causes.map((cause) => cause.calls))
 const HEADS = [{ label: 'Cause' }, { label: 'Calls', isEnd: true }, { label: '' }, { label: 'Last 7 days' }]
 ---
@@ -67,28 +67,6 @@ const HEADS = [{ label: 'Cause' }, { label: 'Calls', isEnd: true }, { label: '' 
           Left out: <Link href={stepsHref({ real: '1' }, range)}>{count(realResults)} real results</Link> such as failing tests,
           searches that found nothing and type errors found.
         </p>
-      )
-    }
-    {
-      bugs.length > 0 && (
-        <div class="tool-problems__bugs">
-          <h4 class="tool-problems__bugs-title">
-            Tool bugs <span class="tool-problems__bugs-aside">in tools you maintain</span>
-          </h4>
-          {bugs.map((bug) => (
-            <a class="tool-problems__bug" href={stepsHref({ cause: 'Tool bug', tool: bug.name }, range)}>
-              <code class="tool-problems__bug-tool">{bug.name}</code>
-              <span class="tool-problems__bug-tally">
-                {count(bug.failures)} failures, last on {day(bug.lastFailureAt)}
-              </span>
-              <Status class="tool-problems__bug-state" tone={bug.successesSince > 0 ? 'good' : 'problem'} form="text">
-                {bug.successesSince > 0
-                  ? `${plural(bug.successesSince, 'successful call')} since`
-                  : 'no successful call since'}
-              </Status>
-            </a>
-          ))}
-        </div>
       )
     }
   </Fragment>

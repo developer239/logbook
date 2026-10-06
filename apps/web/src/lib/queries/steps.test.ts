@@ -35,7 +35,7 @@ describe('steps', () => {
       title: 'Fix the widget',
       turnId: 'm-me-4',
       name: 'notes_add',
-      family: 'cookbook:notes',
+      family: 'mcp:opencode',
       status: 'completed',
       inputJson: '{"text":"hi"}',
       at: expect.any(Number) as number,

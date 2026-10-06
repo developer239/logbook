@@ -29,6 +29,7 @@ const { shown, called, most } = cardTools(rows)
   }
   <Fragment slot="note">
     What each call puts in the context, from its text at about {CHARS_PER_TOKEN} characters a token: the call and its result,
-    or the skill's text each time it loads. Every later request reads it again.
+    or the skill's text each time it loads. Every later request reads it again. A definition is what a tool's name,
+    description and input schema add to each request that carries it.
   </Fragment>
 </Card>

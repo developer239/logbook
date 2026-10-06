@@ -2,7 +2,6 @@ import { contextSnapshots, type IContextSnapshot } from '../context'
 import { ParamError } from '../errors'
 import { causeOf } from '../labels'
 import { MINUTE } from '../time'
-import { toolName } from '../tools'
 import { failuresWithCause, isSlow, usualTime } from './calls'
 import { contextEvents } from './context-events'
 import { turnPath } from './conversation'
@@ -20,8 +19,7 @@ import {
 } from './session'
 
 // A request whose first output came this long after the session was ready did
-// not wait on the model all that time. The cookbook's turn table draws the same
-// line.
+// not wait on the model all that time.
 const IDLE_GAP_MS = 10 * MINUTE
 
 interface IStepBase {
@@ -137,7 +135,7 @@ const turnSteps = (cache: ISessionCache, session: ISession, turn: ITurn, level: 
       level,
       startAt: tool.startedAt ?? messageOf(session, tool.messageId).createdAt,
       durationMs: tool.startedAt === null || tool.endedAt === null ? null : tool.endedAt - tool.startedAt,
-      name: toolName(tool.name),
+      name: tool.bareName,
       family: tool.family,
       isFailed: tool.status === 'error',
       cause: tool.status === 'error' ? causeOf(tool.family, tool.label) : null,

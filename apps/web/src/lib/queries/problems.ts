@@ -1,10 +1,7 @@
-import { causeOf, TOOL_BUG, UNLABELLED } from '../labels'
+import { causeOf, UNLABELLED } from '../labels'
 import { countBy } from '../lists'
 import type { IRange } from '../range'
-import { CALL_AT } from '../sql'
 import { addDays, startOfDay } from '../time'
-import { isCookbookFamily, normalName, toolName } from '../tools'
-import { get } from '../warehouse'
 import { causeCounts, failedCalls } from './calls'
 
 interface ICause {
@@ -15,18 +12,10 @@ interface ICause {
   tools: string[]
 }
 
-interface IToolBug {
-  name: string
-  failures: number
-  lastFailureAt: number
-  successesSince: number
-}
-
 export interface IToolProblems {
   causes: ICause[]
   failed: number
   realResults: number
-  bugs: IToolBug[]
 }
 
 const ROSE_FACTOR = 2
@@ -37,7 +26,7 @@ const roseFrom = (current: number, previous: number): number | null =>
 
 // The harnesses call the shell Bash and bash, so a name counts whatever its case.
 const topNames = (names: readonly string[], take: number): string[] =>
-  [...Map.groupBy(names, normalName).values()]
+  [...Map.groupBy(names, (name) => name.toLowerCase()).values()]
     .toSorted((left, right) => right.length - left.length)
     .slice(0, take)
     .flatMap((group) => group.slice(0, 1))
@@ -86,30 +75,12 @@ export const toolProblems = (range: IRange): IToolProblems => {
         roseFrom:
           range.previous === null || cause === UNLABELLED ? null : roseFrom(ofCause.length, previous.get(cause) ?? 0),
         tools: topNames(
-          ofCause.map((call) => toolName(call.name)),
+          ofCause.map((call) => call.name),
           TOP_TOOLS
         ),
       }
     })
     .toSorted((left, right) => right.calls - left.calls)
 
-  const bugCalls = (byCause.get(TOOL_BUG) ?? []).filter((call) => isCookbookFamily(call.family))
-
-  const bugs = topNames(
-    bugCalls.map((call) => call.name),
-    TOP_TOOLS
-  ).map((full): IToolBug => {
-    const ofTool = bugCalls.filter((call) => call.name === full)
-    const lastFailureAt = Math.max(...ofTool.map((call) => call.at))
-    const successesSince =
-      get<{ total: number }>(
-        `SELECT COUNT(*) AS total FROM tool_call tc WHERE tc.name = ? AND tc.status = 'completed' AND ${CALL_AT} > ?`,
-        full,
-        lastFailureAt
-      )?.total ?? 0
-
-    return { name: toolName(full), failures: ofTool.length, lastFailureAt, successesSince }
-  })
-
-  return { causes, failed: calls.length - realResults, realResults, bugs }
+  return { causes, failed: calls.length - realResults, realResults }
 }
