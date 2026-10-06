@@ -32,6 +32,7 @@
         "scripts/run-generate.ts",
         "scripts/check.ts",
         "scripts/sync-readme.ts",
+        "scripts/run-text-changes.ts",
         "capture/build.ts",
         ".vitepress/theme/*.data.ts"
       ],
