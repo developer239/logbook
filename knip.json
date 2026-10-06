@@ -29,7 +29,12 @@
     },
     "apps/docs": {
       "entry": ["scripts/generate.ts", "scripts/check.ts", "scripts/sync-readme.ts"],
-      "project": ["*.ts", "scripts/**/*.ts", ".vitepress/**/*.{ts,mts,vue}"]
+      "project": [
+        "*.ts",
+        "scripts/**/*.ts",
+        "capture/**/*.{ts,mjs}",
+        ".vitepress/**/*.{ts,mts,vue}"
+      ]
     },
     "apps/web": {
       "entry": ["src/pages/**/*.astro", "src/scripts/*.ts"],
