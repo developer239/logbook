@@ -16,3 +16,9 @@ mise.local.toml
 packages/demo/out/
 apps/cli/package/
 apps/cli/build/
+
+# documentation site builds and generated pages
+apps/docs/.vitepress/dist/
+apps/docs/.vitepress/cache/
+apps/docs/src/.generated/
+apps/docs/src/public/captures/

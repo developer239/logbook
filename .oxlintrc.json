@@ -424,7 +424,13 @@
       }
     },
     {
-      "files": ["packages/adapter-*/src/index.ts", "**/*.config.ts", "**/*.config.mjs"],
+      "files": [
+        "packages/adapter-*/src/index.ts",
+        "**/*.config.ts",
+        "**/*.config.mjs",
+        "apps/docs/.vitepress/config.mts",
+        "apps/docs/.vitepress/theme/index.ts"
+      ],
       "rules": {
         "import/no-default-export": "off"
       }

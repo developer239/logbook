@@ -1,0 +1,21 @@
+{
+  "name": "@log-book/docs",
+  "version": "0.0.0-development",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "mermaid": "catalog:",
+    "vitepress": "catalog:",
+    "vitepress-mermaid-renderer": "catalog:",
+    "vitest": "catalog:",
+    "vue": "catalog:"
+  }
+}
