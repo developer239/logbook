@@ -26,7 +26,7 @@
     "check:deps": "pnpm ci:build && node packages/ci/dist/index.js deps",
     "check:fixtures": "pnpm ci:build && node packages/ci/dist/index.js fixtures",
     "check:tests": "pnpm ci:build && node packages/ci/dist/index.js tests",
-    "check:release": "pnpm ci:build && node packages/ci/dist/index.js release",
+    "check:release": "pnpm ci:build && node packages/ci/dist/index.js release-guard",
     "stage": "pnpm ci:build && node packages/ci/dist/index.js stage-cli && node packages/ci/dist/index.js stage-libraries",
     "demo:build": "node packages/demo/bin/logbook-demo.mjs build",
     "demo:check": "node packages/demo/bin/logbook-demo.mjs check",
@@ -42,7 +42,8 @@
     "docs:text-changes": "pnpm --silent --filter @log-book/docs text-changes",
     "check:literals": "pnpm ci:build && node packages/ci/dist/index.js literals",
     "check:network": "pnpm ci:build && node packages/ci/dist/index.js network",
-    "check:package": "pnpm ci:build && node packages/ci/dist/index.js package"
+    "check:package": "pnpm ci:build && node packages/ci/dist/index.js package",
+    "release:version": "pnpm ci:build && node packages/ci/dist/index.js release"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",

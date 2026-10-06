@@ -24,6 +24,9 @@ catalog:
   '@commitlint/lint': 21.2.3
   '@commitlint/load': 21.2.3
   '@commitlint/types': 21.2.3
+  '@semantic-release/commit-analyzer': 13.0.1
+  '@semantic-release/github': 12.0.10
+  '@semantic-release/release-notes-generator': 14.1.1
   '@types/node': 24.19.1
   astro: 7.3.5
   esbuild: 0.28.2
@@ -36,6 +39,7 @@ catalog:
   oxlint: 1.86.0
   oxlint-tsgolint: 7.0.2003
   playwright: 1.63.0
+  semantic-release: 25.0.9
   stylelint: 17.16.0
   typescript: 7.1.0-dev.20261003.1
   vitepress: 1.6.3
