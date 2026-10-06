@@ -71,6 +71,7 @@ export type SharedToolName =
   | 'git-log'
   | 'git-tag'
   | 'trace-drift'
+  | 'git-commit'
   | 'git-push'
   | 'grep-code'
   | 'typecheck'
@@ -508,6 +509,13 @@ export const TOOLS: IToolCorpus = {
       command: 'pytest -q -k tax -s',
       result: `tax line 1: 0.125 -> 0.13\ntax line 2: 0.135 -> 0.14\ntax line 3: ${SEARCH_PHRASE}\n.\n1 passed in 0.10s`,
       durationMs: 3 * SECOND_MS,
+    }),
+    'git-commit': shell({
+      ...GIT_CHANGE,
+      command: 'git commit -am "add a discount code field to checkout"',
+      result:
+        '[feature/discount-codes 8d3e0b7] add a discount code field to checkout\n 2 files changed, 11 insertions(+), 5 deletions(-)',
+      durationMs: 2 * SECOND_MS,
     }),
     'git-push': shell({
       ...GIT_CHANGE,

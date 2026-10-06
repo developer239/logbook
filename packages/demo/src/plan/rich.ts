@@ -4,6 +4,7 @@ import type { ShapeName } from '../corpus/shapes.js'
 import { createStream, type IRandomStream } from '../random.js'
 import { dayStart, HOUR_MS } from './calendar.js'
 import { minutes, SessionPlanner, spanOf, turnsFrom } from './session-planner.js'
+import { planShowcase } from './showcase.js'
 import type { ISessionSpec } from './small.js'
 import type { IPlan, IPlannedTurn } from './types.js'
 
@@ -39,11 +40,12 @@ interface IGroup {
   scriptedHosts: number
 }
 
-// 150 top-level sessions in the first writer (130 interactive and 20 scripted, 6 of those run from another session's
-// shell call) and 90 in the second; 67 of the first writer's start a subagent, 3 of which start another, and 30 of
-// the second's start a child session. `shop` mostly in the first writer, `billing` mostly in the second.
+// With the showcase conversation, 150 top-level sessions in the first writer (130 interactive and 20 scripted, 6 of
+// those run from another session's shell call) and 90 in the second; 67 of the first writer's start a subagent, 3 of
+// which start another, and 30 of the second's start a child session. `shop` mostly in the first writer, `billing`
+// mostly in the second.
 const GROUPS: readonly IGroup[] = [
-  { writer: 0, project: 'shop', count: 86, hosts: 55, nested: 3, scriptedHosts: 6 },
+  { writer: 0, project: 'shop', count: 85, hosts: 54, nested: 3, scriptedHosts: 6 },
   { writer: 0, project: 'billing', count: 16, hosts: 12, nested: 0, scriptedHosts: 0 },
   { writer: 0, project: 'field-guide', count: 28, hosts: 0, nested: 0, scriptedHosts: 0 },
   { writer: 1, project: 'billing', count: 60, hosts: 26, nested: 0, scriptedHosts: 0 },
@@ -165,6 +167,8 @@ export class RichPlanner extends SessionPlanner {
 
   public readonly plan = (): IPlan => {
     const { seed, anchor, labels, model } = this.inputs
+    // Planned before everything else, so its writer writes it first.
+    this.sessions.push(...planShowcase(this.inputs))
     const placed = this.recentOnes(createStream(seed, 'rich/order').shuffle(this.specs()))
     const older = placed.filter((entry) => !entry.isRecent)
     let previousEnd = 0

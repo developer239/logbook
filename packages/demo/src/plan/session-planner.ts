@@ -6,7 +6,7 @@ import type { IPlanInputs, IPlannedSession, IPlannedTurn, IWriterDeclaration } f
 const SECOND_MS = 1000
 // The turn of a session that starts another session, long enough to hold it.
 const SPAWNING_TURN = 1
-const TOP_LEVEL_AGENT = 'build'
+export const TOP_LEVEL_AGENT = 'build'
 
 export const minutes = (stream: IRandomStream, min: number, max: number): number =>
   stream.integer(min, max) * MINUTE_MS + stream.integer(0, 59) * SECOND_MS

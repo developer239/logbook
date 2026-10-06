@@ -6,7 +6,7 @@ import type {
   ScriptEvent,
   ScriptStep,
 } from '@log-book/adapter-api/source-writer'
-import type { PromptAct } from '@log-book/engine'
+import type { PromptAct, ReplyCode } from '@log-book/engine'
 import type { IReactionTag } from '../corpus/prompts.js'
 import type { ClosingKind } from '../corpus/replies.js'
 import {
@@ -55,12 +55,13 @@ interface IClosing {
   reply: IPlannedReply | null
 }
 
-// What a turn opens with, the developer's reactions its prompt carries, and how its last reply reads.
+// What a turn opens with, the developer's reactions its prompt carries, and how its last reply reads: null for a turn
+// whose last use ends it.
 interface ITurnPlan {
   shape: ITurnShape
   prompt: string
   reactions: readonly IReactionTag[]
-  closing: IClosing
+  closing: IClosing | null
 }
 
 const SECOND_MS = 1000
@@ -93,6 +94,8 @@ const PLAIN_CLOSINGS: ReadonlySet<ClosingKind> = new Set(['progress', 'done'])
 const SLOT = /\{(?<name>[a-z]+)\}/gu
 const QUOTE = /\[\[(?<quote>.+?)\]\]/u
 const QUOTE_MARKS = /\[\[|\]\]/gu
+// The showcase conversation draws from a stream of its own, so it is the same for every seed.
+const SHOWCASE_SEED = 0
 
 // A template with each `{slot}` filled; a slot without a value is a corpus error.
 const fill = (template: string, slots: Readonly<Record<string, string>>): string =>
@@ -103,6 +106,12 @@ const fill = (template: string, slots: Readonly<Record<string, string>>): string
     }
     return value
   })
+
+// The text without its quote marks, and in an interactive session its codes and the words its quote copies.
+const closingFrom = (marked: string, codes: readonly ReplyCode[], isInteractive: boolean): IClosing => ({
+  text: marked.replaceAll(QUOTE_MARKS, ''),
+  reply: isInteractive ? { codes: [...codes], quote: QUOTE.exec(marked)?.groups?.quote ?? null } : null,
+})
 
 const tokensOf = (stream: IRandomStream, hasReasoning: boolean): IScriptTokens => ({
   input: stream.integer(800, 6000),
@@ -132,7 +141,7 @@ class WriterScripter {
   public readonly reactions: Record<string, IPlannedReaction[]> = {}
   public readonly replies: Record<string, IPlannedReply> = {}
   public readonly subagents: Record<string, SubagentTaskName> = {}
-  // The first top-level interactive session of the plan, in either writer.
+  // The first top-level interactive session of the plan, in either writer, the showcase conversation left out.
   public readonly firstSession: string | null
   private readonly plan: IPlan
   private readonly declaration: IWriterDeclaration
@@ -246,7 +255,7 @@ class SessionScripter {
     this.writer = writer
     this.session = session
     this.task = task
-    this.stream = createStream(writer.seed, `${session.key}/script`)
+    this.stream = createStream(session.shape === 'showcase' ? SHOWCASE_SEED : writer.seed, `${session.key}/script`)
     this.slots = slots ?? this.sessionSlots()
     this.children = writer.childrenOf(session)
     this.model = writer.modelOf(session)
@@ -297,10 +306,13 @@ class SessionScripter {
       const closing = { text: fill(this.task.result, this.slots), reply: null }
       return { shape, prompt: fill(this.task.prompt, this.slots), reactions: [], closing }
     }
+    if (this.session.shape === 'showcase') {
+      return this.showcaseTurn(index)
+    }
     const shape = shapes.shapes[this.session.shape].turns[index] ?? this.followUp()
     const isInteractive = this.task === null && this.session.origin === 'interactive'
     const at = this.session.turns[index]?.start ?? this.session.start
-    const reaction = isInteractive && index > 0 ? this.turnReaction(index, shape, at) : undefined
+    const reaction = this.turnReaction(index, shape, at, isInteractive)
     if (reaction !== undefined) {
       const template = this.stream.pick(prompts.reactions[reaction].filter((candidate) => candidate.act === shape.act))
       return {
@@ -318,6 +330,39 @@ class SessionScripter {
     }
   }
 
+  // The showcase conversation's turns, and its subagent's after the first, as showcase.ts holds them.
+  private readonly showcaseTurn = (index: number): ITurnPlan => {
+    const { showcase } = this.writer.corpus
+    if (this.task !== null) {
+      const followUp = showcase.subagent.followUps[index - 1]
+      if (followUp === undefined) {
+        throw new Error(`The showcase subagent has no turn ${String(index + 1)}`)
+      }
+      return {
+        shape: { act: followUp.act, uses: followUp.uses, closing: 'done' },
+        prompt: followUp.prompt,
+        reactions: [],
+        closing: closingFrom(followUp.closing, [], false),
+      }
+    }
+    const turn = showcase.turns[index]
+    if (turn === undefined) {
+      throw new Error(`The showcase conversation has no turn ${String(index + 1)}`)
+    }
+    return {
+      shape: {
+        act: turn.act,
+        events: turn.events,
+        uses: turn.uses,
+        ...(turn.isInterrupted ? { stop: 'interrupt' } : {}),
+        closing: 'done',
+      },
+      prompt: turn.prompt,
+      reactions: turn.reactions,
+      closing: turn.closing === null ? null : closingFrom(turn.closing.text, turn.closing.codes, true),
+    }
+  }
+
   // The small set's one follow-up turn, or one of the rich set's longer ones.
   private readonly followUp = (): ITurnShape => {
     const { shapes } = this.writer.corpus
@@ -326,9 +371,15 @@ class SessionScripter {
 
   private readonly isRolled = (percent: number): boolean => this.stream.integer(1, 100) <= percent
 
-  // A turn's own reaction, or the rich set's story where it has none.
-  private readonly turnReaction = (index: number, shape: ITurnShape, at: number): ITurnShape['reaction'] =>
-    this.reactionOf(index, shape) ?? this.storyReaction(shape, at)
+  // A turn's own reaction, or the rich set's story where it has none; only an interactive session's turns after the first
+  // carry one.
+  private readonly turnReaction = (
+    index: number,
+    shape: ITurnShape,
+    at: number,
+    isInteractive: boolean
+  ): ITurnShape['reaction'] =>
+    isInteractive && index > 0 ? (this.reactionOf(index, shape) ?? this.storyReaction(shape, at)) : undefined
 
   // A scripted session opens with its opening prompt; a task of the rich set's later weeks often asks for the tests in
   // the task itself.
@@ -380,15 +431,10 @@ class SessionScripter {
     return shape.afterStop
   }
 
-  // The text without its quote marks, and in an interactive session its codes and the words its quote copies.
+  // One of the kind's texts with its codes.
   private readonly closingOf = (kind: ClosingKind, isInteractive: boolean): IClosing => {
     const templates = this.writer.corpus.replies.closing[kind]
-    const marked = fill(this.stream.pick(templates.texts), this.slots)
-    const quote = QUOTE.exec(marked)?.groups?.quote ?? null
-    return {
-      text: marked.replaceAll(QUOTE_MARKS, ''),
-      reply: isInteractive ? { codes: [...templates.codes], quote } : null,
-    }
+    return closingFrom(fill(this.stream.pick(templates.texts), this.slots), templates.codes, isInteractive)
   }
 
   // The turn's opening steps at its start, then each use after a reply, and the closing reply at its end, or the
@@ -743,6 +789,8 @@ class SessionScripter {
 // Each writer's command files and session scripts from the plan, in the writers' order. Pure, like the planner: each
 // session draws from its own stream, so equal inputs give equal scripts.
 export const scriptPlan = (plan: IPlan, inputs: IScriptInputs): IWriterScripts[] => {
-  const first = plan.sessions.find((session) => session.parentKey === null && session.origin === 'interactive')
+  const first = plan.sessions.find(
+    (session) => session.parentKey === null && session.origin === 'interactive' && session.shape !== 'showcase'
+  )
   return inputs.writers.map((_writer, index) => new WriterScripter(plan, inputs, index, first?.key ?? null).scripts())
 }

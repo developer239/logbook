@@ -4,7 +4,13 @@ import type { ReactionName } from './prompts.js'
 import type { ClosingKind } from './replies.js'
 import type { ProjectToolName, SharedToolName, SkillName } from './tools.js'
 
-export const SUBAGENT_TASK_NAMES = ['find-tests', 'check-discount', 'review-form', 'check-fix'] as const
+export const SUBAGENT_TASK_NAMES = [
+  'find-tests',
+  'check-discount',
+  'review-form',
+  'check-fix',
+  'trace-discount',
+] as const
 export type SubagentTaskName = (typeof SUBAGENT_TASK_NAMES)[number]
 
 // A tool call of tools.ts, a skill load, the start of a session this one starts, or the `claude -p` shell call that
@@ -405,6 +411,17 @@ export const SHAPES: IShapeCorpus = {
       goal: 'verify behaviour',
       outcome: 'done',
       summary: 'Runs the invoice tests and reports any failure.',
+    },
+    // The showcase conversation's subagent, which runs more turns after this one.
+    'trace-discount': {
+      agentType: 'explore',
+      act: 'task',
+      prompt: 'trace how a discount code gets from the checkout form to the cart total',
+      uses: ['search-text', 'read-source', 'read-test'],
+      result: 'The code goes from the form to applyDiscount, which caps it; nothing else reads the percent.',
+      goal: 'explore the codebase',
+      outcome: 'done',
+      summary: 'Traces how a discount code gets from the checkout form to the cart total.',
     },
   },
 }

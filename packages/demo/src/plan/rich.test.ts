@@ -616,6 +616,18 @@ describe('the rich plan coverage matrix', () => {
   })
 })
 
+describe('the rich plan coverage matrix, row 25', () => {
+  it('holds 1 showcase conversation in rich and none in small', () => {
+    // Act
+    const showcases = [plan, planDataset({ ...INPUTS, size: 'small' })].map(
+      (sized) => sized.sessions.filter((session) => session.shape === 'showcase' && session.parentKey === null).length
+    )
+
+    // Assert
+    expect(showcases).toStrictEqual([1, 0])
+  })
+})
+
 describe("the rich plan's story", () => {
   it('corrects more than it praises on average in weeks 1 to 6, and praises more than it corrects from week 7', () => {
     // Arrange
