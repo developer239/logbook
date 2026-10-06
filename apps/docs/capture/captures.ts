@@ -22,6 +22,8 @@ export interface ISiteCaptures {
   shots: SiteShots
   videos: Readonly<Record<string, ISiteVideo>>
   files: readonly string[]
+  // The committed captures pages can show, by their path under committed/.
+  committed: readonly string[]
 }
 
 // What the site reads of a shot of the shot list.
@@ -135,11 +137,39 @@ export const siteVideoOf = (captures: ISiteCaptures, id: string, page: string): 
   return video
 }
 
+// Where committed captures live, relative to the repository, and where the site serves them.
+export const COMMITTED_DIRECTORY = 'apps/docs/src/public/committed/'
+
+// The committed captures pages can show: the entries of the committed capture manifest under committed/, by their path
+// there.
+export const committedOf = (manifest: unknown): string[] => {
+  const captures = isRecord(manifest) ? manifest.captures : undefined
+  if (!Array.isArray(captures)) {
+    throw new Error('The committed capture manifest holds no list of captures')
+  }
+  return captures.flatMap((entry) =>
+    isRecord(entry) && typeof entry.file === 'string' && entry.file.startsWith(COMMITTED_DIRECTORY)
+      ? [entry.file.slice(COMMITTED_DIRECTORY.length)]
+      : []
+  )
+}
+
+// One committed capture by its path under committed/; a file the committed capture manifest does not list stops the
+// build, naming it and the page.
+export const siteCommittedOf = (captures: ISiteCaptures, file: string, page: string): string => {
+  if (!captures.committed.includes(file)) {
+    throw new Error(
+      `${page} shows the committed capture ${file}, which apps/docs/committed-captures.json does not list`
+    )
+  }
+  return file
+}
+
 export type CaptureComponent = 'Shot' | 'Video'
 
-// The id of every Shot or Video a page's HTML names, such as <Shot id="dashboard" />, so a build can refuse an unknown
-// one before it renders the page.
-export const idsIn = (html: string, component: CaptureComponent): string[] =>
-  [...html.matchAll(new RegExp(`<${component}\\b[^>]*?\\bid="(?<id>[^"]*)"`, 'gu'))].map(
-    (match) => match.groups?.id ?? ''
+// The value of an attribute on every Shot or Video a page's HTML names, such as the id of <Shot id="dashboard" />, so a
+// build can refuse an unknown one before it renders the page.
+export const attributesIn = (html: string, component: CaptureComponent, attribute: string): string[] =>
+  [...html.matchAll(new RegExp(`<${component}\\b[^>]*?\\b${attribute}="(?<value>[^"]*)"`, 'gu'))].map(
+    (match) => match.groups?.value ?? ''
   )

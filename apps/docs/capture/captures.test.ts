@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { idsIn, type ISiteCaptures, siteShotOf, siteShotsOf, siteVideoOf, siteVideosOf } from './captures.js'
+import {
+  attributesIn,
+  committedOf,
+  type ISiteCaptures,
+  siteCommittedOf,
+  siteShotOf,
+  siteShotsOf,
+  siteVideoOf,
+  siteVideosOf,
+} from './captures.js'
 
 const SHOTS = [{ id: 'dashboard', alt: 'The dashboard', viewport: [1440, 900] as const }]
 const TOUR = { file: 'tour.mp4', video: 'tour', scheme: 'dark', viewport: [1280, 800], poster: 'dashboard-dark.png' }
@@ -11,9 +20,10 @@ const MANIFEST = {
   ],
 }
 
-const capturesOf = (manifest: unknown): ISiteCaptures => ({
+const capturesOf = (manifest: unknown, committed: readonly string[] = []): ISiteCaptures => ({
   shots: siteShotsOf(manifest, SHOTS),
   ...siteVideosOf(manifest),
+  committed,
 })
 
 describe('siteShotsOf and siteShotOf', () => {
@@ -64,15 +74,45 @@ describe('siteVideosOf and siteVideoOf', () => {
   })
 })
 
-describe('idsIn', () => {
-  it('finds the id of every Shot or Video of a page', () => {
+describe('committedOf and siteCommittedOf', () => {
+  it('gives the committed captures under committed/ by their path there', () => {
     // Arrange
-    const html = '<Shot id="dashboard" />\n<p>text</p><Video id="tour" /><Shot caption="Example" id="tokens"/>'
+    const manifest = {
+      captures: [
+        { file: 'apps/docs/src/public/committed/dashboard-90-days.png' },
+        { file: 'apps/docs/src/public/elsewhere.png' },
+      ],
+    }
 
     // Act
-    const ids = { shots: idsIn(html, 'Shot'), videos: idsIn(html, 'Video') }
+    const committed = committedOf(manifest)
 
     // Assert
-    expect(ids).toStrictEqual({ shots: ['dashboard', 'tokens'], videos: ['tour'] })
+    expect(committed).toStrictEqual(['dashboard-90-days.png'])
+  })
+
+  it('throws on a committed capture the manifest does not list, naming the file and the page', () => {
+    expect(() => siteCommittedOf(capturesOf(MANIFEST, ['dashboard-90-days.png']), 'example.png', 'index.md')).toThrow(
+      'index.md shows the committed capture example.png, which apps/docs/committed-captures.json does not list'
+    )
+  })
+})
+
+describe('attributesIn', () => {
+  it('finds an attribute of every Shot or Video of a page', () => {
+    // Arrange
+    const html =
+      '<Shot id="dashboard" />\n<p>text</p><Video id="tour" /><Shot caption="Example" id="tokens"/>' +
+      '<Shot committed="example.png" alt="Example" />'
+
+    // Act
+    const found = {
+      shots: attributesIn(html, 'Shot', 'id'),
+      committed: attributesIn(html, 'Shot', 'committed'),
+      videos: attributesIn(html, 'Video', 'id'),
+    }
+
+    // Assert
+    expect(found).toStrictEqual({ shots: ['dashboard', 'tokens'], committed: ['example.png'], videos: ['tour'] })
   })
 })

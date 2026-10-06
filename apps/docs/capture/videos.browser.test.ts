@@ -213,7 +213,7 @@ describe('recordVideo', () => {
 describe('siteVideoOf', () => {
   it('throws on a video id the manifest does not have, naming it and the page', () => {
     // Arrange
-    const captures = { shots: {}, videos: {}, files: [] }
+    const captures = { shots: {}, videos: {}, files: [], committed: [] }
 
     // Act
     const lookup = (): unknown => siteVideoOf(captures, 'nope', 'index.md')
