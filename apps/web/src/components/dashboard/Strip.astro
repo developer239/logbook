@@ -8,10 +8,10 @@ import Link from '../ui/Link.astro'
 import Status from '../ui/Status.astro'
 import './Strip.css'
 
-type Props = ReturnType<typeof stripFor> & { range: IRange }
+type Props = ReturnType<typeof stripFor> & { range: IRange; isLabelled: boolean }
 
-const { range, current, previous } = Astro.props
-const stats = stripStats(range, current, previous)
+const { range, current, previous, isLabelled } = Astro.props
+const stats = stripStats(range, current, previous, isLabelled)
 ---
 
 <div class="strip">
@@ -22,9 +22,11 @@ const stats = stripStats(range, current, previous)
           {stat.tone === 'problem' && <Status tone="problem" />}
           {stat.label}
         </Label>
-        <Link class:list={['strip__value', stat.tone !== '' && `strip__value--${stat.tone}`]} href={stat.href}>
-          {stat.value}
-        </Link>
+        {stat.value !== null && (
+          <Link class:list={['strip__value', stat.tone !== '' && `strip__value--${stat.tone}`]} href={stat.href}>
+            {stat.value}
+          </Link>
+        )}
         <span class="strip__sub">{stat.sub}</span>
         {stat.change !== null && (
           <span class:list={['strip__change', !stat.isUp && 'strip__change--down']}>

@@ -17,6 +17,7 @@ import { load } from '../lib/load'
 import { slowCalls } from '../lib/queries/calls'
 import { goalMix, timePerConversation, timePerTurn, tokensByGoal } from '../lib/queries/effort'
 import { agentReactions, reactionTrend } from '../lib/queries/interaction'
+import { hasModelLabelling } from '../lib/queries/labelling'
 import { retryLoops } from '../lib/queries/loops'
 import { toolProblems } from '../lib/queries/problems'
 import { stripFor } from '../lib/queries/strip'
@@ -41,6 +42,7 @@ const page = load(() => {
     conversationTime: timePerConversation(range),
     reactions: reactionTrend(range),
     agentReactions: agentReactions(range),
+    isLabelled: hasModelLabelling(),
   }
 })
 
@@ -53,7 +55,7 @@ if (!page.ok) {
   {
     page.ok && (
       <>
-        <Strip {...page.data.strip} range={page.data.range} />
+        <Strip {...page.data.strip} isLabelled={page.data.isLabelled} range={page.data.range} />
         <Board>
           <Fragment slot="first">
             <ToolProblems {...page.data.problems} range={page.data.range} />
@@ -63,13 +65,13 @@ if (!page.ok) {
           <Fragment slot="second">
             <SlowCalls {...page.data.slow} range={page.data.range} />
             <RetryLoops {...page.data.loops} range={page.data.range} />
-            <DidntFinish {...page.data.unfinished} range={page.data.range} />
-            <ReactionTrend {...page.data.reactions} />
-            <AgentReactions models={page.data.agentReactions} />
+            <DidntFinish {...page.data.unfinished} isLabelled={page.data.isLabelled} range={page.data.range} />
+            <ReactionTrend {...page.data.reactions} isLabelled={page.data.isLabelled} />
+            <AgentReactions models={page.data.agentReactions} isLabelled={page.data.isLabelled} />
           </Fragment>
           <Fragment slot="third">
-            <GoalMix {...page.data.goals} range={page.data.range} />
-            <TokensByGoal {...page.data.tokens} />
+            <GoalMix {...page.data.goals} isLabelled={page.data.isLabelled} range={page.data.range} />
+            <TokensByGoal {...page.data.tokens} isLabelled={page.data.isLabelled} />
             <ToolTokens rows={page.data.toolTokens} range={page.data.range} />
           </Fragment>
         </Board>
