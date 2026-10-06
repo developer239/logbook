@@ -5,6 +5,7 @@ import { claudeCodeSourceWriter } from '@log-book/adapter-claude-code/source-wri
 import { openCodeSourceWriter } from '@log-book/adapter-opencode/source-writer'
 import { isErrnoCode, LogBookError } from '@log-book/core'
 import { DEFAULT_LABEL_MODEL } from '@log-book/engine'
+import { checkBuild } from '../check/check-demo.js'
 import { DEMO_CORPUS_MARK, PLAN_CORPUS } from '../corpus/index.js'
 import { MODELS } from '../corpus/models.js'
 import { DEMO_ERROR_CODES } from '../errors.js'
@@ -57,7 +58,7 @@ const DECLARATIONS: readonly IWriterDeclaration[] = [
 // The current time floored to the hour, so two builds within one hour are identical.
 export const thisHour = (now: number): number => Math.floor(now / HOUR_MS) * HOUR_MS
 
-const defaultOut = (size: DemoSize): string => fileURLToPath(new URL(`../../out/${size}`, import.meta.url))
+export const defaultOut = (size: DemoSize): string => fileURLToPath(new URL(`../../out/${size}`, import.meta.url))
 
 const notDemo = (out: string): LogBookError =>
   new LogBookError(
@@ -104,8 +105,8 @@ const guardOut = async (out: string): Promise<void> => {
 }
 
 // Plans the set, writes the home, the plan file and the manifest, imports the home through the built CLI in the
-// sealed environment and compares what it read with what the writers wrote, then writes the planned labels and their
-// labelling runs.
+// sealed environment and compares what it read with what the writers wrote, writes the planned labels and their
+// labelling runs, and last checks the out directory against its manifest.
 export const buildDemo = async (options: IBuildOptions): Promise<IBuiltDemo> => {
   if (process.env.TZ !== 'UTC') {
     throw new LogBookError(
@@ -136,6 +137,7 @@ export const buildDemo = async (options: IBuildOptions): Promise<IBuiltDemo> => 
   )
   await importDemo(out, written)
   await writeLabels(demoWarehousePath(out), written.plan)
+  await checkBuild(out)
 
   return { out, warehouse: demoWarehousePath(out), manifest: written.manifest, plan: written.plan }
 }

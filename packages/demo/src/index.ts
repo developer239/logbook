@@ -1,4 +1,5 @@
 export { buildDemo, type IBuildOptions, type IBuiltDemo } from './build/build-demo.js'
+export { checkDemo, type DemoRule, type IDemoFinding } from './check/check-demo.js'
 export { DEMO_ERROR_CODES } from './errors.js'
 export { planLabels } from './plan/labels.js'
 export { sealedEnvironment } from './sealed-environment.js'
