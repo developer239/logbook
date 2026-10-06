@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { COMMANDS, EXIT_CODES, PACKAGE, parseCommandLine } from '@log-book/cli/grammar'
+import { checkK3 } from '../capture/k3.js'
 import { SITE_URL } from '../site.js'
 import { checkK6 } from './k6.js'
 import { checkK7, findingLine } from './k7.js'
@@ -24,6 +25,7 @@ const check = async (): Promise<number> => {
   }
   const callSites = callSitesOf(await readFile(CALL_SITES, 'utf8'))
   const findings = [
+    ...(await checkK3({ captures: join(BUILT, 'captures'), repository: REPOSITORY })),
     ...(await checkK6({
       docs: DOCS,
       repository: REPOSITORY,

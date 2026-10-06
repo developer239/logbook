@@ -34,7 +34,7 @@ const checkExamples = async (): Promise<void> => {
 
 // Writes the reference and privacy pages' generated parts into src/.generated: from the CLI's command table, the
 // engine's item contents and the network call-site file.
-const generate = async (): Promise<void> => {
+export const generate = async (): Promise<void> => {
   await checkExamples()
   await mkdir(GENERATED, { recursive: true })
   const files: Readonly<Record<string, string>> = {
@@ -48,5 +48,3 @@ const generate = async (): Promise<void> => {
   }
   await Promise.all(Object.entries(files).map(async ([name, text]) => writeFile(new URL(name, GENERATED), text)))
 }
-
-await generate()

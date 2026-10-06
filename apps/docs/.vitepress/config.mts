@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { type DefaultTheme, defineConfigWithTheme } from 'vitepress'
+import { type DefaultTheme, defineConfigWithTheme, type MarkdownEnv, type MarkdownRenderer } from 'vitepress'
+import { shotIdsIn, siteShotOf, type SiteShots } from '../capture/captures.js'
+import { loadSiteShots } from '../capture/site-shots.js'
 import { cliFacts } from '../scripts/cli.js'
 import { firstLineOf } from '../scripts/readme.js'
 import { BASE_PATH, SITE_URL } from '../site.js'
@@ -43,6 +45,23 @@ const SIDEBAR: DefaultTheme.SidebarItem[] = [
 // The README's first line, so the site, the README and npm describe Log Book in the same sentence.
 const description = firstLineOf(await readFile(new URL('../../../README.md', import.meta.url), 'utf8'))
 
+// Every Shot a page names is one the last capture made, checked while the page's Markdown renders, so an unknown id
+// stops the build, naming it and the page.
+const checkShots =
+  (shots: SiteShots) =>
+  (md: MarkdownRenderer): void => {
+    md.core.ruler.push('shot-ids', (state) => {
+      const page = (state.env as MarkdownEnv).relativePath
+      for (const token of state.tokens.flatMap((each) => [each, ...(each.children ?? [])])) {
+        if (token.type === 'html_block' || token.type === 'html_inline') {
+          for (const id of shotIdsIn(token.content)) {
+            siteShotOf(shots, id, page)
+          }
+        }
+      }
+    })
+  }
+
 // The site describes the release it was built from, so a page never documents a flag the published CLI lacks.
 const version = await versionAt(fileURLToPath(new URL('.', import.meta.url)))
 
@@ -50,6 +69,7 @@ export default defineConfigWithTheme<IThemeConfig>({
   title: 'Log Book',
   description,
   srcDir: 'src',
+  markdown: { config: checkShots(await loadSiteShots()) },
   // Written parts that pages include, not pages of their own.
   srcExclude: ['reference/examples/**', 'privacy/statement.md', 'privacy/summary.md'],
   base: BASE_PATH,
@@ -58,7 +78,10 @@ export default defineConfigWithTheme<IThemeConfig>({
   // The deploy builds a shallow checkout of a tag, so the dates would be wrong or missing.
   lastUpdated: false,
   sitemap: { hostname: SITE_URL },
-  head: [['meta', { 'http-equiv': 'Content-Security-Policy', 'content': CONTENT_SECURITY_POLICY }]],
+  head: [
+    ['meta', { 'http-equiv': 'Content-Security-Policy', 'content': CONTENT_SECURITY_POLICY }],
+    ['meta', { property: 'og:image', content: new URL('captures/dashboard-dark.png', SITE_URL).href }],
+  ],
   themeConfig: {
     nav: [
       { text: 'Docs', link: '/start/install' },

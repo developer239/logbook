@@ -203,6 +203,7 @@ describe('captureShot', () => {
       'Steps',
       '/steps',
       '/chart.svg',
+      '',
     ])
   })
 })

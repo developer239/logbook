@@ -88,13 +88,13 @@ const scrollToTurn = async (page: Page, turn: number, settleMs: number): Promise
   await page.locator(`[data-turn-pane="${turnId}"]`).waitFor({ state: 'visible', timeout: settleMs })
 }
 
-// The page's visible text, then every link and source target on it, one per line.
+// The page's visible text, then every link and source target on it, one per line, ending with a newline.
 const textOf = async (page: Page): Promise<string> =>
   page.evaluate(() => {
     const targets = [...document.querySelectorAll('[href], [src]')].flatMap((element) =>
       ['href', 'src'].flatMap((name) => element.getAttribute(name) ?? [])
     )
-    return [document.body.innerText, ...targets].join('\n')
+    return `${[document.body.innerText, ...targets].join('\n')}\n`
   })
 
 const openShot = async (page: Page, host: string, shot: IShot, plan: DemoPlan): Promise<string> => {
