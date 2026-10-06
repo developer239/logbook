@@ -28,6 +28,7 @@ const DESCRIPTORS: Harnesses = new Map([
       location: null,
       locationVariables: [],
       problem: null,
+      notice: null,
     },
   ],
 ])

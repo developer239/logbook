@@ -105,6 +105,7 @@ describe('harnessesOf', () => {
         location: null,
         locationVariables: [],
         problem: null,
+        notice: null,
       },
       {
         id: 'sample',
@@ -115,6 +116,7 @@ describe('harnessesOf', () => {
         location: null,
         locationVariables: [],
         problem: null,
+        notice: null,
       },
     ])
   })
