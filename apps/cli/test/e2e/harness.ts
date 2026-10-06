@@ -96,9 +96,19 @@ interface IHostFile {
   port: number
 }
 
+// A command the test signals itself: the leader of a process group of its own, as a terminal's foreground job is.
+export interface IRunningCommand {
+  pid: number
+  output: () => { stdout: string[]; stderr: string[] }
+  // Resolves with the exit code once the command has exited and its output is read.
+  closed: Promise<number | null>
+}
+
 interface IRunning {
   child: ChildProcess
   exited: Promise<unknown>
+  // Started as a group leader: its group, the rewrite process it forks included, is ended with it.
+  isGroup: boolean
 }
 
 const linesOf = (text: string): string[] => {
@@ -282,12 +292,22 @@ const copyWarehouse = async (warehouse: string, target: string): Promise<void> =
   }
 }
 
+// Sends a signal to a process group, which may be gone already.
+const signalGroup = (pid: number, signal: NodeJS.Signals): void => {
+  try {
+    process.kill(-pid, signal)
+  } catch {
+    // The group has ended.
+  }
+}
+
 // The harness of layer 7: throwaway homes, logbook runs and hosts in them, and the stand-in opener; at each test's end
 // it stops what it started, ends any stand-in opener still alive and removes the homes.
 export const useE2eHarness = (): {
   createHome: (options?: IHomeOptions) => Promise<IE2eHome>
   run: (home: IE2eHome, args: readonly string[], options?: IRunOptions) => Promise<ICommandResult>
   startHost: (home: IE2eHome, options?: IHostOptions) => Promise<IStartedHost>
+  startCommand: (home: IE2eHome, args: readonly string[], options?: IRunOptions) => Promise<IRunningCommand>
   installOpener: (home: IE2eHome, behaviour: TOpenerBehaviour) => Promise<IStandInOpener>
   teardown: () => Promise<void>
 } => {
@@ -295,24 +315,39 @@ export const useE2eHarness = (): {
   const running: IRunning[] = []
   const openerCalls: string[] = []
 
-  const spawnLogbook = async (home: IE2eHome, args: readonly string[], options: IRunOptions): Promise<ChildProcess> => {
+  const spawnLogbook = async (
+    home: IE2eHome,
+    args: readonly string[],
+    options: IRunOptions,
+    isGroup = false
+  ): Promise<ChildProcess> => {
     const environment = environmentOf(home, options)
     await refuseOutsideTemporary(environment)
     const command = commandOf(args)
-    const child = spawn(command.file, command.args, { env: environment, stdio: ['ignore', 'pipe', 'pipe'] })
-    running.push({ child, exited: once(child, 'exit') })
+    const child = spawn(command.file, command.args, {
+      env: environment,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: isGroup,
+    })
+    running.push({ child, exited: once(child, 'exit'), isGroup })
     return child
   }
 
-  const stopChild = async ({ child, exited }: IRunning): Promise<void> => {
-    if (!isRunning(child)) {
-      return
+  const stopChild = async ({ child, exited, isGroup }: IRunning): Promise<void> => {
+    if (isRunning(child)) {
+      child.kill('SIGTERM')
+      const ended = await Promise.race([
+        exited.then(() => true),
+        new Promise((done) => setTimeout(done, STOP_GRACE_MS)),
+      ])
+      if (ended !== true) {
+        child.kill('SIGKILL')
+        await exited
+      }
     }
-    child.kill('SIGTERM')
-    const ended = await Promise.race([exited.then(() => true), new Promise((done) => setTimeout(done, STOP_GRACE_MS))])
-    if (ended !== true) {
-      child.kill('SIGKILL')
-      await exited
+    // A group leader's children, such as a rewrite process, are ended with it.
+    if (isGroup && child.pid !== undefined) {
+      signalGroup(child.pid, 'SIGKILL')
     }
   }
 
@@ -363,6 +398,19 @@ export const useE2eHarness = (): {
       const [code] = (await once(child, 'close')) as [number | null]
       clearTimeout(timeout)
       return { code, ...output() }
+    },
+
+    startCommand: async (home, args, options = {}) => {
+      const child = await spawnLogbook(home, args, options, true)
+      const output = collect(child)
+      if (child.pid === undefined) {
+        throw new Error(`logbook ${args.join(' ')} did not start`)
+      }
+      return {
+        pid: child.pid,
+        output,
+        closed: once(child, 'close').then(([code]: unknown[]) => (typeof code === 'number' ? code : null)),
+      }
     },
 
     startHost: async (home, options = {}) => {
