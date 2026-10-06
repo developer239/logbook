@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 'use strict'
 
 // The logbook binary. CommonJS with nothing newer than ES2017 (so no named capture groups) and no product code, so any

@@ -2,6 +2,7 @@ import semanticRelease from 'semantic-release'
 import { demoCaptureArguments } from './checks/demo-captures.js'
 import { dependencyFindings } from './checks/deps.js'
 import { fixtureFindings } from './checks/fixtures.js'
+import { checkInstalled } from './checks/installed.js'
 import { harnessFindings, ownerFindings } from './checks/literals.js'
 import { networkFindings } from './checks/network.js'
 import { packageFindings } from './checks/package.js'
@@ -65,6 +66,16 @@ const COMMANDS: Readonly<Record<string, CiCommand>> = {
       return WRONG_ARGUMENTS
     }
     return checkTests(process.cwd(), { ...io, env: process.env })
+  },
+  // Packs, installs and imports every staged package offline, then runs the end-to-end suite against the installed CLI.
+  'installed': async (args, io) => {
+    const [option, value] = args
+    const seed = Number(value)
+    if (args.length !== 2 || option !== '--seed' || !Number.isInteger(seed) || seed < 0) {
+      io.stderr(`This command takes --seed <a whole number>; got ${args.length === 0 ? 'none' : args.join(' ')}.\n`)
+      return WRONG_ARGUMENTS
+    }
+    return checkInstalled(process.cwd(), seed, io)
   },
   'release': async (args, io) =>
     releaseVersion(args, { stderr: io.stderr, env: process.env, cwd: process.cwd(), release: semanticRelease }),
