@@ -53,6 +53,8 @@ export interface IRunOptions {
   env?: INamedVariables
   // A directory put first on PATH, for a fake claude.
   firstOnPath?: string
+  // A directory that is the whole PATH, in place of the sealed one, for a start that must reach no browser opener.
+  onlyOnPath?: string
   timeoutMs?: number
 }
 
@@ -170,7 +172,8 @@ const commandOf = (args: readonly string[]): { file: string; args: string[] } =>
   return { file: process.execPath, args: [BUILT_SHIM, ...args] }
 }
 
-// The sealed environment of the home, the variables the test named, and a directory first on PATH when given.
+// The sealed environment of the home, the variables the test named, and a directory first on PATH, or as the whole of
+// it, when given.
 const environmentOf = (home: IE2eHome, options: IRunOptions): Record<string, string> => {
   const named = Object.fromEntries(
     Object.entries(options.env ?? {}).filter((entry): entry is [string, string] => entry[1] !== undefined)
@@ -179,15 +182,16 @@ const environmentOf = (home: IE2eHome, options: IRunOptions): Record<string, str
   return {
     ...home.environment,
     ...named,
-    PATH: options.firstOnPath === undefined ? path : `${options.firstOnPath}:${path}`,
+    PATH: options.onlyOnPath ?? (options.firstOnPath === undefined ? path : `${options.firstOnPath}:${path}`),
   }
 }
 
-const readHostFile = async (path: string): Promise<IHostFile> => {
+// The host file once it names the host the harness started, so a file left by another process never counts.
+const readHostFile = async (path: string, host: number | undefined): Promise<IHostFile> => {
   const parsed: unknown = JSON.parse(await readFile(path, 'utf8'))
   const { pid, port } = typeof parsed === 'object' && parsed !== null ? (parsed as Partial<IHostFile>) : {}
-  if (typeof pid !== 'number' || typeof port !== 'number' || port <= 0 || !isProcessAlive(pid)) {
-    throw new Error(`${path} names no live host yet`)
+  if (pid !== host || typeof pid !== 'number' || typeof port !== 'number' || port <= 0 || !isProcessAlive(pid)) {
+    throw new Error(`${path} names no live host started here yet`)
   }
   return { pid, port }
 }
@@ -242,9 +246,9 @@ const collect = (child: ChildProcess): (() => { stdout: string[]; stderr: string
 }
 
 // The directory a host start puts first on PATH, refusing a start that would open a real browser: without the stand-in
-// opener, its arguments must hold --no-open.
+// opener or a PATH of its own that reaches none, its arguments must hold --no-open.
 const hostFirstOnPath = (options: IHostOptions, args: readonly string[]): string | undefined => {
-  if (options.opener === undefined && !args.includes('--no-open')) {
+  if (options.opener === undefined && options.onlyOnPath === undefined && !args.includes('--no-open')) {
     throw new Error('a host start opens the browser; pass --no-open or install the stand-in opener')
   }
   if (options.opener !== undefined && options.firstOnPath !== undefined) {
@@ -428,7 +432,10 @@ export const useE2eHarness = (): {
         )
       })
       const { pid, port } = await Promise.race([
-        vi.waitFor(async () => readHostFile(hostFile), { timeout: HOST_START_TIMEOUT_MS, interval: POLL_MS }),
+        vi.waitFor(async () => readHostFile(hostFile, child.pid), {
+          timeout: HOST_START_TIMEOUT_MS,
+          interval: POLL_MS,
+        }),
         exited,
       ])
       exited.catch(() => undefined)
