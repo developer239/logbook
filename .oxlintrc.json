@@ -480,6 +480,17 @@
       }
     },
     {
+      "files": ["packages/demo/test/small-build.ts"],
+      "rules": {
+        "naming/declaration-naming": [
+          "error",
+          {
+            "interfaceExceptions": ["ProvidedContext"]
+          }
+        ]
+      }
+    },
+    {
       "files": ["apps/web/src/**/*.astro"],
       "globals": {
         "Astro": "readonly"

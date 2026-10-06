@@ -18,12 +18,12 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@log-book/adapter-claude-code": "workspace:*",
-    "@log-book/adapter-opencode": "workspace:*",
     "vitest": "catalog:"
   },
   "dependencies": {
     "@log-book/adapter-api": "workspace:*",
+    "@log-book/adapter-claude-code": "workspace:*",
+    "@log-book/adapter-opencode": "workspace:*",
     "@log-book/core": "workspace:*",
     "@log-book/engine": "workspace:*",
     "@log-book/warehouse": "workspace:*"

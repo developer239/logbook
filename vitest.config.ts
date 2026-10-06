@@ -19,6 +19,8 @@ interface IProjectSpec {
   isSerial?: boolean
   // Runs before the project's own setup that builds the demo through the built CLI.
   isBuiltCliNeeded?: boolean
+  // The project's own global setup, after the stale-build check.
+  setup?: string
   // Keeps a stubbed environment variable for the rest of the file: a test helper that stubs it once in beforeAll
   // would otherwise lose it after the first test.
   isEnvStubKept?: boolean
@@ -77,7 +79,13 @@ const PROJECTS: IProjectSpec[] = [
     isSerial: true,
     isBuiltCliNeeded: true,
   },
-  { name: 'demo-build', include: ['packages/demo/test/**/*.test.ts'], timeout: DEMO_BUILD_TIMEOUT_MS },
+  {
+    name: 'demo-build',
+    include: ['packages/demo/test/**/*.test.ts'],
+    timeout: DEMO_BUILD_TIMEOUT_MS,
+    isBuiltCliNeeded: true,
+    setup: './packages/demo/test/small-build.ts',
+  },
 ]
 
 export default defineConfig({
@@ -107,7 +115,10 @@ export default defineConfig({
         testTimeout: project.timeout,
         hookTimeout: project.timeout,
         fileParallelism: project.isSerial !== true,
-        globalSetup: project.isBuiltCliNeeded === true ? [BUILT_CLI_CHECK] : [],
+        globalSetup: [
+          ...(project.isBuiltCliNeeded === true ? [BUILT_CLI_CHECK] : []),
+          ...(project.setup === undefined ? [] : [project.setup]),
+        ],
         unstubEnvs: project.isEnvStubKept !== true,
         env: { ...ROOT_ENV, ...project.env },
       },
