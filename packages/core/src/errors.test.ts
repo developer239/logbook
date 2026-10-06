@@ -35,7 +35,7 @@ describe('LogBookError', () => {
     const error = new LogBookError('The unit is gone', code)
 
     // Assert
-    expect(error.code).toBe('ADAPTER_UNIT_GONE')
+    expect(error.code).toBe('ADAPTER_UNIT_GONE_NOT')
   })
 })
 
