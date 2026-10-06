@@ -62,7 +62,7 @@ export const SHOTS: readonly IShot[] = [
     id: 'dashboard',
     page: { kind: 'path', path: '/' },
     range: THIRTY_DAYS,
-    expect: ['Tool problems', 'Reactions to the agent', 'Reactions from the agent'],
+    expect: ['Tool trouble', 'Reactions to the agent', 'Reactions from the agent'],
     alt: "The dashboard over 30 days: tool problems, time per turn, the agent's and the developer's reactions, and tokens",
   }),
   shot({
@@ -92,7 +92,7 @@ export const SHOTS: readonly IShot[] = [
   }),
   shot({
     id: 'steps',
-    page: { kind: 'follow', path: '/', link: `${card('Tool problems')} li.rows__row a` },
+    page: { kind: 'follow', path: '/', link: `${card('Tool trouble')} li.rows__row a` },
     range: THIRTY_DAYS,
     expect: ['Failed: '],
     alt: 'The failed steps of the most common cause, followed from the Tool problems card',
@@ -107,7 +107,7 @@ export const SHOTS: readonly IShot[] = [
     id: 'dashboard-phone',
     page: { kind: 'path', path: '/' },
     viewport: PHONE,
-    expect: ['Tool problems'],
+    expect: ['Tool trouble'],
     alt: 'The dashboard on a phone',
   }),
   shot({
