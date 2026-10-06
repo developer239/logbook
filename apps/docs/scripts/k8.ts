@@ -14,7 +14,7 @@ export interface IK8Inputs {
 type Scheme = 'dark' | 'light'
 
 // A text capture of the run: the web app's path it was taken on, without range or filter parameters, and its text
-// with every run of whitespace collapsed.
+// folded as labels are.
 interface IPageText {
   path: string
   scheme: Scheme
@@ -36,7 +36,9 @@ const CONVERSATION = '/conversations/:id'
 const CONVERSATION_PATH = /^\/conversations\/[^/]+$/u
 const WHITESPACE = /\s+/gu
 
-const collapsed = (text: string): string => text.replaceAll(WHITESPACE, ' ').trim()
+// Every run of whitespace collapsed and the letters in lower case: the web app sets some labels in capitals with CSS,
+// which the captured text keeps, while the source and the docs write them as they are.
+const folded = (text: string): string => text.replaceAll(WHITESPACE, ' ').trim().toLowerCase()
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 
@@ -70,7 +72,7 @@ const pageTextsOf = async (captures: string): Promise<IPageText[]> => {
     entries.flatMap(entryCaptures).map(async ({ scheme, page, file }) => ({
       path: new URL(page, 'http://capture.invalid').pathname,
       scheme,
-      text: collapsed(await readFile(join(captures, file), 'utf8')),
+      text: folded(await readFile(join(captures, file), 'utf8')),
     }))
   )
 }
@@ -85,7 +87,7 @@ const quotesOf = (text: string): IQuote[] => {
     .map((match) => ({
       line: text.slice(0, match.index).split('\n').length,
       page: match.groups?.page ?? '',
-      label: collapsed(match.groups?.label ?? ''),
+      label: (match.groups?.label ?? '').replaceAll(WHITESPACE, ' ').trim(),
     }))
     .filter((quote) => !fenced.has(quote.line))
 }
@@ -95,7 +97,7 @@ const missingSchemes = (quote: IQuote, texts: readonly IPageText[]): Scheme[] =>
   SCHEMES.filter(
     (scheme) =>
       !texts.some(
-        (each) => each.scheme === scheme && isPageOf(quote.page, each.path) && each.text.includes(quote.label)
+        (each) => each.scheme === scheme && isPageOf(quote.page, each.path) && each.text.includes(folded(quote.label))
       )
   )
 
