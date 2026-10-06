@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { build, stop, type BuildResult, type Plugin } from 'esbuild'
 import { harnessIdsIn } from '../checks/literals.js'
 import { descriptionOf, homepageOf, README } from './published-fields.js'
+import { writeThirdParty } from './third-party.js'
 
 // Where the stage reads and writes, relative to the repository root. It reads the workspace's builds as files and
 // imports no workspace package.
@@ -151,4 +152,6 @@ export const stageCli = async (givenRoot: string): Promise<void> => {
     cp(at(README), at(join(PACKAGE, README))),
   ])
   await writeFile(at(join(PACKAGE, 'package.json')), `${JSON.stringify(manifest, null, 2)}\n`)
+  // The licence notices of the npm code the bundle and the copied web build carry.
+  await writeThirdParty(root)
 }
