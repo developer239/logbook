@@ -28,7 +28,7 @@
       "project": ["src/**/*.ts", "fixtures/**/*.ts"]
     },
     "apps/docs": {
-      "entry": ["scripts/generate.ts"],
+      "entry": ["scripts/generate.ts", "scripts/check.ts"],
       "project": ["*.ts", "scripts/**/*.ts", ".vitepress/**/*.{ts,mts,vue}"]
     },
     "apps/web": {

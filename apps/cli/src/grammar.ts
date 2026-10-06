@@ -12,4 +12,4 @@ export {
 } from './grammar/commands.js'
 export { ENVIRONMENT, type IEnvironmentVariable, type IVariableEffect } from './grammar/environment.js'
 export { EXIT_CODE_NAMES, EXIT_CODES, type ExitCodeName, type IExitCode } from './grammar/exit-codes.js'
-export { parseCommandLine, type OptionValue, type ParsedCommandLine } from './grammar/parse.js'
+export { commandLineParser, parseCommandLine, type OptionValue, type ParsedCommandLine } from './grammar/parse.js'

@@ -6,7 +6,8 @@
     "build": "pnpm run generate && vitepress build",
     "preview": "vitepress preview",
     "typecheck": "tsc --noEmit",
-    "generate": "tsc -p tsconfig.build.json && node dist/scripts/generate.js"
+    "generate": "tsc -p tsconfig.build.json && node dist/scripts/generate.js",
+    "check": "tsc -p tsconfig.build.json && node dist/scripts/check.js"
   },
   "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
