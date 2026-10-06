@@ -25,8 +25,8 @@ const CONTENT_SECURITY_POLICY = [
 const SIDEBAR: DefaultTheme.SidebarItem[] = [
   { text: 'Getting started', items: [] },
   { text: 'Using Log Book', items: [] },
-  { text: 'Labelling', items: [] },
-  { text: 'Privacy', items: [] },
+  { text: 'Labelling', items: [{ text: 'What it sends', link: '/labelling/what-it-sends' }] },
+  { text: 'Privacy', items: [{ text: 'What Log Book sends, and where', link: '/privacy/' }] },
   {
     text: 'Reference',
     items: [
@@ -46,7 +46,7 @@ export default defineConfigWithTheme<IThemeConfig>({
   description: "Where your coding agent's time went.",
   srcDir: 'src',
   // Written parts that pages include, not pages of their own.
-  srcExclude: ['reference/examples/**'],
+  srcExclude: ['reference/examples/**', 'privacy/statement.md', 'privacy/summary.md'],
   base: BASE_PATH,
   cleanUrls: true,
   appearance: 'dark',

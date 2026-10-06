@@ -7,7 +7,7 @@ const EXIT_CODES_PAGE = '/reference/exit-codes'
 const EXAMPLES = '../reference/examples'
 
 // Text from the command table as a page shows it, word for word.
-const escaped = (text: string): string => text.replaceAll(MARKDOWN, (character) => `\\${character}`)
+export const escaped = (text: string): string => text.replaceAll(MARKDOWN, (character) => `\\${character}`)
 
 const code = (text: string): string => `\`${text}\``
 
