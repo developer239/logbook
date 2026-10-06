@@ -44,7 +44,7 @@ const isDay = (value: unknown): boolean =>
   typeof value === 'string' && DAY.test(value) && new Date(`${value}T00:00:00Z`).toISOString().startsWith(value)
 
 // The list a file holds under its key, or a finding that names the file when it is missing or unparsable.
-const listIn = async (root: string, file: string, key: string): Promise<unknown[] | string> => {
+export const listIn = async (root: string, file: string, key: string): Promise<unknown[] | string> => {
   let text: string
   try {
     text = await readFile(join(root, file), 'utf8')
