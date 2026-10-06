@@ -5,6 +5,7 @@ import { TOOLS, type IToolEntry } from './tools.js'
 const ENTRIES: readonly (readonly [string, IToolEntry])[] = [
   ...Object.entries(TOOLS.project.shop),
   ...Object.entries(TOOLS.project.billing),
+  ...Object.entries(TOOLS.project['field-guide']),
   ...Object.entries(TOOLS.shared),
 ]
 

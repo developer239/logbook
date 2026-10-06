@@ -1,7 +1,7 @@
 import type { IPlanCorpus } from '../plan/types.js'
 import { COMMANDS } from './commands.js'
 import corpusMark from './corpus-mark.json' with { type: 'json' }
-import { MODEL_RATES, MODELS } from './models.js'
+import { MODEL_RATES, MODELS, REPLY_HABITS } from './models.js'
 import { CAST, PROJECTS } from './projects.js'
 import { PROMPTS } from './prompts.js'
 import { REPLIES } from './replies.js'
@@ -15,7 +15,7 @@ import { OUTCOME_NOTES, WORK } from './work.js'
 // a scripted session may open with) or `commandFile`.
 export const CORPUS = {
   'commands.ts': { COMMANDS },
-  'models.ts': { MODELS, MODEL_RATES },
+  'models.ts': { MODELS, MODEL_RATES, REPLY_HABITS },
   'projects.ts': { CAST, PROJECTS },
   'prompts.ts': { PROMPTS },
   'replies.ts': { REPLIES },
@@ -35,6 +35,7 @@ export const PLAN_CORPUS: IPlanCorpus = {
   tools: TOOLS,
   commands: COMMANDS,
   rates: MODEL_RATES,
+  habits: REPLY_HABITS,
 }
 
 // Recorded in every build's manifest; CI fails a packed tarball that contains it. It lives in a data file so the

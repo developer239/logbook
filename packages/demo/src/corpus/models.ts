@@ -1,9 +1,26 @@
+import type { ClosingKind } from './replies.js'
+
 // The model ids each writer records, spelled as that harness spells current public ones. A new model generation
 // changes this file only.
 export const MODELS = {
   'claude-code': ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-4-5'],
   'opencode': ['anthropic/claude-sonnet-5-5', 'openai/gpt-5.5'],
 } as const
+
+// How often a model's turn of the rich set ends its own way where the turn would end plainly, in percent: one Claude Code
+// model asks permission, one caves after pushback and another holds, and an OpenCode model pushes back most.
+export interface IReplyHabit {
+  closing: ClosingKind
+  percent: number
+}
+
+export const REPLY_HABITS: Readonly<Record<string, IReplyHabit>> = {
+  'claude-opus-5-5': { closing: 'permission', percent: 30 },
+  'claude-sonnet-5-5': { closing: 'caves', percent: 30 },
+  'claude-haiku-4-5': { closing: 'holds', percent: 25 },
+  'anthropic/claude-sonnet-5-5': { closing: 'caves', percent: 15 },
+  'openai/gpt-5.5': { closing: 'pushback', percent: 35 },
+}
 
 export interface IModelRates {
   input: number

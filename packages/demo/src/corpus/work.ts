@@ -22,9 +22,9 @@ export const OUTCOME_NOTES: Readonly<Record<SessionOutcome, string>> = {
   'unclear': 'the review ended without a clear verdict',
 }
 
-// Features in `shop`, bug fixes and debugging in `billing`, as the story has it.
+// Features in `shop`, bug fixes and debugging in `billing`, writing in `field-guide`, as the story has it.
 export const WORK: Record<ProjectName, readonly IWorkItem[]> = {
-  shop: [
+  'shop': [
     {
       title: 'add a discount code field to checkout',
       goal: 'build a feature',
@@ -62,7 +62,7 @@ export const WORK: Record<ProjectName, readonly IWorkItem[]> = {
       summary: 'Asks whether the cart badge counts items or lines.',
     },
   ],
-  billing: [
+  'billing': [
     {
       title: 'fix rounding in invoice totals',
       goal: 'fix a bug',
@@ -92,6 +92,38 @@ export const WORK: Record<ProjectName, readonly IWorkItem[]> = {
       goal: 'ship and operate',
       outcomes: ['done', 'blocked'],
       summary: 'Releases billing 2.3.0: release notes, a tag and the push.',
+    },
+  ],
+  'field-guide': [
+    {
+      title: 'write the trail safety chapter',
+      goal: 'writing',
+      outcomes: ['done', 'partly done', 'handed off'],
+      summary: 'Writes the trail safety chapter: water, weather and when to turn back.',
+    },
+    {
+      title: 'rewrite the fern chapter for beginners',
+      goal: 'writing',
+      outcomes: ['done', 'abandoned'],
+      summary: 'Rewrites the fern chapter in plain words for readers new to plants.',
+    },
+    {
+      title: 'find out which ferns grow above the tree line',
+      goal: 'research outside the codebase',
+      outcomes: ['done', 'unclear', 'blocked'],
+      summary: 'Looks up which ferns grow above the tree line, for the fern chapter.',
+    },
+    {
+      title: 'find where the link check lists the chapters',
+      goal: 'explore the codebase',
+      outcomes: ['done', 'unclear'],
+      summary: 'Finds where the link check script reads the list of chapters it checks.',
+    },
+    {
+      title: 'ask what the glossary counts as scree',
+      goal: 'no task',
+      outcomes: ['no task'],
+      summary: 'Asks how the glossary defines scree.',
     },
   ],
 }

@@ -14,7 +14,7 @@ const USAGE = 'Usage: logbook-demo <command>'
 const EXIT_FAILURE = 1
 const EXIT_USAGE = 2
 const PACKAGE_DIRECTORY = fileURLToPath(new URL('..', import.meta.url))
-const SIZES: readonly DemoSize[] = ['small']
+const SIZES: readonly DemoSize[] = ['small', 'rich']
 const LABELS: readonly LabelsVariant[] = ['all', 'none']
 // An ISO time that names its zone: `Z` or an offset such as `+02:00`.
 const ZONED_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/u
@@ -137,7 +137,8 @@ export const startArgsOf = (args: readonly string[], now: number): IStartArgs =>
     throw new UsageLine(`--port takes a port from 0 to ${String(MAX_PORT)}, got ${port ?? ''}`)
   }
   return {
-    build: buildOptionsFrom(build, now),
+    // A demo host shows the rich set unless told otherwise.
+    build: buildOptionsFrom({ ...build, size: build.size ?? 'rich' }, now),
     port: portNumber,
     isFresh: fresh === true,
     isReused: reuse === true,
@@ -212,7 +213,7 @@ const scanArgsOf = (args: readonly string[]): IScanArgs => {
     allowPositionals: true,
   })
   if (positionals.length === 0) {
-    throw new UsageLine('Usage: logbook-demo scan <file>... [--size small] [--seed <n>]')
+    throw new UsageLine('Usage: logbook-demo scan <file>... [--size small|rich] [--seed <n>]')
   }
   return {
     files: positionals,
