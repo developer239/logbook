@@ -287,19 +287,17 @@ const fileTexts = async (root: string, homeFiles: readonly string[]): Promise<IP
     )
   ).flat()
 
-// The facts of the machine that runs the check: its home, the out directory as given and with links resolved, the user
-// name and the host name as whole words.
-const machineFacts = async (out: string): Promise<RegExp[]> => {
-  const paths = [...new Set([homedir(), resolve(out), await realpath(out)])]
+// The facts of a machine a text must not hold: the paths given, and the user name and the host name as whole words.
+export const machineFacts = (paths: readonly string[]): RegExp[] => {
   const words = [userInfo().username, hostname()].filter((word) => word.length >= MIN_WORD)
   return [
-    ...paths.map((path) => new RegExp(escaped(path), 'u')),
+    ...[...new Set(paths)].map((path) => new RegExp(escaped(path), 'u')),
     ...words.map((word) => new RegExp(`\\b${escaped(word)}\\b`, 'iu')),
   ]
 }
 
 // C5: every shape a machine would leave is the invented one.
-const isInventedOnly = (text: string): boolean =>
+export const isInventedOnly = (text: string): boolean =>
   [...text.matchAll(MACHINE_PATH)].every(([path]) => `${path}/`.startsWith(INVENTED_HOME)) &&
   [...text.matchAll(UUID)].every((match) => match.groups?.first?.toLowerCase() === INVENTED_UUID) &&
   [...text.matchAll(SOURCE_ID)].every(([id]) => INVENTED_SOURCE_ID.test(id)) &&
@@ -331,7 +329,8 @@ export const checkDemo = async (out: string): Promise<IDemoFinding[]> => {
   const root = resolve(out)
   const manifest = await readManifest(root)
   const homeFiles = await homeFilesOf(root)
-  const facts = await machineFacts(out)
+  // The checking machine's home and the out directory as given and with its links resolved.
+  const facts = machineFacts([homedir(), root, await realpath(out)])
   const db = await openSqlite(demoWarehousePath(root), { isReadOnly: true })
   try {
     const tables = tablesOf(db)
