@@ -42,3 +42,12 @@ export const InstallCommand = defineComponent({
     }
   },
 })
+
+// A label of the web app's UI quoted inline in its style. K8 finds it in the text captures of the page it names, so a
+// renamed heading fails the check until the docs follow.
+export const Ui = defineComponent({
+  props: { page: { type: String, required: true } },
+  setup(_props, { slots }) {
+    return () => h('span', { class: 'ui-label' }, slots.default?.())
+  },
+})
