@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { type DefaultTheme, defineConfigWithTheme, type MarkdownEnv, type MarkdownRenderer } from 'vitepress'
-import { idsIn, type ISiteCaptures, siteShotOf, siteVideoOf } from '../capture/captures.js'
+import { attributesIn, type ISiteCaptures, siteCommittedOf, siteShotOf, siteVideoOf } from '../capture/captures.js'
 import { loadSiteCaptures } from '../capture/site-captures.js'
 import { cliFacts } from '../scripts/cli.js'
 import { firstLineOf } from '../scripts/readme.js'
@@ -69,8 +69,9 @@ const SIDEBAR: DefaultTheme.SidebarItem[] = [
 // The README's first line, so the site, the README and npm describe Log Book in the same sentence.
 const description = firstLineOf(await readFile(new URL('../../../README.md', import.meta.url), 'utf8'))
 
-// Every Shot and Video a page names is one the last capture made, with its poster, checked while the page's Markdown
-// renders, so an unknown id stops the build, naming it and the page.
+// Every Shot and Video a page names is one the last capture made, with its poster, or a committed capture the committed
+// capture manifest lists, checked while the page's Markdown renders, so an unknown one stops the build, naming it and
+// the page.
 const checkCaptures =
   (captures: ISiteCaptures) =>
   (md: MarkdownRenderer): void => {
@@ -78,10 +79,13 @@ const checkCaptures =
       const page = (state.env as MarkdownEnv).relativePath
       for (const token of state.tokens.flatMap((each) => [each, ...(each.children ?? [])])) {
         if (token.type === 'html_block' || token.type === 'html_inline') {
-          for (const id of idsIn(token.content, 'Shot')) {
+          for (const id of attributesIn(token.content, 'Shot', 'id')) {
             siteShotOf(captures.shots, id, page)
           }
-          for (const id of idsIn(token.content, 'Video')) {
+          for (const file of attributesIn(token.content, 'Shot', 'committed')) {
+            siteCommittedOf(captures, file, page)
+          }
+          for (const id of attributesIn(token.content, 'Video', 'id')) {
             siteVideoOf(captures, id, page)
           }
         }
