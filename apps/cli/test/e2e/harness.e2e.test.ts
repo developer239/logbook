@@ -111,7 +111,7 @@ describe('the end-to-end harness', () => {
 
     it('starts a host on an empty home that answers on the port its host file names, and stops it', async () => {
       // Arrange
-      const home = await harness.createHome()
+      const home = await harness.createHome({ home: 'none' })
 
       // Act
       const host = await harness.startHost(home, { args: ['--no-open', '--no-sync'] })

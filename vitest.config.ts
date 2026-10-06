@@ -77,6 +77,7 @@ const PROJECTS: IProjectSpec[] = [
     timeout: E2E_TIMEOUT_MS,
     isSerial: true,
     isBuiltCliNeeded: true,
+    setup: './apps/cli/test/e2e/demo-build.ts',
   },
   {
     name: 'demo-build',

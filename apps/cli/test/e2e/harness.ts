@@ -1,12 +1,12 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { once } from 'node:events'
 import { existsSync } from 'node:fs'
-import { chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
+import { chmod, cp, mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { sealedEnvironment } from '@log-book/demo'
-import { afterEach, vi } from 'vitest'
+import { afterEach, inject, vi } from 'vitest'
 
 // The binary layer 7 runs: the shim pnpm build stages, or, with LOGBOOK_E2E_BIN set, that file, as CI sets it to the
 // logbook installed from the packed tarball. The harness decides which, never a test.
@@ -18,6 +18,23 @@ const COMMAND_TIMEOUT_MS = 30_000
 const HOST_START_TIMEOUT_MS = 30_000
 const STOP_GRACE_MS = 5000
 const POLL_MS = 50
+
+// What a derived home leaves out of its copy of the demo build's home, relative to the home.
+const OPENCODE_DATABASE = '.local/share/opencode/opencode.db'
+const CLAUDE_CODE_PROJECTS = '.claude/projects'
+// SQLite's write-ahead log beside the warehouse, which holds part of what the build wrote.
+const WAL_SUFFIX = '-wal'
+
+// The home a test starts from: a copy of the demo small set's home, or one derived from it, in which discovery finds
+// only Claude Code, Claude Code with no transcripts, or no harness.
+type TDemoHome = 'demo' | 'one-harness' | 'claude-code-empty' | 'none'
+
+export interface IHomeOptions {
+  // `demo` when absent.
+  home?: TDemoHome
+  // A copy of the build's warehouse beside the home; by default there is none, so the first start is a first run.
+  isWarehouseCopied?: boolean
+}
 
 // A throwaway home: its directory under the OS temporary directory, and exactly the environment every process run in
 // it gets, sealedEnvironment(out).
@@ -240,10 +257,35 @@ const openerSource = (calls: string, behaviour: TOpenerBehaviour): string =>
     '',
   ].join('\n')
 
+// Makes the home a test asked for from the build's home: copied, then changed as its variant says.
+const fillHome = async (home: string, variant: TDemoHome, buildHome: string): Promise<void> => {
+  if (variant === 'none') {
+    await mkdir(home)
+    return
+  }
+  await cp(buildHome, home, { recursive: true })
+  if (variant === 'one-harness') {
+    await rm(join(home, OPENCODE_DATABASE))
+  }
+  if (variant === 'claude-code-empty') {
+    const projects = join(home, CLAUDE_CODE_PROJECTS)
+    const entries = await readdir(projects)
+    await Promise.all(entries.map(async (entry) => rm(join(projects, entry), { recursive: true })))
+  }
+}
+
+// Copies the build's warehouse, with its write-ahead log when there is one, to where the home's logbook opens it.
+const copyWarehouse = async (warehouse: string, target: string): Promise<void> => {
+  await cp(warehouse, target)
+  if (existsSync(`${warehouse}${WAL_SUFFIX}`)) {
+    await cp(`${warehouse}${WAL_SUFFIX}`, `${target}${WAL_SUFFIX}`)
+  }
+}
+
 // The harness of layer 7: throwaway homes, logbook runs and hosts in them, and the stand-in opener; at each test's end
 // it stops what it started, ends any stand-in opener still alive and removes the homes.
 export const useE2eHarness = (): {
-  createHome: () => Promise<IE2eHome>
+  createHome: (options?: IHomeOptions) => Promise<IE2eHome>
   run: (home: IE2eHome, args: readonly string[], options?: IRunOptions) => Promise<ICommandResult>
   startHost: (home: IE2eHome, options?: IHostOptions) => Promise<IStartedHost>
   installOpener: (home: IE2eHome, behaviour: TOpenerBehaviour) => Promise<IStandInOpener>
@@ -302,11 +344,15 @@ export const useE2eHarness = (): {
   afterEach(teardown)
 
   return {
-    createHome: async () => {
+    createHome: async ({ home = 'demo', isWarehouseCopied = false } = {}) => {
       const out = await mkdtemp(join(await realpath(tmpdir()), 'logbook-e2e-'))
       homes.push(out)
       const environment = sealedEnvironment(out)
-      await mkdir(environment.HOME ?? join(out, 'home'))
+      const demo = inject('e2eDemo')
+      await fillHome(environment.HOME ?? join(out, 'home'), home, join(demo.out, 'home'))
+      if (isWarehouseCopied) {
+        await copyWarehouse(demo.warehouse, environment.LOGBOOK_DB ?? join(out, 'warehouse.db'))
+      }
       return { out, environment }
     },
 
