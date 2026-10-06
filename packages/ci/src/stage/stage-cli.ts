@@ -73,6 +73,16 @@ export const cliManifest = (
   publishConfig: { access: 'public' },
 })
 
+// The manifest the stage writes for the CLI, from the workspace's manifest, the adapters and the published fields.
+export const cliManifestOf = async (root: string): Promise<Record<string, unknown>> => {
+  const workspace = workspaceManifestOf(await readFile(join(root, CLI_MANIFEST), 'utf8'))
+  const harnessIds = harnessIdsIn((await readdir(join(root, 'packages'))).map((name) => `packages/${name}/`))
+  return cliManifest(workspace, harnessIds, {
+    description: await descriptionOf(root),
+    homepage: await homepageOf(root),
+  })
+}
+
 // Replaces the CLI's web build module in the bundle, and records that it did.
 const webBuildModule = (path: string, replaced: { isDone: boolean }): Plugin => ({
   name: 'web-build',
@@ -93,8 +103,7 @@ const webBuildModule = (path: string, replaced: { isDone: boolean }): Plugin => 
 export const stageCli = async (givenRoot: string): Promise<void> => {
   const root = await realpath(givenRoot)
   const at = (path: string): string => join(root, path)
-  const manifest = workspaceManifestOf(await readFile(at(CLI_MANIFEST), 'utf8'))
-  const published = { description: await descriptionOf(root), homepage: await homepageOf(root) }
+  const manifest = await cliManifestOf(root)
 
   await rm(at(PACKAGE), { recursive: true, force: true })
   await mkdir(dirname(at(METAFILE)), { recursive: true })
@@ -141,9 +150,5 @@ export const stageCli = async (givenRoot: string): Promise<void> => {
     // The root README is the CLI's npm page; its images link to the site, so the package carries none.
     cp(at(README), at(join(PACKAGE, README))),
   ])
-  const harnessIds = harnessIdsIn((await readdir(at('packages'))).map((name) => `packages/${name}/`))
-  await writeFile(
-    at(join(PACKAGE, 'package.json')),
-    `${JSON.stringify(cliManifest(manifest, harnessIds, published), null, 2)}\n`
-  )
+  await writeFile(at(join(PACKAGE, 'package.json')), `${JSON.stringify(manifest, null, 2)}\n`)
 }
