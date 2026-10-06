@@ -40,6 +40,8 @@ interface IWrittenStep {
 const ANCHOR = Date.UTC(2026, 8, 28, 18)
 const SLOW_MS = 30_000
 const SLOW_FACTOR = 10
+// The calls of one kind the slow-call card needs before it knows how long that kind usually takes.
+const USUAL_MIN_CALLS = 20
 // The families the slow-call card leaves out: they wait on other work or on the human by design.
 const NOT_SLOW = new Set(['subagent', 'dispatch', 'question', 'wait'])
 
@@ -97,23 +99,32 @@ const isScriptedRun = (step: TCallStep): boolean =>
 const isWaitingShell = (written: readonly IWriterScripts[], call: IWrittenStep & { step: TCallStep }): boolean =>
   isScriptedRun(call.step) || written[call.writer]?.calls[call.step.key]?.shell?.purpose === 'wait for something'
 
-// Longer than 30 seconds and ten times the median of its writer's calls of its family, in a family the card keeps.
+// What the slow-call card groups a call by in one writer: the tool it records, and a shell call's purpose.
+const kindOf = (written: readonly IWriterScripts[], call: IWrittenStep & { step: TCallStep }): string =>
+  [
+    call.writer,
+    call.step.family,
+    call.step.intent,
+    call.step.tool,
+    written[call.writer]?.calls[call.step.key]?.shell?.purpose,
+  ].join('|')
+
+// As the slow-call card decides it: a finished call of a kind the card keeps, with at least 20 finished calls of its
+// kind, longer than 30 seconds and ten times the median of them.
 const isSlow = (
   written: readonly IWriterScripts[],
   call: IWrittenStep & { step: TCallStep },
   calls: readonly (IWrittenStep & { step: TCallStep })[]
 ): boolean => {
-  const usual = median(
-    calls
-      .filter((other) => other.writer === call.writer && other.step.family === call.step.family)
-      .map((other) => durationOf(other.step))
-  )
+  const ofKind = calls.filter((other) => other.step.endAt !== null && kindOf(written, other) === kindOf(written, call))
   const duration = durationOf(call.step)
   return (
+    call.step.endAt !== null &&
     !NOT_SLOW.has(call.step.family) &&
     !isWaitingShell(written, call) &&
+    ofKind.length >= USUAL_MIN_CALLS &&
     duration > SLOW_MS &&
-    duration > SLOW_FACTOR * usual
+    duration > SLOW_FACTOR * median(ofKind.map((other) => durationOf(other.step)))
   )
 }
 

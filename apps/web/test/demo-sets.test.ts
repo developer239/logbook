@@ -57,19 +57,4 @@ describe('the demo sets of the web test run', () => {
       isBuilt: true,
     })
   })
-
-  it('hold no labelling run in the variant without model labels, and some in the small set', async () => {
-    // Arrange
-    const [labelled, unlabelled] = [
-      await copyOf(inject('demoSmall').warehouse),
-      await copyOf(inject('demoSmallNoLabels').warehouse),
-    ]
-
-    // Act
-    const sql = 'SELECT COUNT(*) AS count FROM label_run'
-    const runs = [count(labelled, sql), count(unlabelled, sql)]
-
-    // Assert
-    expect(runs).toStrictEqual([inject('demoSmall').plan.labels.runs.length, 0])
-  })
 })

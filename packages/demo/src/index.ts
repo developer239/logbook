@@ -3,6 +3,9 @@ export { checkDemo, type DemoRule, type IDemoFinding } from './check/check-demo.
 export { startDemo, type IStartDemoOptions, type IStartedDemo } from './start/start-demo.js'
 export { scanText, type IScanFinding, type IScanOptions, type ScanRule } from './check/scan-text.js'
 export { DEMO_ERROR_CODES } from './errors.js'
+// The engine's labelling tasks, with each field's vocabulary and each task's version, for the web tests that hold the
+// small set to its coverage contract: the web app may not import the engine.
+export { LABEL_TASKS, type ILabelTaskInfo } from '@log-book/engine'
 export { planLabels } from './plan/labels.js'
 export { sealedEnvironment } from './sealed-environment.js'
 export { planDataset } from './plan/planner.js'

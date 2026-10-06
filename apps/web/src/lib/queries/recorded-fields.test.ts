@@ -1,5 +1,5 @@
 import type { IBuiltDemo } from '@log-book/demo'
-import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, inject, it, vi } from 'vitest'
 import {
   allTime,
   callRowsOf,
@@ -51,6 +51,8 @@ const ODD_MESSAGE = `${ODD_SESSION}/m1`
 const LONG_MS = HOUR
 let waiting: IRecordedCall[] = []
 let control: IRecordedCall | undefined
+// The slow groups of the small set itself, before the odd rows: its planned slow test run.
+let ownSlowKeys: string[] = []
 
 const recordedCall = (id: string): IRecordedCall =>
   warehouse.db
@@ -98,6 +100,10 @@ const skillLoads = (): { name: string; chars: number[]; requestChars: number[] }
 beforeAll(async () => {
   demo = inject('demoSmall')
   warehouse = await copyDemo('demoSmall')
+  ownSlowKeys = (await import('./calls')).slowCalls(allTime(demo)).groups.map((group) => group.key)
+  // A module of its own for the tests, whose usual times are first read after the odd rows: rows this connection writes
+  // leave its data version as it was, so a module that read them before would keep them.
+  vi.resetModules()
   calls = await import('./calls')
   waiting = [
     ...recordedOf((step) => step.kind === 'call' && (step.family === 'dispatch' || step.family === 'wait')),
@@ -257,11 +263,13 @@ describe('slow calls by family', () => {
     const { groups } = calls.slowCalls(allTime(demo))
 
     expect({
-      keys: groups.map((group) => group.key),
+      keys: groups.map((group) => group.key).toSorted(),
       families: [...new Set(waiting.map((call) => call.family))].toSorted(),
+      isOwnSlow: ownSlowKeys.length > 0,
     }).toStrictEqual({
-      keys: [control === undefined ? '' : slowKeyOf(control)],
+      keys: [...ownSlowKeys, control === undefined ? '' : slowKeyOf(control)].toSorted(),
       families: ['dispatch', 'shell', 'subagent', 'wait'],
+      isOwnSlow: true,
     })
   })
 
