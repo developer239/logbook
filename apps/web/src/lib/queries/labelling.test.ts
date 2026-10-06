@@ -339,12 +339,16 @@ describe('labelling state: the exits this process keeps', () => {
     expect([beforeNewer, afterNewer]).toStrictEqual(['needs-claude', 'stopped'])
   })
 
-  it('a plan that succeeds after a kept missing prerequisite clears it', () => {
+  it("a plan that succeeds after a run child's missing prerequisite clears it, and one before it does not", () => {
+    // Arrange
+    const missing = exit(7, AT, 'needs Claude Code: set CLAUDE_BIN')
+
     // Act
-    const state = labelling.labellingState({ ...NONE, planExit: exit(0, AT + MINUTE) })
+    const after = labelling.labellingState({ ...NONE, runExit: missing, planExit: exit(0, AT + MINUTE) }).name
+    const before = labelling.labellingState({ ...NONE, runExit: missing, planExit: exit(0, AT - MINUTE) }).name
 
     // Assert
-    expect(state.name).toBe('never')
+    expect([after, before]).toStrictEqual(['never', 'needs-claude'])
   })
 })
 

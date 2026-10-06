@@ -1,0 +1,21 @@
+---
+import Layout from '../../layouts/Layout.astro'
+import { pageOf, readForm } from '../../lib/forms'
+import { stopRun } from '../../lib/labelling'
+
+if (Astro.request.method !== 'POST') {
+  return new Response(null, { status: 405, headers: { Allow: 'POST' } })
+}
+
+const page = pageOf((await readForm(Astro.request))?.get('back'), Astro.url)
+
+if (page !== null) {
+  // SIGTERM to this process's own run child, if it lives; another pid holding the lock is never signalled.
+  stopRun()
+  return Astro.redirect(page, 303)
+}
+
+Astro.response.status = 400
+---
+
+<Layout title="Stop labelling" current={null} range={null} problem="Stop returns to a page of this app; the form sent none." back="/labels" />

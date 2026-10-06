@@ -14,6 +14,8 @@ export interface IBuiltHandler {
   origin: string
   // The copy the server runs from.
   directory: string
+  // The connections the server holds open now.
+  connections: () => Promise<number>
   close: () => Promise<void>
 }
 
@@ -41,6 +43,16 @@ export const mountBuiltHandler = async (): Promise<IBuiltHandler> => {
   return {
     origin: `http://127.0.0.1:${String((server.address() as AddressInfo).port)}`,
     directory,
+    connections: async () =>
+      new Promise((resolve, reject) => {
+        server.getConnections((error, open) => {
+          if (error === null) {
+            resolve(open)
+          } else {
+            reject(error)
+          }
+        })
+      }),
     close: async () => {
       await new Promise<void>((resolve) => {
         server.close(() => {

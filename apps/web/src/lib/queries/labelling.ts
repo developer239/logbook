@@ -83,8 +83,16 @@ const ENDED: Record<Exclude<LabelRunOutcome, 'failed'>, LabellingStateName> = {
   unreachable: 'unreachable',
 }
 
-// Exits that have no state of their own: the holder of the lock, or the newest record, says what happened.
-const SILENT_EXITS = new Set<number | null>([EXIT.success, EXIT.alreadyRunning, EXIT.interrupted])
+// Exits that are not a failed run: success, `already running` and `interrupted` have no state of their own (the
+// holder of the lock, or the newest record, says what happened), and `missing prerequisite` and `updated while
+// running` have theirs, which a later successful plan can clear.
+const NOT_FAILED = new Set<number | null>([
+  EXIT.success,
+  EXIT.alreadyRunning,
+  EXIT.interrupted,
+  EXIT.missingPrerequisite,
+  EXIT.updatedWhileRunning,
+])
 
 const state = (
   name: LabellingStateName,
@@ -137,7 +145,7 @@ const isCurrent = (exit: IChildExit | null, record: IRunRecord | undefined): exi
 // A run child of this process that failed before it wrote a record has only its exit to tell.
 const failedExit = (own: ILabellingProcess, record: IRunRecord | undefined): IChildExit | null => {
   const exit = own.runExit
-  return isCurrent(exit, record) && !SILENT_EXITS.has(exit.code) && !hasRecordOf(exit.pid) ? exit : null
+  return isCurrent(exit, record) && !NOT_FAILED.has(exit.code) && !hasRecordOf(exit.pid) ? exit : null
 }
 
 const recordState = (record: IRunRecord): ILabellingState => {
@@ -183,11 +191,12 @@ const keptExitState = (own: ILabellingProcess, record: IRunRecord | undefined): 
     return state('updated')
   }
 
-  const missing = [own.planExit, own.runExit]
+  // The last plan or run child decides: a plan that succeeds after a missing prerequisite clears it.
+  const last = [own.planExit, own.runExit]
     .filter((exit) => isCurrent(exit, record))
-    .find((exit) => exit.code === EXIT.missingPrerequisite)
-  if (missing !== undefined) {
-    return state('needs-claude', { at: missing.at, detail: missing.lastLine })
+    .toSorted((first, second) => second.at - first.at)[0]
+  if (last?.code === EXIT.missingPrerequisite) {
+    return state('needs-claude', { at: last.at, detail: last.lastLine })
   }
 
   const failed = failedExit(own, record)

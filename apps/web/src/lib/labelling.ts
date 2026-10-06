@@ -54,17 +54,19 @@ let running: IRunChild | undefined
 let runExit: IChildExit | undefined
 let isUpdated = false
 
-// The model as its own argument after --model, so it can never read as an option; none leaves the CLI's default.
-const modelArgs = (model: string | null): string[] => {
-  if (model === null) {
-    return []
-  }
-
-  if (!isLabelModelId(model)) {
+// A model a request names, refused (400) unless it follows the CLI's --model rule; none leaves the CLI's default.
+export const checkedModel = (model: string | null): string | null => {
+  if (model !== null && !isLabelModelId(model)) {
     throw new ParamError(`The model ${LABEL_MODEL_RULE}, got ${JSON.stringify(model)}`)
   }
 
-  return ['--model', model]
+  return model
+}
+
+// The model as its own argument after --model, so it can never read as an option.
+const modelArgs = (model: string | null): string[] => {
+  const checked = checkedModel(model)
+  return checked === null ? [] : ['--model', checked]
 }
 
 const keep = (pid: number | undefined, run: ICliRun): IChildExit => {

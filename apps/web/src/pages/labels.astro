@@ -1,0 +1,83 @@
+---
+import { readLabelsLock, resolveWarehousePath } from '@log-book/warehouse'
+import Labels from '../components/labels/Labels.astro'
+import Layout from '../layouts/Layout.astro'
+import { ParamError } from '../lib/errors'
+import { readForm } from '../lib/forms'
+import { checkedModel, labellingProcess, plan as runPlan, startRun } from '../lib/labelling'
+import { load } from '../lib/load'
+import { labellingState } from '../lib/queries/labelling'
+import { labelControlOf } from '../lib/views/label-control'
+import { isLastRun, isLive, partOf, planPart, progressLines } from '../lib/views/labels-page'
+
+if (Astro.request.method !== 'GET' && Astro.request.method !== 'POST') {
+  return new Response(null, { status: 405, headers: { Allow: 'GET, POST' } })
+}
+
+// A model the request names, as text; a file in its place is no model.
+const modelOf = (value: FormDataEntryValue | null | undefined): string | null =>
+  value === null || value === undefined ? null : checkedModel(typeof value === 'string' ? value : '')
+
+let problem: string | null = null
+
+if (Astro.request.method === 'POST') {
+  try {
+    const model = modelOf((await readForm(Astro.request))?.get('model'))
+    // A lock held by a run, a drop or maintenance, or a run child of this process still alive, is shown, not joined.
+    if (!readLabelsLock(resolveWarehousePath()).isHeld && labellingProcess().run === null) {
+      startRun(model, Astro.locals.children)
+    }
+    return Astro.redirect('/labels', 303)
+  } catch (error) {
+    if (!(error instanceof ParamError)) {
+      throw error
+    }
+    problem = error.message
+    Astro.response.status = error.status
+  }
+}
+
+const now = Date.now()
+// A refused POST shows its reason, and plans nothing.
+const page =
+  problem === null
+    ? load(() => {
+        const model = checkedModel(Astro.url.searchParams.get('model'))
+        const state = labellingState(labellingProcess())
+        return { model, state, part: partOf(state) }
+      })
+    : null
+
+if (page !== null && !page.ok) {
+  Astro.response.status = page.status
+}
+
+const data = page?.ok === true ? page.data : null
+const part = data?.part ?? null
+// Only the plan part runs a plan: a run, the maintenance or an update would make its counts wrong or its child fail.
+const plan = data !== null && part === 'plan' ? planPart(await runPlan(data.model, Astro.locals.children)) : null
+const progress =
+  data !== null && data.state.progress !== null && part !== 'plan'
+    ? progressLines(data.state.progress, now, part === 'running-elsewhere')
+    : null
+---
+
+<Layout
+  title="Labels"
+  current={null}
+  range={null}
+  problem={problem ?? (page === null || page.ok ? null : page.problem)}
+  isReloading={part !== null && isLive(part)}
+>
+  {
+    data !== null && part !== null && (
+      <Labels
+        lastRun={isLastRun(data.state) ? labelControlOf(data.state, now).text : null}
+        part={part}
+        plan={plan}
+        progress={progress}
+        line={labelControlOf(data.state, now).text}
+      />
+    )
+  }
+</Layout>
