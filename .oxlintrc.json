@@ -497,7 +497,11 @@
       }
     },
     {
-      "files": ["packages/demo/test/small-build.ts", "apps/web/test/demo-sets.ts"],
+      "files": [
+        "packages/demo/test/small-build.ts",
+        "apps/web/test/demo-sets.ts",
+        "apps/cli/test/e2e/demo-build.ts"
+      ],
       "rules": {
         "naming/declaration-naming": [
           "error",
