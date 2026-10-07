@@ -39,32 +39,29 @@ features:
 
 Reactions, goals and outcomes come from [labelling](/labelling/), which runs only when you start it, through your own Claude Code, on the model you choose (<Fact name="defaultModel" /> unless you pick another).
 
-## Who it is for
-
-You use Claude Code or OpenCode most days, and the sessions blur together. You'd like to know where the waiting comes from, whether the same command fails every week, and how often you have to correct the agent. Log Book answers from the history already on your disk. You don't change how you work, and there is nothing to configure.
-
-## See it
-
-<Shot id="conversation" caption="One conversation, with the steps of the turn you are reading." />
-
-<Shot id="agent-reactions" caption="How each model's replies react to you: asking permission, giving in, pushing back." />
-
-<Video id="tour" />
-
-A short tour: the dashboard, one conversation as you scroll through it, and the reactions on both sides. It plays when you click it, without sound.
-
 ## Install
 
 <InstallCommand />
 
-`logbook` opens `http://127.0.0.1:<Fact name="defaultPort" />` in your browser. You need Node.js <Fact name="nodeFloor" /> or newer on macOS or Linux; on Windows, run it inside WSL. The first sync reads your whole history, about half a minute per thousand sessions, and Log Book syncs again every five minutes while it runs. To try it without installing anything, run `npx @log-book/cli`.
+`logbook` opens <code><Fact name="defaultAddress" /></code> in your browser. You need Node.js <Fact name="nodeFloor" /> or newer on macOS or Linux; on Windows, run it inside WSL. The first sync reads your whole history, about half a minute per thousand sessions, and Log Book syncs again every five minutes while it runs. To try it without installing anything, run `npx @log-book/cli`.
+
+## Ask it from the terminal, or let your agent ask
+
+Everything the page shows is also a `logbook` command, so you, a script or your coding agent can ask it directly:
+
+```sh
+logbook sessions --limit 10   # the newest sessions
+logbook search "flaky test"   # prompts, replies, reasoning and tool output that mention it
+logbook report                # every canned report
+logbook sql "SELECT COUNT(*) FROM session"   # read-only SQL over the warehouse
+```
+
+Ask Claude Code or OpenCode a question about your past work, such as what kept failing last week or how you fixed a problem before, and it can run these and answer from your history. `logbook sql --help` describes every table, so an agent can write its own queries. What a command prints becomes part of that agent's conversation, so it reaches the agent's model provider like anything else the agent reads. [Every command](/reference/cli)
+
+## See it
+
+<Video id="tour" />
 
 ## Your data stays on your computer
 
 <!--@include: ./privacy/summary.md-->
-
-## Free for noncommercial use
-
-Log Book is free. Its source is public under the PolyForm Noncommercial License 1.0.0, which makes it source-available rather than open source: you can use it, read it and change it for personal projects, study and research, and charities, schools and public bodies can use it too. Using it at work for a company needs a separate license; write to m.jarnot@yahoo.com.
-
-[The license in plain words](/help/license)

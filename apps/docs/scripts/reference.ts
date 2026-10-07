@@ -85,8 +85,8 @@ const commandSection = (command: ICommandSpec, exitCodes: readonly IExitCode[]):
   '',
   escaped(command.summary),
   '',
-  escaped(command.description),
-  '',
+  // Each line of a description is a paragraph of its own, as the terminal shows it on a line of its own.
+  ...command.description.split('\n').flatMap((line) => [escaped(line), '']),
   ...(command.options.length === 0 ? [] : [...optionsTable(command.options), '']),
   ...valuesOf(command).flatMap((line) => [line, '']),
   `**Writes:** ${command.isWriting ? 'yes' : 'no'}`,
