@@ -1,6 +1,8 @@
 ---
 import { MODEL_HELP, STARTING, STOP_TITLE, STOPPING, UPDATED, startTitle, type IPlanPart, type LabelsPart } from '../../lib/views/labels-page'
 import Button from '../ui/Button.astro'
+import Card from '../ui/Card.astro'
+import PageHead from '../ui/PageHead.astro'
 import './Labels.css'
 
 interface Props {
@@ -15,53 +17,57 @@ interface Props {
 }
 
 const { lastRun, part, plan, progress, line } = Astro.props
+const isRunning = part === 'starting' || part === 'running-here' || part === 'stopping'
 ---
 
 <section class="labels" data-labels-part={part}>
-  <h1 class="labels__heading">Label with your Claude Code</h1>
+  <PageHead title="Label with your Claude Code" />
   {lastRun !== null && <p class="labels__last">{lastRun}</p>}
   {part === 'starting' && <p class="labels__line">{STARTING}</p>}
   {part === 'stopping' && <p class="labels__line">{STOPPING}</p>}
   {part === 'updated' && <p class="labels__line">{UPDATED}</p>}
   {(part === 'maintenance' || (part === 'running-elsewhere' && progress === null)) && <p class="labels__line">{line}</p>}
   {
-    progress !== null && (
-      <pre class="labels__progress" set:text={progress.join('\n')} />
+    (progress !== null || isRunning) && (
+      <Card title="Progress" level={2}>
+        {progress !== null && <pre class="labels__progress" set:text={progress.join('\n')} />}
+        {isRunning && (
+          <form method="post" action="/labels/stop">
+            <input type="hidden" name="back" value="/labels" />
+            <Button variant="soft" type="submit" title={STOP_TITLE} disabled={part === 'stopping'}>
+              Stop
+            </Button>
+          </form>
+        )}
+      </Card>
     )
   }
   {
     plan !== null && (
-      <>
-        {plan.lines.map((text) => (
-          <p class="labels__line">{text}</p>
-        ))}
+      <Card title="This run" level={2}>
+        <div class="labels__plan">
+          {plan.lines.map((text) => (
+            <p class="labels__line">{text}</p>
+          ))}
+        </div>
         {plan.model !== null && (
-          <>
+          <div class="labels__start">
             <form class="labels__model" method="get" action="/labels" data-labels-model>
               <label class="labels__field">
-                Model <input class="labels__input" type="text" name="model" value={plan.model} required />
+                <span class="labels__field-name">Model</span>
+                <input class="labels__input" type="text" name="model" value={plan.model} required />
               </label>
-              <p class="labels__help">{MODEL_HELP}</p>
             </form>
             <form method="post" action="/labels">
               <input type="hidden" name="model" value={plan.model} />
-              <Button variant="accent" type="submit" title={startTitle(plan.model)}>
+              <Button class="labels__submit" variant="accent" type="submit" title={startTitle(plan.model)}>
                 Start labelling
               </Button>
             </form>
-          </>
+            <p class="labels__help">{MODEL_HELP}</p>
+          </div>
         )}
-      </>
-    )
-  }
-  {
-    (part === 'starting' || part === 'running-here' || part === 'stopping') && (
-      <form method="post" action="/labels/stop">
-        <input type="hidden" name="back" value="/labels" />
-        <Button variant="soft" type="submit" title={STOP_TITLE} disabled={part === 'stopping'}>
-          Stop
-        </Button>
-      </form>
+      </Card>
     )
   }
 </section>

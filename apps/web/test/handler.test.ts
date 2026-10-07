@@ -118,7 +118,7 @@ describe('the guard in the built handler', () => {
       status: 200,
       policy: ['content-security-policy', 'x-content-type-options', 'referrer-policy'],
       nosniff: 'nosniff',
-      referrer: 'no-referrer',
+      referrer: 'same-origin',
       frames: true,
     })
   })

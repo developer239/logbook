@@ -130,7 +130,7 @@ importers:
         version: 7.0.2003
       stylelint:
         specifier: 'catalog:'
-        version: 17.16.0(typescript@7.1.0-dev.20261003.1)
+        version: 17.16.0(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1)
       typescript:
         specifier: 'catalog:'
         version: 7.1.0-dev.20261003.1
@@ -185,7 +185,7 @@ importers:
         version: 24.19.1
       ffmpeg-static:
         specifier: 'catalog:'
-        version: 5.3.0
+        version: 5.3.0(supports-color@10.2.2)
       mermaid:
         specifier: 'catalog:'
         version: 12.1.0
@@ -209,7 +209,7 @@ importers:
     dependencies:
       '@astrojs/node':
         specifier: 'catalog:'
-        version: 11.1.6(astro@7.3.5(@types/node@24.19.1)(jiti@2.7.0)(yaml@2.9.1))
+        version: 11.1.6(astro@7.3.5(@types/node@24.19.1)(jiti@2.7.0)(yaml@2.9.1))(supports-color@10.2.2)
       '@log-book/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -229,6 +229,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.1
+      playwright:
+        specifier: 'catalog:'
+        version: 1.63.0
       vitest:
         specifier: 'catalog:'
         version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -298,16 +301,16 @@ importers:
         version: 21.2.3
       '@semantic-release/commit-analyzer':
         specifier: 'catalog:'
-        version: 13.0.1(semantic-release@25.0.9(typescript@7.1.0-dev.20261003.1))
+        version: 13.0.1(semantic-release@25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1))(supports-color@10.2.2)
       '@semantic-release/github':
         specifier: 'catalog:'
-        version: 12.0.10(semantic-release@25.0.9(typescript@7.1.0-dev.20261003.1))
+        version: 12.0.10(semantic-release@25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1))(supports-color@10.2.2)
       '@semantic-release/release-notes-generator':
         specifier: 'catalog:'
-        version: 14.1.1(semantic-release@25.0.9(typescript@7.1.0-dev.20261003.1))
+        version: 14.1.1(semantic-release@25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1))(supports-color@10.2.2)
       semantic-release:
         specifier: 'catalog:'
-        version: 25.0.9(typescript@7.1.0-dev.20261003.1)
+        version: 25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1)
       vitest:
         specifier: 'catalog:'
         version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -5427,11 +5430,11 @@ snapshots:
       github-slugger: 2.0.0
       satteri: 0.10.5
 
-  '@astrojs/node@11.1.6(astro@7.3.5(@types/node@24.19.1)(jiti@2.7.0)(yaml@2.9.1))':
+  '@astrojs/node@11.1.6(astro@7.3.5(@types/node@24.19.1)(jiti@2.7.0)(yaml@2.9.1))(supports-color@10.2.2)':
     dependencies:
       '@astrojs/internal-helpers': 0.11.0
       astro: 7.3.5(@types/node@24.19.1)(jiti@2.7.0)(yaml@2.9.1)
-      send: 1.2.1
+      send: 1.2.1(supports-color@10.2.2)
       server-destroy: 1.0.1
     transitivePeerDependencies:
       - supports-color
@@ -6551,23 +6554,23 @@ snapshots:
 
   '@sec-ant/readable-stream@0.4.1': {}
 
-  '@semantic-release/commit-analyzer@13.0.1(semantic-release@25.0.9(typescript@7.1.0-dev.20261003.1))':
+  '@semantic-release/commit-analyzer@13.0.1(semantic-release@25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1))(supports-color@10.2.2)':
     dependencies:
       conventional-changelog-angular: 8.3.1
       conventional-changelog-writer: 8.4.0
       conventional-commits-filter: 5.0.0
       conventional-commits-parser: 6.4.0
-      debug: 4.4.3
-      import-from-esm: 2.0.0
+      debug: 4.4.3(supports-color@10.2.2)
+      import-from-esm: 2.0.0(supports-color@10.2.2)
       lodash-es: 4.18.1
       micromatch: 4.0.8
-      semantic-release: 25.0.9(typescript@7.1.0-dev.20261003.1)
+      semantic-release: 25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1)
     transitivePeerDependencies:
       - supports-color
 
   '@semantic-release/error@4.0.0': {}
 
-  '@semantic-release/github@12.0.10(semantic-release@25.0.9(typescript@7.1.0-dev.20261003.1))':
+  '@semantic-release/github@12.0.10(semantic-release@25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1))(supports-color@10.2.2)':
     dependencies:
       '@octokit/core': 7.0.8
       '@octokit/plugin-paginate-rest': 15.0.0(@octokit/core@7.0.8)
@@ -6575,15 +6578,15 @@ snapshots:
       '@octokit/plugin-throttling': 11.0.5(@octokit/core@7.0.8)
       '@semantic-release/error': 4.0.0
       aggregate-error: 5.0.0
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@10.2.2)
       dir-glob: 3.0.1
-      http-proxy-agent: 9.1.0
-      https-proxy-agent: 9.1.0
+      http-proxy-agent: 9.1.0(supports-color@10.2.2)
+      https-proxy-agent: 9.1.0(supports-color@10.2.2)
       issue-parser: 7.0.2
       lodash-es: 4.18.1
       mime: 4.1.0
       p-filter: 4.1.0
-      semantic-release: 25.0.9(typescript@7.1.0-dev.20261003.1)
+      semantic-release: 25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1)
       tinyglobby: 0.2.17
       undici: 7.30.0
       url-join: 5.0.0
@@ -6591,7 +6594,7 @@ snapshots:
       - kerberos
       - supports-color
 
-  '@semantic-release/npm@13.2.0(semantic-release@25.0.9(typescript@7.1.0-dev.20261003.1))':
+  '@semantic-release/npm@13.2.0(semantic-release@25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1))':
     dependencies:
       '@actions/core': 3.0.1
       '@semantic-release/error': 4.0.0
@@ -6606,21 +6609,21 @@ snapshots:
       rc: 1.2.8
       read-pkg: 10.1.0
       registry-auth-token: 5.1.1
-      semantic-release: 25.0.9(typescript@7.1.0-dev.20261003.1)
+      semantic-release: 25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1)
       semver: 7.8.5
       tempy: 3.2.0
 
-  '@semantic-release/release-notes-generator@14.1.1(semantic-release@25.0.9(typescript@7.1.0-dev.20261003.1))':
+  '@semantic-release/release-notes-generator@14.1.1(semantic-release@25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1))(supports-color@10.2.2)':
     dependencies:
       conventional-changelog-angular: 8.3.1
       conventional-changelog-writer: 8.4.0
       conventional-commits-filter: 5.0.0
       conventional-commits-parser: 6.4.0
-      debug: 4.4.3
-      import-from-esm: 2.0.0
+      debug: 4.4.3(supports-color@10.2.2)
+      import-from-esm: 2.0.0(supports-color@10.2.2)
       lodash-es: 4.18.1
       read-package-up: 11.0.0
-      semantic-release: 25.0.9(typescript@7.1.0-dev.20261003.1)
+      semantic-release: 25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -7031,9 +7034,9 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  agent-base@6.0.2:
+  agent-base@6.0.2(supports-color@10.2.2):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -7639,9 +7642,11 @@ snapshots:
 
   dayjs@1.11.23: {}
 
-  debug@4.4.3:
+  debug@4.4.3(supports-color@10.2.2):
     dependencies:
       ms: 2.1.3
+    optionalDependencies:
+      supports-color: 10.2.2
 
   deep-extend@0.6.0: {}
 
@@ -7878,11 +7883,11 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.7
 
-  ffmpeg-static@5.3.0:
+  ffmpeg-static@5.3.0(supports-color@10.2.2):
     dependencies:
       '@derhuerst/http-basic': 8.2.4
       env-paths: 2.2.1
-      https-proxy-agent: 5.0.1
+      https-proxy-agent: 5.0.1(supports-color@10.2.2)
       progress: 2.0.3
     transitivePeerDependencies:
       - supports-color
@@ -8107,10 +8112,10 @@ snapshots:
       statuses: 2.0.2
       toidentifier: 1.0.1
 
-  http-proxy-agent@9.1.0:
+  http-proxy-agent@9.1.0(supports-color@10.2.2):
     dependencies:
       agent-base: 9.0.0
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@10.2.2)
       proxy-agent-negotiate: 1.1.0
     transitivePeerDependencies:
       - kerberos
@@ -8120,17 +8125,17 @@ snapshots:
     dependencies:
       '@types/node': 10.17.60
 
-  https-proxy-agent@5.0.1:
+  https-proxy-agent@5.0.1(supports-color@10.2.2):
     dependencies:
-      agent-base: 6.0.2
-      debug: 4.4.3
+      agent-base: 6.0.2(supports-color@10.2.2)
+      debug: 4.4.3(supports-color@10.2.2)
     transitivePeerDependencies:
       - supports-color
 
-  https-proxy-agent@9.1.0:
+  https-proxy-agent@9.1.0(supports-color@10.2.2):
     dependencies:
       agent-base: 9.0.0
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@10.2.2)
       proxy-agent-negotiate: 1.1.0
     transitivePeerDependencies:
       - kerberos
@@ -8153,9 +8158,9 @@ snapshots:
       parent-module: 1.0.1
       resolve-from: 4.0.0
 
-  import-from-esm@2.0.0:
+  import-from-esm@2.0.0(supports-color@10.2.2):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@10.2.2)
       import-meta-resolve: 4.2.0
     transitivePeerDependencies:
       - supports-color
@@ -9036,16 +9041,16 @@ snapshots:
 
   search-insights@2.17.3: {}
 
-  semantic-release@25.0.9(typescript@7.1.0-dev.20261003.1):
+  semantic-release@25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1):
     dependencies:
-      '@semantic-release/commit-analyzer': 13.0.1(semantic-release@25.0.9(typescript@7.1.0-dev.20261003.1))
+      '@semantic-release/commit-analyzer': 13.0.1(semantic-release@25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1))(supports-color@10.2.2)
       '@semantic-release/error': 4.0.0
-      '@semantic-release/github': 12.0.10(semantic-release@25.0.9(typescript@7.1.0-dev.20261003.1))
-      '@semantic-release/npm': 13.2.0(semantic-release@25.0.9(typescript@7.1.0-dev.20261003.1))
-      '@semantic-release/release-notes-generator': 14.1.1(semantic-release@25.0.9(typescript@7.1.0-dev.20261003.1))
+      '@semantic-release/github': 12.0.10(semantic-release@25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1))(supports-color@10.2.2)
+      '@semantic-release/npm': 13.2.0(semantic-release@25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1))
+      '@semantic-release/release-notes-generator': 14.1.1(semantic-release@25.0.9(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1))(supports-color@10.2.2)
       aggregate-error: 5.0.0
       cosmiconfig: 9.0.2(typescript@7.1.0-dev.20261003.1)
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@10.2.2)
       env-ci: 11.2.0
       execa: 9.6.1
       figures: 6.1.0
@@ -9054,7 +9059,7 @@ snapshots:
       git-log-parser: 1.2.1
       hook-std: 4.0.0
       hosted-git-info: 9.0.3
-      import-from-esm: 2.0.0
+      import-from-esm: 2.0.0(supports-color@10.2.2)
       lodash-es: 4.18.1
       marked: 15.0.12
       marked-terminal: 7.3.0(marked@15.0.12)
@@ -9075,9 +9080,9 @@ snapshots:
 
   semver@7.8.5: {}
 
-  send@1.2.1:
+  send@1.2.1(supports-color@10.2.2):
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@10.2.2)
       encodeurl: 2.0.0
       escape-html: 1.0.3
       etag: 1.8.1
@@ -9268,7 +9273,7 @@ snapshots:
 
   strip-json-comments@5.0.3: {}
 
-  stylelint@17.16.0(typescript@7.1.0-dev.20261003.1):
+  stylelint@17.16.0(supports-color@10.2.2)(typescript@7.1.0-dev.20261003.1):
     dependencies:
       '@csstools/css-calc': 3.4.3(@csstools/css-parser-algorithms@4.0.2(@csstools/css-tokenizer@4.0.2))(@csstools/css-tokenizer@4.0.2)
       '@csstools/css-parser-algorithms': 4.0.2(@csstools/css-tokenizer@4.0.2)
@@ -9281,7 +9286,7 @@ snapshots:
       cosmiconfig: 9.0.2(typescript@7.1.0-dev.20261003.1)
       css-functions-list: 3.3.3
       css-tree: 3.2.1
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@10.2.2)
       fast-glob: 3.3.3
       fastest-levenshtein: 1.0.16
       file-entry-cache: 11.1.5

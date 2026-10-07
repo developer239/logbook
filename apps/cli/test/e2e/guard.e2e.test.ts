@@ -27,7 +27,7 @@ const POLICY_HEADERS = {
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; " +
     "connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'",
   'x-content-type-options': 'nosniff',
-  'referrer-policy': 'no-referrer',
+  'referrer-policy': 'same-origin',
 }
 
 interface IRequest {
