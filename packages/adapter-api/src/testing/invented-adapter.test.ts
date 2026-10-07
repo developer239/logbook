@@ -209,7 +209,7 @@ describe('inventedAdapter', () => {
   it.each([
     ['unknown-actor', 'actor narrator is not a known actor'],
     ['empty-part-text', 'text is empty'],
-    ['adapter-id-in-title', 'title contains the adapter id'],
+    ['adapter-id-in-source-id', 'sourceId contains the adapter id'],
     ['duplicate-seq', 'seq 0 is not unique in its session'],
   ] as const)('returns output that breaks the rule %s', async (rule, problem) => {
     // Arrange

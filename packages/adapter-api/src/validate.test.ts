@@ -229,10 +229,10 @@ describe('validateImportedUnit', () => {
     },
     {
       rule: 13,
-      breakUnit: (session: IImportedSession): void => {
-        session.session.title = `Imported by ${ADAPTER_ID}`
+      breakUnit: (_session: IImportedSession, unit: { sessions: IImportedSession[] }): void => {
+        unit.sessions[0] = validSession(`${ADAPTER_ID}:s1`)
       },
-      problem: `session ${S1}: title contains the adapter id`,
+      problem: `session ${ADAPTER_ID}:${S1}: sourceId contains the adapter id`,
     },
     {
       rule: 14,
@@ -297,14 +297,18 @@ describe('validateImportedUnit', () => {
     expect(problems).toStrictEqual([])
   })
 
-  it('reports the adapter id in an event data field that is not an id', () => {
+  it("passes the adapter id in the harness's own data, where a user may name either agent", () => {
     // Arrange and act
     const problems = validateBroken((session) => {
+      session.session.title = `Compare ${ADAPTER_ID} with the other agent`
+      session.session.projectDir = `/work/${ADAPTER_ID}-setup`
+      nth(session.parts, 0).text = `Why does ${ADAPTER_ID} skip this session?`
+      nth(session.toolCalls, 0).inputJson = JSON.stringify({ command: `grep -r ${ADAPTER_ID} .` })
       nth(session.events, 1).dataJson = JSON.stringify({ name: `${ADAPTER_ID} review`, chars: 120, toolCallId: null })
     })
 
     // Assert
-    expect(problems).toStrictEqual([`event ${S1}/e2: dataJson contains the adapter id`])
+    expect(problems).toStrictEqual([])
   })
 
   it('passes an mcp family that matches the call server', () => {

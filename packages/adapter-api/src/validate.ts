@@ -104,14 +104,6 @@ interface ISessionScope {
   toolCallIds: Set<string>
 }
 
-const reportAdapterId = (scope: ISessionScope, record: string, fields: Record<string, string | null>): void => {
-  for (const [field, value] of Object.entries(fields)) {
-    if (value?.includes(scope.adapterId) === true) {
-      scope.report(record, `${field} contains the adapter id`)
-    }
-  }
-}
-
 const reportChild = (scope: ISessionScope, record: string, id: string, sessionId: string): void => {
   if (!isChildOf(id, scope.sessionId)) {
     scope.report(record, 'id is not a child id of its session')
@@ -146,13 +138,11 @@ const validateSessionRecord = (scope: ISessionScope, { session }: IImportedSessi
   if (session.origin !== 'interactive') {
     report(record, 'origin is not interactive')
   }
-  reportAdapterId(scope, record, {
-    sourceId: session.sourceId,
-    origin: session.origin,
-    projectDir: session.projectDir,
-    title: session.title,
-    agent: session.agent,
-  })
+  // The source's own id, never text a user writes; holding the adapter id, it was prefixed twice. Every other field
+  // carries the harness's data, where a user may name either agent, so it is not held to this.
+  if (session.sourceId.includes(adapterId)) {
+    report(record, 'sourceId contains the adapter id')
+  }
 }
 
 const validateMessage = (scope: ISessionScope, message: IMessageRecord): void => {
@@ -172,13 +162,6 @@ const validateMessage = (scope: ISessionScope, message: IMessageRecord): void =>
   if (message.requestedAt !== null && message.actor !== 'assistant') {
     report(record, `requestedAt set on a ${message.actor} message`)
   }
-  reportAdapterId(scope, record, {
-    actor: message.actor,
-    sourceRole: message.sourceRole,
-    model: message.model,
-    agent: message.agent,
-    gitBranch: message.gitBranch,
-  })
 }
 
 // The family is a tool family, and an mcp family names the call server.
@@ -221,14 +204,6 @@ const validateToolCall = (scope: ISessionScope, call: IToolCallRecord): void => 
   if (call.family === 'shell') {
     validateShellInput(scope, record, call)
   }
-  reportAdapterId(scope, record, {
-    name: call.name,
-    bareName: call.bareName,
-    server: call.server,
-    family: call.family,
-    inputJson: call.inputJson,
-    status: call.status,
-  })
 }
 
 // A tool_call part names a call of its session; a tool_result part only has its id shape, because a resumed
@@ -255,28 +230,6 @@ const validatePart = (scope: ISessionScope, part: IPartRecord): void => {
   if (part.text === '' && part.kind !== 'tool_result') {
     report(record, 'text is empty')
   }
-  reportAdapterId(scope, record, { kind: part.kind, text: part.text })
-}
-
-// An event's data without its id fields (`id` and every `…Id`), which hold session, message or tool call ids and so
-// the adapter id by design.
-const withoutIdFields = (value: unknown): unknown => {
-  if (Array.isArray(value)) {
-    return value.map((item: unknown) => withoutIdFields(item))
-  }
-  if (isRecord(value)) {
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([key]) => key !== 'id' && !key.endsWith('Id'))
-        .map(([key, item]) => [key, withoutIdFields(item)])
-    )
-  }
-  return value
-}
-
-const dataTextOf = (dataJson: string): string => {
-  const { isValid, value } = parseJson(dataJson)
-  return isValid ? JSON.stringify(withoutIdFields(value)) : dataJson
 }
 
 const validateEvent = (scope: ISessionScope, event: IEventRecord): void => {
@@ -292,7 +245,6 @@ const validateEvent = (scope: ISessionScope, event: IEventRecord): void => {
   if (!isEventDataValid(event.kind, event.dataJson)) {
     report(record, `dataJson is not a JSON document of the ${event.kind} shape`)
   }
-  reportAdapterId(scope, record, { kind: event.kind, dataJson: dataTextOf(event.dataJson) })
 }
 
 const validateSession = (report: TReport, adapterId: string, imported: IImportedSession, ids: IUnitIds): void => {
