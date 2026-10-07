@@ -43,7 +43,12 @@ describe('claudeCode', () => {
       filterAlias: 'claude',
       parserVersion: 2,
       testedVersions: ['2.1'],
-      locationVariables: ['CLAUDE_CONFIG_DIR'],
+      locationVariables: [
+        {
+          name: 'CLAUDE_CONFIG_DIR',
+          changes: "Claude Code's configuration directory; Log Book reads the projects directory inside it",
+        },
+      ],
     })
   })
 

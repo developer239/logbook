@@ -5,8 +5,8 @@ pageClass: home-page
 
 hero:
   name: Log Book
-  text: Where your coding agent's time went.
-  tagline: Log Book reads the sessions Claude Code and OpenCode already keep on your machine and shows them on a page your own computer serves. See which turns were slow and why, which tool calls failed, and which corrections you keep making.
+  text: Find the slow turns, failed tools and repeated mistakes.
+  tagline: Log Book reads the sessions Claude Code and OpenCode already keep on your machine, and shows them on a page your own computer serves.
   image:
     dark: /captures/dashboard-dark.png
     light: /captures/dashboard-light.png
@@ -16,47 +16,60 @@ hero:
       text: Install
       link: '#install'
     - theme: alt
-      text: Read the docs
-      link: /start/install
+      text: Quick start
+      link: /start/quick-start
     - theme: alt
       text: Source on GitHub
       link: https://github.com/developer239/logbook
 
 features:
-  - title: Time per turn.
-    details: How long each turn took, split into model time, tool time and time the agent spent waiting for you.
-  - title: Tool problems.
-    details: Failed calls grouped by cause, retry loops, and calls that ran far longer than usual.
-  - title: Your reactions.
-    details: How often you corrected the agent, pushed back or praised it, week by week.
-  - title: The agent's reactions.
-    details: For each model, how often its replies ask your permission, give in when you push back, or push back themselves.
-  - title: Goals and outcomes.
-    details: What each conversation was for, and whether it got done, stalled or was abandoned.
-  - title: Every conversation.
-    details: The whole thread with each step, subagent and token count, from both agents in one list.
+  - title: 1. Spot the pattern.
+    details: Failed calls, retry loops, slow turns and unfinished conversations, across Claude Code and OpenCode, week by week.
+    link: /tour#spot-a-pattern-on-the-dashboard
+    linkText: The dashboard
+  - title: 2. Open the evidence.
+    details: Every number opens the conversations and tool calls behind it, down to the exact turn and its output.
+    link: /tour#open-the-evidence-behind-a-number
+    linkText: Drill down
+  - title: 3. Ask your history.
+    details: Search past work from the terminal, run a report, or let your coding agent query it for you.
+    link: /reference/recipes
+    linkText: CLI recipes
 ---
-
-Reactions, goals and outcomes come from [labelling](/labelling/), which runs only when you start it, through your own Claude Code, on the model you choose (<Fact name="defaultModel" /> unless you pick another).
 
 ## Install
 
 <InstallCommand />
 
-`logbook` opens <code><Fact name="defaultAddress" /></code> in your browser. You need Node.js <Fact name="nodeFloor" /> or newer on macOS or Linux; on Windows, run it inside WSL. The first sync reads your whole history, about half a minute per thousand sessions, and Log Book syncs again every five minutes while it runs. To try it without installing anything, run `npx @log-book/cli`.
+`logbook` opens <code><Fact name="defaultAddress" /></code> in your browser. The first sync reads your whole history, about half a minute per thousand sessions, and Log Book syncs again every five minutes while it runs. To try it without installing anything, run `npx @log-book/cli`.
 
-## Ask it from the terminal, or let your agent ask
+::: info Before you install
+
+- It reads the Claude Code and OpenCode history already stored on this machine.
+- It runs on macOS and Linux with Node.js <Fact name="nodeFloor" /> or newer; on Windows, inside WSL 2.
+- The page is served on `127.0.0.1`, and your history is copied into a SQLite file in your home directory.
+- Syncing and everything you see without labels stay on your computer. Optional model labelling sends session excerpts through your own Claude Code.
+- It is free for noncommercial use. [Company use](/help/license) needs a license.
+
+:::
+
+## Useful from the first sync
+
+Without any model, Log Book shows every conversation, failed tool calls by cause, retry loops, slow calls, turn timing and token use.
+
+Model labels add what each conversation was for, how it ended, and how you and the agent reacted to each other. You start them yourself, [preview](/labelling/#preview-then-start-a-run) what they would send, and choose the Claude model; they count against your Claude plan.
+
+## Search your past work from the terminal
 
 Everything the page shows is also a `logbook` command, so you, a script or your coding agent can ask it directly:
 
 ```sh
-logbook sessions --limit 10   # the newest sessions
-logbook search "flaky test"   # prompts, replies, reasoning and tool output that mention it
-logbook report                # every canned report
-logbook sql "SELECT COUNT(*) FROM session"   # read-only SQL over the warehouse
+logbook search '"connection refused"'   # prompts, replies, reasoning and tool output that hold it
+logbook report failures                 # what kept failing, by tool and by cause
+logbook sql "SELECT COUNT(*) FROM session"   # read-only SQL over your history
 ```
 
-Ask Claude Code or OpenCode a question about your past work, such as what kept failing last week or how you fixed a problem before, and it can run these and answer from your history. `logbook sql --help` describes every table, so an agent can write its own queries. What a command prints becomes part of that agent's conversation, so it reaches the agent's model provider like anything else the agent reads. [Every command](/reference/cli)
+Ask Claude Code "what kept failing last week?" and it can run these and answer from your history. `logbook sql --help` describes every table, so an agent can write its own queries. [CLI recipes](/reference/recipes)
 
 ## See it
 

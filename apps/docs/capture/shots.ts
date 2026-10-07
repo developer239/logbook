@@ -4,12 +4,11 @@ export type DemoPlan = IStartedDemo['plan']
 export type Scheme = 'dark' | 'light'
 export type BuildName = 'rich' | 'not-labelled'
 
-// Where a shot opens: a path of the web app, the plan's showcase conversation, the conversations filtered by the goal
-// and outcome pair the plan holds most often, or the page a link of another page leads to.
+// Where a shot opens: a path of the web app, the plan's showcase conversation, or the page a link of another page
+// leads to.
 export type ShotPage =
   | { kind: 'path'; path: string }
   | { kind: 'showcase' }
-  | { kind: 'common-goal-outcome' }
   | { kind: 'follow'; path: string; link: string }
 
 // A range preset of the web app's `range` parameter, and how the page names it.
@@ -37,7 +36,6 @@ export interface IShot {
 }
 
 const DESKTOP = [1440, 900] as const
-const PHONE = [390, 844] as const
 const THIRTY_DAYS: IShotRange = { key: '30d', label: '30 days' }
 // The small set's anchor is fixed and lies in the past, so only the whole range shows its data.
 const ALL_TIME: IShotRange = { key: 'all', label: 'All time' }
@@ -72,12 +70,6 @@ export const SHOTS: readonly IShot[] = [
     alt: 'The list of conversations, newest first, with their goals and outcomes',
   }),
   shot({
-    id: 'conversations-filter',
-    page: { kind: 'common-goal-outcome' },
-    expect: ['Conversations'],
-    alt: 'The conversations filtered by a goal and an outcome',
-  }),
-  shot({
     id: 'conversation',
     page: { kind: 'showcase' },
     expect: ['Turn 01'],
@@ -102,13 +94,6 @@ export const SHOTS: readonly IShot[] = [
     page: { kind: 'path', path: '/tokens' },
     expect: ['Tokens by tool'],
     alt: 'Tokens by tool',
-  }),
-  shot({
-    id: 'dashboard-phone',
-    page: { kind: 'path', path: '/' },
-    viewport: PHONE,
-    expect: ['Tool problems'],
-    alt: 'The dashboard on a phone',
   }),
   shot({
     id: 'not-labelled',
@@ -151,25 +136,6 @@ export const PANELS = {
   notLabelled: { selector: 'p.labels-missing', name: `the "not labelled yet" panel (${NOT_LABELLED_TEXT} ...)` },
 } as const
 
-const quoted = (value: string): string => (/[\s,]/u.test(value) ? `"${value}"` : value)
-
-// The goal and outcome pair the plan's labelled top-level sessions hold most often, the first in plan order on a tie.
-const commonGoalOutcome = (plan: DemoPlan): { goal: string; outcome: string } => {
-  const counts = new Map<string, { goal: string; outcome: string; count: number }>()
-  for (const session of plan.plan.sessions) {
-    if (session.parentKey === null && session.goal !== null && session.outcome !== null) {
-      const key = `${session.goal}\n${session.outcome}`
-      const known = counts.get(key)
-      counts.set(key, { goal: session.goal, outcome: session.outcome, count: (known?.count ?? 0) + 1 })
-    }
-  }
-  const [top] = [...counts.values()].toSorted((left, right) => right.count - left.count)
-  if (top === undefined) {
-    throw new Error('The plan holds no labelled session to filter by')
-  }
-  return top
-}
-
 const withRange = (path: string, range: IShotRange | null): string =>
   range === null ? path : `${path}?${new URLSearchParams({ range: range.key }).toString()}`
 
@@ -180,16 +146,6 @@ export const showcasePath = (plan: DemoPlan): string => {
   return `/conversations/${encodeURIComponent(plan.showcase.id)}`
 }
 
-const filteredPath = (plan: DemoPlan): string => {
-  const { goal, outcome } = commonGoalOutcome(plan)
-  const query = new URLSearchParams([['q', `goal:${quoted(goal)} outcome:${quoted(outcome)}`]])
-  return `/conversations?${query.toString()}`
-}
-
 // The path a shot opens first, built from the plan; a followed shot then moves on to its link's target.
-export const pathOf = (page: ShotPage, range: IShotRange | null, plan: DemoPlan): string => {
-  if (page.kind === 'common-goal-outcome') {
-    return filteredPath(plan)
-  }
-  return withRange(page.kind === 'showcase' ? showcasePath(plan) : page.path, range)
-}
+export const pathOf = (page: ShotPage, range: IShotRange | null, plan: DemoPlan): string =>
+  withRange(page.kind === 'showcase' ? showcasePath(plan) : page.path, range)

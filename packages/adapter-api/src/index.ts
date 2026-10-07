@@ -7,6 +7,7 @@ export type {
   IHarnessDescriptor,
   IHarnessLocation,
   IImportedUnit,
+  ILocationVariable,
   IPrompt,
   IRecognisedCommand,
   ISourceReader,

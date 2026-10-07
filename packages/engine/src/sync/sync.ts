@@ -183,7 +183,7 @@ export const runSync = async (run: ISyncRun): Promise<ISyncResult> => {
           isFound: answer.kind === 'found',
           checkedAt: Date.now(),
           location: where === null ? null : tilde(where),
-          locationVariables: [...descriptor.locationVariables],
+          locationVariables: descriptor.locationVariables.map(({ name }) => name),
         }
       })
     )

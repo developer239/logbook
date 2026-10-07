@@ -25,49 +25,39 @@ const CONTENT_SECURITY_POLICY = [
   "base-uri 'self'",
   "form-action 'none'",
 ].join('; ')
-// In this order; each page's ticket adds its pages to its group, and a group with no page yet is left out.
+// In this order: start, understand the data, operate it, then look things up.
 const SIDEBAR: DefaultTheme.SidebarItem[] = [
   {
-    text: 'Getting started',
+    text: 'Start',
     items: [
-      { text: 'Install', link: '/start/install' },
-      { text: 'The first run', link: '/start/first-run' },
-      { text: 'Update, disk space and uninstall', link: '/start/update' },
-      { text: 'Try the next version', link: '/start/next' },
+      { text: 'Overview', link: '/' },
+      { text: 'Quick start', link: '/start/quick-start' },
+      { text: 'Tour the product', link: '/tour' },
     ],
   },
   {
-    text: 'Using Log Book',
+    text: 'Understand your data',
     items: [
-      { text: 'Dashboard', link: '/ui/dashboard' },
-      { text: 'Conversations', link: '/ui/conversations' },
-      { text: 'A conversation', link: '/ui/conversation' },
-      { text: 'Steps', link: '/ui/steps' },
-      { text: 'Tokens by tool', link: '/ui/tokens' },
-      { text: 'Syncing and empty states', link: '/ui/states' },
+      { text: 'Labels', link: '/labelling/' },
+      { text: 'Privacy and security', link: '/privacy/' },
     ],
   },
   {
-    text: 'Labelling',
+    text: 'Operate',
     items: [
-      { text: 'How labelling works', link: '/labelling/' },
-      { text: 'What it sends', link: '/labelling/what-it-sends' },
+      { text: 'Manage Log Book', link: '/manage' },
+      { text: 'Troubleshooting', link: '/help/troubleshooting' },
     ],
   },
-  { text: 'Privacy', items: [{ text: 'What Log Book sends, and where', link: '/privacy/' }] },
   {
     text: 'Reference',
     items: [
-      { text: 'The logbook command', link: '/reference/cli' },
-      { text: 'Exit codes', link: '/reference/exit-codes' },
+      { text: 'CLI recipes', link: '/reference/recipes' },
+      { text: 'CLI reference', link: '/reference/cli' },
+      { text: 'Database schema', link: '/reference/schema' },
       { text: 'Environment variables', link: '/reference/environment' },
-    ],
-  },
-  {
-    text: 'Help',
-    items: [
-      { text: 'Troubleshooting', link: '/help/troubleshooting' },
-      { text: 'The license in plain words', link: '/help/license' },
+      { text: 'Exit codes', link: '/reference/exit-codes' },
+      { text: 'License and company use', link: '/help/license' },
     ],
   },
 ]
@@ -124,13 +114,13 @@ export default defineConfigWithTheme<IThemeConfig>({
     // Drawn by hand as plain shapes; apps/docs/artwork.json lists it.
     logo: '/logo.svg',
     nav: [
-      { text: 'Docs', link: '/start/install' },
-      { text: 'Reference', link: '/reference/cli' },
+      { text: 'Docs', link: '/start/quick-start' },
+      { text: 'Reference', link: '/reference/recipes' },
       { text: 'Releases', link: `${REPOSITORY}/releases` },
       { text: version, link: version === 'main' ? `${REPOSITORY}/tree/main` : `${REPOSITORY}/releases/tag/${version}` },
       { text: 'GitHub', link: REPOSITORY },
     ],
-    sidebar: SIDEBAR.filter((group) => (group.items?.length ?? 0) > 0),
+    sidebar: SIDEBAR,
     // The index ships with the site, so a query never leaves the page.
     search: { provider: 'local' },
     editLink: { pattern: `${REPOSITORY}/edit/main/apps/docs/src/:path` },

@@ -23,7 +23,10 @@ export const descriptorProblems = (descriptor: IHarnessDescriptor): string[] =>
     ],
     [descriptor.testedVersions.length > 0, 'testedVersions is empty'],
     [descriptor.testedVersions.every((version) => TESTED_VERSION.test(version)), 'a tested version is not major.minor'],
-    [descriptor.locationVariables.every((variable) => isFilled(variable)), 'a location variable is empty'],
+    [
+      descriptor.locationVariables.every((variable) => isFilled(variable.name) && isFilled(variable.changes)),
+      'a location variable has an empty name or description',
+    ],
   ]
     .filter(([isKept]) => isKept === false)
     .map(([, problem]) => String(problem))

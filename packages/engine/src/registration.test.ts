@@ -63,9 +63,9 @@ describe('createEngine registration', () => {
       `The adapter ${id} cannot be registered: its tested versions are not a non-empty list of major.minor versions.`,
     ],
     [
-      'location variables that are not strings',
-      { locationVariables: [1] as unknown as string[] },
-      `The adapter ${id} cannot be registered: its location variables are not an array of strings.`,
+      'location variables without what each changes',
+      { locationVariables: ['EXAMPLE_HOME'] as unknown as IHarnessDescriptor['locationVariables'] },
+      `The adapter ${id} cannot be registered: its location variables are not a list of names with what each changes.`,
     ],
   ])('refuses %s, naming the adapter and the rule', (_rule, descriptor, message) => {
     // Act

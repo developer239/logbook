@@ -17,8 +17,15 @@ export interface IHarnessDescriptor {
   readonly parserVersion: number
   // `major.minor` strings, one per fixture set.
   readonly testedVersions: readonly string[]
-  // The harness's own environment variables that move its data.
-  readonly locationVariables: readonly string[]
+  // The harness's own environment variables that move its data, the one that names its location first.
+  readonly locationVariables: readonly ILocationVariable[]
+}
+
+// An environment variable a harness reads to find its data.
+export interface ILocationVariable {
+  readonly name: string
+  // One line for the environment variables page: what setting it changes.
+  readonly changes: string
 }
 
 // The only place an adapter reads the environment and the home directory from, never process.env or os.homedir(),

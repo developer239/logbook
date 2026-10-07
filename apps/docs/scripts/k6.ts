@@ -20,7 +20,7 @@ interface IMarker {
 
 const RULE = 'K6'
 const MARKER = /<!-- data-flow-case: (?<case>[\w-]+) -->/gu
-// A link to a heading of another page of the site, such as (/labelling/what-it-sends#what-each-request-contains).
+// A link to a heading of another page of the site, such as (/privacy/#what-each-request-contains).
 const ANCHORED_LINK = /\]\((?<path>\/[^)#\s]*)#(?<anchor>[^)\s]+)\)/gu
 const STATEMENT = join('src', 'privacy', 'statement.md')
 const SUMMARY = join('src', 'privacy', 'summary.md')

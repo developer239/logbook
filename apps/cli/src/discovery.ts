@@ -32,14 +32,15 @@ export const discoverAdapters = async (
 
 // The variable that left the harness without a path: the first of its location variables that is set and not empty.
 const setVariable = (descriptor: IHarnessDescriptor, env: IAdapterEnvironment): string | null => {
-  const name = descriptor.locationVariables.find((variable) => (env.variables[variable] ?? '') !== '')
-  return name === undefined ? null : `${name} is ${String(env.variables[name])}`
+  const variable = descriptor.locationVariables.find(({ name }) => (env.variables[name] ?? '') !== '')
+  return variable === undefined ? null : `${variable.name} is ${String(env.variables[variable.name])}`
 }
 
 const notFoundText = (descriptor: IHarnessDescriptor, lookedAt: string | null, env: IAdapterEnvironment): string => {
   if (lookedAt !== null) {
     const [variable] = descriptor.locationVariables
-    const elsewhere = variable === undefined ? '' : `; set ${variable} if ${descriptor.name} keeps its data elsewhere`
+    const elsewhere =
+      variable === undefined ? '' : `; set ${variable.name} if ${descriptor.name} keeps its data elsewhere`
     return `not on this machine (no ${tildePath(lookedAt, env.homeDir)}${elsewhere})`
   }
   const set = setVariable(descriptor, env)
