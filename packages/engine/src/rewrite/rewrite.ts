@@ -104,7 +104,13 @@ export const runRewriteProcess = async (
       stop()
     } else {
       signal.addEventListener('abort', stop, { once: true })
-      child.send(task)
+      // The process can end before the task reaches it, as when Ctrl+C reaches it first: its close then says how it
+      // ended. One still running could only wait for a task that never comes, so it is ended.
+      child.send(task, (error) => {
+        if (error !== null) {
+          child.kill('SIGKILL')
+        }
+      })
     }
   })
 

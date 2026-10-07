@@ -1,3 +1,4 @@
+import * as childProcess from 'node:child_process'
 import { spawn, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, statSync } from 'node:fs'
@@ -20,7 +21,14 @@ import { runSync } from '../sync/sync.js'
 import { typeScriptChildArgs } from '../testing/index.js'
 import { runCompact, type ICompactResult } from './compact.js'
 
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof childProcess>()
+  return { ...actual, fork: vi.fn(actual.fork) }
+})
+
 const CHILD_TIMEOUT_MS = 20_000
+// Long enough for a SIGINT to end a process that is starting up.
+const DEAD_AFTER_SECONDS = 1
 const MEGABYTE = 1024 * 1024
 const PADDING_ROWS = 64
 // The write-ahead log a stopped `VACUUM` has written when the test stops it: well inside the rewrite, far from its end.
@@ -108,9 +116,18 @@ describe('runCompact', () => {
     running.stdout.on('data', (chunk: Buffer) => {
       stdout += chunk.toString()
     })
-    const result = new Promise<ICompactResult>((resolve) => {
-      running.on('close', () => {
-        resolve(JSON.parse(stdout) as ICompactResult)
+    // A child that printed no result failed: the test fails with how it ended instead of waiting for its timeout.
+    const result = new Promise<ICompactResult>((resolve, reject) => {
+      running.on('close', (code, exitSignal) => {
+        try {
+          resolve(JSON.parse(stdout) as ICompactResult)
+        } catch {
+          reject(
+            new Error(
+              `The compacting child ended with ${exitSignal ?? `code ${String(code)}`} and printed ${JSON.stringify(stdout)}.`
+            )
+          )
+        }
       })
     })
     return { pid: running.pid ?? 0, result }
@@ -274,6 +291,36 @@ describe('runCompact', () => {
     },
     CHILD_TIMEOUT_MS
   )
+
+  it('counts a rewrite process that SIGINT ended before its task reached it as stopped', async () => {
+    // Arrange: the real rewrite process, ended by SIGINT and dead before the task is written to it, while this process
+    // has not yet seen it end, as on a slow machine. The event loop is held until it is gone, so the write meets the
+    // closed channel.
+    const { path } = opened()
+    const fileBefore = sha256(path)
+    const actual = await vi.importActual<typeof childProcess>('node:child_process')
+    vi.mocked(childProcess.fork).mockImplementationOnce((...args: Parameters<typeof childProcess.fork>) => {
+      const child = actual.fork(...args)
+      const send = child.send.bind(child)
+      child.send = ((message: childProcess.Serializable, callback?: (error: Error | null) => void): boolean => {
+        child.kill('SIGINT')
+        spawnSync('sleep', [String(DEAD_AFTER_SECONDS)])
+        return send(message, callback)
+      }) as typeof child.send
+      return child
+    })
+
+    // Act
+    const result = await compact()
+
+    // Assert
+    expect({
+      outcome: result.outcome,
+      isRewritten: result.isRewritten,
+      file: sha256(path),
+      lockFiles: lockFiles(path),
+    }).toStrictEqual({ outcome: 'stopped', isRewritten: false, file: fileBefore, lockFiles: [false, false] })
+  })
 
   it(
     'counts a rewrite process that SIGINT ended before its parent saw any signal as stopped',
