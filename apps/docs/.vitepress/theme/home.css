@@ -1,0 +1,43 @@
+/* The home page's hero image is a wide capture of the dashboard, not the square logo VitePress's hero is made for: no
+   fixed square around it and no cap on it, so it fills its column at its own aspect ratio. The selectors start at the
+   page's own class, set in its front matter, and each outweighs the default theme's scoped rule it replaces; none sets
+   display, which hides the other scheme's capture. */
+.home-page .has-image .image {
+  margin: 0 0 2rem;
+}
+
+.home-page .image .image-container {
+  width: 100%;
+  max-width: 36rem;
+  height: auto;
+  transform: none;
+}
+
+.home-page .image-container .image-src {
+  position: static;
+  width: 100%;
+  max-width: 100%;
+  max-height: none;
+  height: auto;
+  border-radius: 8px;
+  transform: none;
+}
+
+/* From 960px wide the text and the capture share the row half and half. */
+@media (min-width: 60rem) {
+  .home-page .has-image .main {
+    width: 50%;
+  }
+
+  .home-page .has-image .image {
+    flex: 0 0 50%;
+    align-self: center;
+    margin: 0;
+    padding-left: 2rem;
+    min-height: 0;
+  }
+
+  .home-page .image .image-container {
+    max-width: none;
+  }
+}
