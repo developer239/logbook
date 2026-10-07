@@ -1,5 +1,7 @@
 ---
 layout: home
+# The hook home.css styles the hero by.
+pageClass: home-page
 
 hero:
   name: Log Book
