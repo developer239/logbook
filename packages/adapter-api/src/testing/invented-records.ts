@@ -179,7 +179,7 @@ export const buildSession = (
 }
 
 // Ways to break one named rule of validateImportedUnit, for a test of the engine's boundary.
-export type InventedInvalidRule = 'unknown-actor' | 'empty-part-text' | 'adapter-id-in-title' | 'duplicate-seq'
+export type InventedInvalidRule = 'unknown-actor' | 'empty-part-text' | 'adapter-id-in-source-id' | 'duplicate-seq'
 
 const BREAKS: Readonly<Record<InventedInvalidRule, (session: IImportedSession) => IImportedSession>> = {
   'unknown-actor': (session) => ({
@@ -192,7 +192,10 @@ const BREAKS: Readonly<Record<InventedInvalidRule, (session: IImportedSession) =
     ...session,
     parts: session.parts.map((part, index) => (index === 0 ? { ...part, text: '' } : part)),
   }),
-  'adapter-id-in-title': (session) => ({ ...session, session: { ...session.session, title: `${INVENTED_ID} run` } }),
+  'adapter-id-in-source-id': (session) => ({
+    ...session,
+    session: { ...session.session, sourceId: `${INVENTED_ID}:${session.session.sourceId}` },
+  }),
   'duplicate-seq': (session) => ({
     ...session,
     messages: session.messages.map((message) => ({ ...message, seq: 0 })),

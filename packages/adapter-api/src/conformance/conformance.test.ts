@@ -343,8 +343,10 @@ const BROKEN_ADAPTERS: readonly { defect: string; adapter: IHarnessAdapter; must
   },
   {
     defect: 'puts its own id into a session title',
+    // Invented fixtures never name a harness, so the leak case catches it; the boundary's check does not, since a user
+    // may name either agent in a title.
     adapter: brokenOutput((session) => ({ ...session, session: { ...session.session, title: `${MINIMAL_ID} log` } })),
-    mustFail: ['valid output', 'no harness id leak'],
+    mustFail: ['no harness id leak'],
   },
   {
     defect: 'lists one unit twice under the same locator',
