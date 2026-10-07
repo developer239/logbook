@@ -1,0 +1,169 @@
+name: promote
+run-name: promote ${{ inputs.version }}
+
+# Moves latest of every published package to a version already on next, and marks its GitHub release latest. Started
+# only by a dispatch: pnpm release:promote X.Y.Z, or gh workflow run promote.yml --ref main -f version=X.Y.Z.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version on next to move latest to, X.Y.Z
+        required: true
+        type: string
+      rollback:
+        description: Move latest back to an older version
+        required: false
+        type: boolean
+        default: false
+
+# One promotion at a time, and none cancelled halfway.
+concurrency:
+  group: promote
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  # The checks of release:promote: on main, tagged, published from the tag by ci.yml with provenance, green, and newer
+  # than latest unless a rollback that crosses no migration. Its checklist goes to the job summary.
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      packages: ${{ steps.check.outputs.packages }}
+      pulls: ${{ steps.check.outputs.pulls }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          # Every tag and commit, for the range since latest's tag.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm ci:build
+      # The inputs reach the command through env, never written into the script.
+      - name: Check the version
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          ROLLBACK: ${{ inputs.rollback }}
+        run: node packages/ci/dist/index.js promote --check
+
+  # Moves latest and nothing else; packages/ci/src/rules/promote-job.yaml is its template, which check:release holds it
+  # to.
+  move:
+    needs: check
+    runs-on: ubuntu-latest
+    environment: npm-latest
+    permissions:
+      id-token: write
+    # Values from the check job reach the scripts through env, never written into them.
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      PACKAGES: ${{ needs.check.outputs.packages }}
+      NPM_INTEGRITY: sha512-Zov8KhamNneiLdELtj5YALtNmJW4L4fCLTzjfpzXG2w6MSHcf0UxgdlK5uloCuksWT+7mGUU7wi79cO6RqivPg==
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Check the version and the packages
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "The version $VERSION is not X.Y.Z."
+            exit 1
+          fi
+          if ! jq -e 'type == "array" and length > 0 and all(.[]; type == "string")' <<< "$PACKAGES" > /dev/null; then
+            echo "The packages $PACKAGES are not a list of names."
+            exit 1
+          fi
+          if jq -r '.[]' <<< "$PACKAGES" | grep -vxE '@log-book/[a-z-]+'; then
+            echo "The names above are not @log-book packages."
+            exit 1
+          fi
+      # npm bundles its dependencies, so the unpacked directory runs alone; a dist-tag change through OIDC needs npm
+      # 11.21.0 or later. Every npm command below is this file; the runner's own npm never runs.
+      - name: Fetch npm and check its integrity
+        run: |
+          curl --fail --silent --show-error --location --output npm.tgz https://registry.npmjs.org/npm/-/npm-11.21.0.tgz
+          integrity="sha512-$(openssl dgst -sha512 -binary npm.tgz | base64 --wrap=0)"
+          if [ "$integrity" != "$NPM_INTEGRITY" ]; then
+            echo "npm-11.21.0.tgz has the integrity $integrity, not $NPM_INTEGRITY."
+            exit 1
+          fi
+          mkdir npm
+          tar --extract --gzip --file npm.tgz --directory npm --strip-components 1
+          if [ "$(node npm/bin/npm-cli.js --version)" != "11.21.0" ]; then
+            echo "The unpacked npm is not 11.21.0."
+            exit 1
+          fi
+      # npm exchanges the job's OIDC token for one that may change dist-tags and nothing else. Moving latest to the
+      # version it already names changes nothing, so a re-run is safe.
+      - name: Move latest
+        run: |
+          for name in $(jq -r '.[]' <<< "$PACKAGES"); do
+            node npm/bin/npm-cli.js dist-tag add "$name@$VERSION" latest
+          done
+
+  # The GitHub release becomes the repository's latest, the registry is held to the move, and the pull requests that
+  # reached users go to the job summary.
+  finish:
+    name: finish
+    needs: [check, move]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.check.outputs.version }}
+      PACKAGES: ${{ needs.check.outputs.packages }}
+      PULLS: ${{ needs.check.outputs.pulls }}
+      # How long finish waits for the registry to show the move; a publish took about 5 minutes to show.
+      WAIT_SECONDS: 900
+    steps:
+      - name: Mark the release latest
+        run: gh release edit "v$VERSION" --repo "$GITHUB_REPOSITORY" --prerelease=false --latest
+      - name: Check latest on the registry
+        run: |
+          started=$(date +%s)
+          while :; do
+            behind=''
+            for name in $(jq -r '.[]' <<< "$PACKAGES"); do
+              latest=$(curl -fsS "https://registry.npmjs.org/-/package/$name/dist-tags" | jq -r '.latest // ""')
+              if [ "$latest" != "$VERSION" ]; then
+                behind="$behind $name@${latest:-unset}"
+              fi
+            done
+            waited=$(($(date +%s) - started))
+            if [ -z "$behind" ]; then
+              echo "latest of every package is $VERSION after ${waited}s."
+              break
+            fi
+            if [ "$waited" -ge "$WAIT_SECONDS" ]; then
+              echo "::error::After ${waited}s latest is not $VERSION for:$behind."
+              exit 1
+            fi
+            echo "After ${waited}s still waiting for:$behind"
+            sleep 30
+          done
+      - name: List the pull requests that reached users
+        run: |
+          {
+            echo "## Promoted $VERSION to latest"
+            echo
+            echo "The pull requests this promotion brought to latest; their tickets move to Production."
+            echo
+            if [ "$(jq 'length' <<< "$PULLS")" = 0 ]; then
+              echo "None"
+            else
+              jq -r '.[]' <<< "$PULLS"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

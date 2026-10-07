@@ -372,7 +372,8 @@ describe('promote, the checklist and the dispatch', () => {
     }).toStrictEqual({
       codes: [1, 0],
       err: ['promote.yml runs from main only; this run is on refs/heads/x.\n'],
-      output: 'version=1.1.0\npackages=["@log-book/core","@log-book/cli"]\n',
+      output:
+        'version=1.1.0\npackages=["@log-book/core","@log-book/cli"]\npulls=["- #2 fix: [KAN-2] the second change"]\n',
       summary: '# Promote 1.1.0 to latest',
     })
   })
