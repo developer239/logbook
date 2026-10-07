@@ -21,15 +21,44 @@ const FORBIDDEN_TEXT = [
 ]
 const SECRET = /\bsecrets\.(?<name>[A-Za-z_][A-Za-z0-9_]*)/gu
 const ALLOWED_SECRET = 'GITHUB_TOKEN'
-// The one job that may hold the right to publish: ci.yml's job publish, equal to the template but for the commit SHAs
-// of its two actions, which must be full SHAs. Within it alone, the text may run npm publish through npm-cli.js.
-const PUBLISH_WORKFLOW = '.github/workflows/ci.yml'
-const PUBLISH_JOB = 'publish'
-const PUBLISH_JOB_TEMPLATE = 'packages/ci/src/rules/publish-job.yaml'
-const PUBLISH_TEXT = new Set(['npm publish', 'npm-cli.js'])
-const PINNED_ACTIONS = ['actions/setup-node', 'actions/download-artifact']
-// The one job that may write contents: ci.yml's job release, which pushes the tag and writes the GitHub release.
-const RELEASE_JOB = 'release'
+const CI_WORKFLOW = '.github/workflows/ci.yml'
+const PROMOTE_WORKFLOW = '.github/workflows/promote.yml'
+
+// A job that may hold an npm token: equal to its template but for the commit SHAs of its pinned actions, which must be
+// full SHAs. Within its lines alone, the workflow's text may hold these phrases.
+interface IGuardedJob {
+  workflow: string
+  job: string
+  template: string
+  actions: readonly string[]
+  text: ReadonlySet<string>
+  rule: string
+}
+
+// ci.yml's job publish, which publishes to next, and promote.yml's job move, which moves latest and cannot publish.
+const GUARDED_JOBS: readonly IGuardedJob[] = [
+  {
+    workflow: CI_WORKFLOW,
+    job: 'publish',
+    template: 'packages/ci/src/rules/publish-job.yaml',
+    actions: ['actions/setup-node', 'actions/download-artifact'],
+    text: new Set(['npm publish', 'npm-cli.js']),
+    rule: 'release-guard/publish-job',
+  },
+  {
+    workflow: PROMOTE_WORKFLOW,
+    job: 'move',
+    template: 'packages/ci/src/rules/promote-job.yaml',
+    actions: ['actions/setup-node'],
+    text: new Set(['npm dist-tag', 'npm-cli.js']),
+    rule: 'release-guard/move-job',
+  },
+]
+// The jobs that may write contents: ci.yml's job release, which pushes the tag and writes the GitHub release, and
+// promote.yml's job finish, which marks the promoted release latest.
+const CONTENTS_WRITERS = [`${CI_WORKFLOW}#release`, `${PROMOTE_WORKFLOW}#finish`]
+// promote.yml starts only from a dispatch.
+const PROMOTE_TRIGGER = 'workflow_dispatch'
 const FULL_SHA = /^[0-9a-f]{40}$/u
 const ANY_SHA = '<sha>'
 
@@ -50,10 +79,10 @@ const jobFindings = (file: string, workflow: Record<string, unknown>, id: string
   const at = `${file}: job ${id}:`
   const permissions = 'permissions' in job ? job.permissions : workflow.permissions
   const environment = environmentOf(job)
-  const mayWriteContents = file === PUBLISH_WORKFLOW && id === RELEASE_JOB
+  const canWriteContents = CONTENTS_WRITERS.includes(`${file}#${id}`)
   return [
     ...(grants(permissions, 'id-token') ? [`${at} id-token: write [release-guard/no-id-token]`] : []),
-    ...(grants(permissions, 'contents') && !mayWriteContents
+    ...(grants(permissions, 'contents') && !canWriteContents
       ? [`${at} contents: write [release-guard/no-contents-write]`]
       : []),
     ...(typeof environment === 'string' && NPM_ENVIRONMENTS.has(environment)
@@ -62,24 +91,24 @@ const jobFindings = (file: string, workflow: Record<string, unknown>, id: string
   ]
 }
 
-// A step's `uses` of a pinned action, split into the action and its ref; undefined for any other value.
-const pinnedUse = (value: unknown): { action: string; ref: string } | undefined => {
+// A step's `uses` of one of these pinned actions, split into the action and its ref; undefined for any other value.
+const pinnedUse = (value: unknown, actions: readonly string[]): { action: string; ref: string } | undefined => {
   if (typeof value !== 'string') {
     return undefined
   }
   const [action = '', ref = ''] = value.split('@')
-  return PINNED_ACTIONS.includes(action) ? { action, ref } : undefined
+  return actions.includes(action) ? { action, ref } : undefined
 }
 
 // The job with the refs of its pinned actions replaced, so the template and the job compare without their SHAs.
-const withoutShas = (value: unknown): unknown => {
+const withoutShas = (value: unknown, actions: readonly string[]): unknown => {
   if (Array.isArray(value)) {
-    return value.map((item) => withoutShas(item))
+    return value.map((item) => withoutShas(item, actions))
   }
   if (isRecord(value)) {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, withoutShas(item)]))
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, withoutShas(item, actions)]))
   }
-  const pinned = pinnedUse(value)
+  const pinned = pinnedUse(value, actions)
   return pinned === undefined ? value : `${pinned.action}@${ANY_SHA}`
 }
 
@@ -105,47 +134,50 @@ const firstDifference = (actual: unknown, expected: unknown, path: string): stri
   return path === '' ? 'the job' : path
 }
 
-// ci.yml's job publish against the template: equal but for its pinned actions' SHAs, each a full commit SHA.
-const publishJobFindings = (job: unknown, template: unknown): string[] => {
-  const at = `${PUBLISH_WORKFLOW}: job ${PUBLISH_JOB}:`
+// A guarded job against its template: equal but for its pinned actions' SHAs, each a full commit SHA.
+const guardedJobFindings = (guarded: IGuardedJob, job: unknown, template: unknown): string[] => {
+  const at = `${guarded.workflow}: job ${guarded.job}:`
   if (template === undefined) {
-    return [`${at} ${PUBLISH_JOB_TEMPLATE} is missing, so the job cannot be compared [release-guard/publish-job]`]
+    return [`${at} ${guarded.template} is missing, so the job cannot be compared [${guarded.rule}]`]
   }
   const steps = isRecord(job) && Array.isArray(job.steps) ? (job.steps as unknown[]) : []
   const unpinned = steps
-    .map((step) => pinnedUse(isRecord(step) ? step.uses : undefined))
+    .map((step) => pinnedUse(isRecord(step) ? step.uses : undefined, guarded.actions))
     .filter((pinned) => pinned !== undefined && !FULL_SHA.test(pinned.ref))
-    .map(
-      (pinned) =>
-        `${at} ${pinned?.action ?? ''}@${pinned?.ref ?? ''} is not a full commit SHA [release-guard/publish-job]`
-    )
-  const difference = firstDifference(withoutShas(job), withoutShas(template), '')
+    .map((pinned) => `${at} ${pinned?.action ?? ''}@${pinned?.ref ?? ''} is not a full commit SHA [${guarded.rule}]`)
+  const difference = firstDifference(withoutShas(job, guarded.actions), withoutShas(template, guarded.actions), '')
   return [
-    ...(difference === undefined
-      ? []
-      : [`${at} ${difference} differs from ${PUBLISH_JOB_TEMPLATE} [release-guard/publish-job]`]),
+    ...(difference === undefined ? [] : [`${at} ${difference} differs from ${guarded.template} [${guarded.rule}]`]),
     ...unpinned,
   ]
 }
 
 const lineOf = (text: string, offset: number): number => text.slice(0, offset).split('\n').length
 
-// The lines of ci.yml's job publish, where the publishing text is the job's own.
-const publishJobLines = (file: string, text: string): ReadonlySet<number> => {
-  const node = file === PUBLISH_WORKFLOW ? parseDocument(text).getIn(['jobs', PUBLISH_JOB], true) : undefined
-  if (!isNode(node) || node.range === undefined || node.range === null) {
-    return new Set()
-  }
-  const [start, , end] = node.range
-  const first = lineOf(text, start)
-  return new Set(Array.from({ length: lineOf(text, end) - first + 1 }, (_unused, index) => first + index))
+// The phrases each line of the workflow's guarded jobs may hold, by line number.
+const guardedLines = (file: string, text: string): ReadonlyMap<number, ReadonlySet<string>> => {
+  const document = parseDocument(text)
+  return new Map(
+    GUARDED_JOBS.filter((guarded) => guarded.workflow === file).flatMap((guarded) => {
+      const node = document.getIn(['jobs', guarded.job], true)
+      if (!isNode(node) || node.range === undefined || node.range === null) {
+        return []
+      }
+      const [start, , end] = node.range
+      const first = lineOf(text, start)
+      return Array.from({ length: lineOf(text, end) - first + 1 }, (_unused, index): [number, ReadonlySet<string>] => [
+        first + index,
+        guarded.text,
+      ])
+    })
+  )
 }
 
-const textFindings = (file: string, text: string, publishLines: ReadonlySet<number>): string[] =>
+const textFindings = (file: string, text: string, allowed: ReadonlyMap<number, ReadonlySet<string>>): string[] =>
   text.split('\n').flatMap((line, index) => {
     const at = `${file}:${String(index + 1)}:`
     const forbidden = FORBIDDEN_TEXT.filter(
-      (phrase) => line.includes(phrase) && !(PUBLISH_TEXT.has(phrase) && publishLines.has(index + 1))
+      (phrase) => line.includes(phrase) && allowed.get(index + 1)?.has(phrase) !== true
     )
     const secrets = [...line.matchAll(SECRET)]
       .map((match) => match.groups?.name ?? '')
@@ -156,18 +188,35 @@ const textFindings = (file: string, text: string, publishLines: ReadonlySet<numb
     ]
   })
 
-const workflowFindings = (file: string, text: string, template: unknown): string[] => {
+// promote.yml's triggers other than a dispatch.
+const triggerFindings = (file: string, workflow: Record<string, unknown>): string[] => {
+  if (file !== PROMOTE_WORKFLOW) {
+    return []
+  }
+  const triggers =
+    typeof workflow.on === 'string' ? [workflow.on] : Object.keys(isRecord(workflow.on) ? workflow.on : {})
+  const others = triggers.filter((trigger) => trigger !== PROMOTE_TRIGGER)
+  return others.length > 0 || triggers.length === 0
+    ? [
+        `${file}: triggered by ${others.join(', ') || 'nothing'}, not only ${PROMOTE_TRIGGER} [release-guard/promote-trigger]`,
+      ]
+    : []
+}
+
+const workflowFindings = (file: string, text: string, templates: ReadonlyMap<string, unknown>): string[] => {
   const parsed: unknown = parse(text)
   const workflow = isRecord(parsed) ? parsed : {}
   const jobs = isRecord(workflow.jobs) ? workflow.jobs : {}
   return [
     ...('permissions' in workflow ? [] : [`${file}: no top-level permissions [release-guard/workflow-permissions]`]),
-    ...Object.entries(jobs).flatMap(([id, job]) =>
-      file === PUBLISH_WORKFLOW && id === PUBLISH_JOB
-        ? publishJobFindings(job, template)
-        : jobFindings(file, workflow, id, job)
-    ),
-    ...textFindings(file, text, publishJobLines(file, text)),
+    ...triggerFindings(file, workflow),
+    ...Object.entries(jobs).flatMap(([id, job]) => {
+      const guarded = GUARDED_JOBS.find((candidate) => candidate.workflow === file && candidate.job === id)
+      return guarded === undefined
+        ? jobFindings(file, workflow, id, job)
+        : guardedJobFindings(guarded, job, templates.get(guarded.template))
+    }),
+    ...textFindings(file, text, guardedLines(file, text)),
   ]
 }
 
@@ -205,15 +254,22 @@ const releaseConfigFindings = async (root: string): Promise<string[]> => {
     : [`${RELEASE_CONFIG_FILE}: not exactly the release configuration [release-guard/release-config]`]
 }
 
-// Every workflow right and manifest the release guard refuses: no OIDC token, no contents write but in ci.yml's job
-// release, no npm environment or publishing text, no stored secret, outside ci.yml's job publish, which must equal its
-// template; every workspace manifest private; and semantic-release configured exactly.
+// Every workflow right and manifest the release guard refuses: no OIDC token, no npm environment or publishing text, no
+// stored secret, outside ci.yml's job publish and promote.yml's job move, which must equal their templates; no contents
+// write but in ci.yml's job release and promote.yml's job finish; promote.yml started only by a dispatch; every
+// workspace manifest private; and semantic-release configured exactly.
 export const releaseFindings = async (root: string): Promise<string[]> => {
   const files = await trackedFiles(root, ['.github/workflows', 'packages', 'apps'])
   const read = async (file: string): Promise<string> => readFile(join(root, file), 'utf8')
-  const template: unknown = files.includes(PUBLISH_JOB_TEMPLATE) ? parse(await read(PUBLISH_JOB_TEMPLATE)) : undefined
+  const templates = new Map(
+    await Promise.all(
+      GUARDED_JOBS.filter((guarded) => files.includes(guarded.template)).map(
+        async (guarded): Promise<[string, unknown]> => [guarded.template, parse(await read(guarded.template))]
+      )
+    )
+  )
   const workflows = await Promise.all(
-    files.filter((file) => WORKFLOW.test(file)).map(async (file) => workflowFindings(file, await read(file), template))
+    files.filter((file) => WORKFLOW.test(file)).map(async (file) => workflowFindings(file, await read(file), templates))
   )
   const manifests = await Promise.all(
     files.filter((file) => MANIFEST.test(file)).map(async (file) => manifestFinding(file, await read(file)))

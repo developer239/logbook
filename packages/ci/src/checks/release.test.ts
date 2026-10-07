@@ -41,6 +41,11 @@ const TEMPLATE_FILE = 'packages/ci/src/rules/publish-job.yaml'
 const TEMPLATE_TEXT = readFileSync(new URL('../rules/publish-job.yaml', import.meta.url), 'utf8')
 const CI = '.github/workflows/ci.yml'
 const PUBLISH_STEP = 4
+// The move job's template, as the repository holds it.
+const MOVE_TEMPLATE_FILE = 'packages/ci/src/rules/promote-job.yaml'
+const MOVE_TEMPLATE_TEXT = readFileSync(new URL('../rules/promote-job.yaml', import.meta.url), 'utf8')
+const PROMOTE = '.github/workflows/promote.yml'
+const MOVE_STEP = 3
 
 interface IStep {
   uses?: string
@@ -50,6 +55,17 @@ interface IStep {
 // A fresh copy of the template's job, to change before planting it.
 const publishJob = (): { env: Record<string, string>; steps: IStep[] } & Record<string, unknown> =>
   parse(TEMPLATE_TEXT) as { env: Record<string, string>; steps: IStep[] } & Record<string, unknown>
+
+// A fresh copy of the move template's job, to change before planting it.
+const moveJob = (): { env: Record<string, string>; steps: IStep[] } & Record<string, unknown> =>
+  parse(MOVE_TEMPLATE_TEXT) as { env: Record<string, string>; steps: IStep[] } & Record<string, unknown>
+
+// promote.yml started by these triggers, with no top-level rights, the move job given and any other jobs.
+const promoteWorkflow = (
+  move: unknown,
+  jobs: Record<string, unknown> = {},
+  on: unknown = 'workflow_dispatch'
+): string => stringify({ name: 'promote', on, permissions: {}, jobs: { ...jobs, move } })
 
 // ci.yml with top-level permissions, the publish job given and any other jobs.
 const ciWorkflow = (publish: unknown, jobs: Record<string, unknown> = {}): string =>
@@ -66,6 +82,7 @@ const findings = async (files: Readonly<Record<string, string | null>>): Promise
     'apps/example/package.json': PRIVATE,
     '.releaserc.json': JSON.stringify(RELEASE_CONFIG, null, 2),
     [TEMPLATE_FILE]: TEMPLATE_TEXT,
+    [MOVE_TEMPLATE_FILE]: MOVE_TEMPLATE_TEXT,
     ...files,
   }
   return releaseFindings(
@@ -375,6 +392,136 @@ describe('the release guard', () => {
       expect(found).toStrictEqual([
         `${CI}: job build: id-token: write [release-guard/no-id-token]`,
         `${CI}: job build: environment npm-next [release-guard/no-npm-environment]`,
+      ])
+    })
+  })
+
+  describe('the move job', () => {
+    it("passes promote.yml's job move equal to the template, with contents: write in its job finish", async () => {
+      // Act
+      const found = await findings({
+        [PROMOTE]: promoteWorkflow(moveJob(), {
+          finish: { 'runs-on': 'ubuntu-latest', 'permissions': { contents: 'write' }, 'steps': [{ run: 'echo x' }] },
+        }),
+      })
+
+      // Assert
+      expect(found).toStrictEqual([])
+    })
+
+    it.each([
+      ['an extra step', (job: ReturnType<typeof moveJob>) => ({ ...job, steps: [...job.steps, { run: 'ls' }] })],
+      [
+        'actions/checkout added',
+        (job: ReturnType<typeof moveJob>) => ({
+          ...job,
+          steps: [{ uses: `actions/checkout@${'c'.repeat(40)}` }, ...job.steps],
+        }),
+      ],
+    ])('fails with %s', async (_case, change) => {
+      // Act
+      const found = await findings({ [PROMOTE]: promoteWorkflow(change(moveJob())) })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${PROMOTE}: job move: steps differs from ${MOVE_TEMPLATE_FILE} [release-guard/move-job]`,
+      ])
+    })
+
+    it('fails with actions/setup-node pinned to a version tag', async () => {
+      // Arrange
+      const job = moveJob()
+      job.steps = [{ ...job.steps[0], uses: 'actions/setup-node@v7' }, ...job.steps.slice(1)]
+
+      // Act
+      const found = await findings({ [PROMOTE]: promoteWorkflow(job) })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${PROMOTE}: job move: actions/setup-node@v7 is not a full commit SHA [release-guard/move-job]`,
+      ])
+    })
+
+    it('fails with the npm integrity changed', async () => {
+      // Arrange
+      const job = moveJob()
+      job.env = { ...job.env, NPM_INTEGRITY: `sha512-${'A'.repeat(86)}==` }
+
+      // Act
+      const found = await findings({ [PROMOTE]: promoteWorkflow(job) })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${PROMOTE}: job move: env.NPM_INTEGRITY differs from ${MOVE_TEMPLATE_FILE} [release-guard/move-job]`,
+      ])
+    })
+
+    it('fails with npm publish in it', async () => {
+      // Arrange
+      const job = moveJob()
+      job.steps = job.steps.map((step, index) =>
+        index === MOVE_STEP ? { ...step, run: `${step.run ?? ''}node npm/bin/npm-cli.js npm publish .\n` } : step
+      )
+      const text = promoteWorkflow(job)
+
+      // Act
+      const found = await findings({ [PROMOTE]: text })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${PROMOTE}: job move: steps[${String(MOVE_STEP)}].run differs from ${MOVE_TEMPLATE_FILE} [release-guard/move-job]`,
+        `${PROMOTE}:${String(lineHolding(text, 'npm publish .'))}: npm publish [release-guard/no-publish-text]`,
+      ])
+    })
+
+    it('fails on a push trigger added to promote.yml', async () => {
+      // Act
+      const found = await findings({
+        [PROMOTE]: promoteWorkflow(moveJob(), {}, { workflow_dispatch: null, push: { branches: ['main'] } }),
+      })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${PROMOTE}: triggered by push, not only workflow_dispatch [release-guard/promote-trigger]`,
+      ])
+    })
+
+    it('fails on id-token: write and environment: npm-latest on another job', async () => {
+      // Act
+      const found = await findings({
+        [PROMOTE]: promoteWorkflow(moveJob(), {
+          check: {
+            'runs-on': 'ubuntu-latest',
+            'environment': { name: 'npm-latest' },
+            'permissions': { 'id-token': 'write', 'contents': 'write' },
+            'steps': [{ run: 'ls' }],
+          },
+        }),
+      })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${PROMOTE}: job check: id-token: write [release-guard/no-id-token]`,
+        `${PROMOTE}: job check: contents: write [release-guard/no-contents-write]`,
+        `${PROMOTE}: job check: environment npm-latest [release-guard/no-npm-environment]`,
+      ])
+    })
+
+    it('fails on npm dist-tag outside move, in promote.yml and in ci.yml', async () => {
+      // Arrange
+      const tagging = { 'runs-on': 'ubuntu-latest', 'steps': [{ run: 'npm dist-tag add @log-book/cli@1.0.0 latest' }] }
+      const [promote, ci] = [
+        promoteWorkflow(moveJob(), { finish: tagging }),
+        ciWorkflow(publishJob(), { build: tagging }),
+      ]
+
+      // Act
+      const found = await findings({ [PROMOTE]: promote, [CI]: ci })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${CI}:${String(lineHolding(ci, 'npm dist-tag add'))}: npm dist-tag [release-guard/no-publish-text]`,
+        `${PROMOTE}:${String(lineHolding(promote, 'npm dist-tag add'))}: npm dist-tag [release-guard/no-publish-text]`,
       ])
     })
   })

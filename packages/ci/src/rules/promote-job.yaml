@@ -1,0 +1,56 @@
+# The move job, the only code that ever gets an npm token able to change dist-tags. promote.yml's job `move` must equal
+# this template in everything but the commit SHA of actions/setup-node, which must be a full 40-character SHA;
+# check:release compares the two. It runs nothing from the repository and installs nothing: one pinned action, Node,
+# and an npm fetched by URL and checked against its pinned SHA-512 integrity. Its trusted publisher allows dist-tag
+# changes only, so it cannot publish.
+needs: check
+runs-on: ubuntu-latest
+environment: npm-latest
+permissions:
+  id-token: write
+# Values from the check job reach the scripts through env, never written into them.
+env:
+  VERSION: ${{ needs.check.outputs.version }}
+  PACKAGES: ${{ needs.check.outputs.packages }}
+  NPM_INTEGRITY: sha512-Zov8KhamNneiLdELtj5YALtNmJW4L4fCLTzjfpzXG2w6MSHcf0UxgdlK5uloCuksWT+7mGUU7wi79cO6RqivPg==
+steps:
+  - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+    with:
+      node-version: 24
+  - name: Check the version and the packages
+    run: |
+      if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "The version $VERSION is not X.Y.Z."
+        exit 1
+      fi
+      if ! jq -e 'type == "array" and length > 0 and all(.[]; type == "string")' <<< "$PACKAGES" > /dev/null; then
+        echo "The packages $PACKAGES are not a list of names."
+        exit 1
+      fi
+      if jq -r '.[]' <<< "$PACKAGES" | grep -vxE '@log-book/[a-z-]+'; then
+        echo "The names above are not @log-book packages."
+        exit 1
+      fi
+  # npm bundles its dependencies, so the unpacked directory runs alone; a dist-tag change through OIDC needs npm
+  # 11.21.0 or later. Every npm command below is this file; the runner's own npm never runs.
+  - name: Fetch npm and check its integrity
+    run: |
+      curl --fail --silent --show-error --location --output npm.tgz https://registry.npmjs.org/npm/-/npm-11.21.0.tgz
+      integrity="sha512-$(openssl dgst -sha512 -binary npm.tgz | base64 --wrap=0)"
+      if [ "$integrity" != "$NPM_INTEGRITY" ]; then
+        echo "npm-11.21.0.tgz has the integrity $integrity, not $NPM_INTEGRITY."
+        exit 1
+      fi
+      mkdir npm
+      tar --extract --gzip --file npm.tgz --directory npm --strip-components 1
+      if [ "$(node npm/bin/npm-cli.js --version)" != "11.21.0" ]; then
+        echo "The unpacked npm is not 11.21.0."
+        exit 1
+      fi
+  # npm exchanges the job's OIDC token for one that may change dist-tags and nothing else. Moving latest to the version
+  # it already names changes nothing, so a re-run is safe.
+  - name: Move latest
+    run: |
+      for name in $(jq -r '.[]' <<< "$PACKAGES"); do
+        node npm/bin/npm-cli.js dist-tag add "$name@$VERSION" latest
+      done

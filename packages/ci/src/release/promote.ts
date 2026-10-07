@@ -247,8 +247,9 @@ const checkDirection = async (root: string, promotion: IPromotion): Promise<void
   }
 }
 
-// What is about to reach users: the pull requests since latest's tag, the migration, and the quarantined tests.
-const checklistOf = async (root: string, promotion: IPromotion): Promise<string> => {
+// What is about to reach users: the pull requests since latest's tag, oldest first, the migration, and the quarantined
+// tests; and the pull requests' lines on their own, for promote.yml's finish job.
+const checklistOf = async (root: string, promotion: IPromotion): Promise<{ checklist: string; pulls: string[] }> => {
   const target = `v${promotion.version}`
   const since = (await tagExists(root, promotion.latest)) ? `v${promotion.latest}` : null
   const subjects = await git(root, ['log', '--format=%s', since === null ? target : `${since}..${target}`])
@@ -258,16 +259,17 @@ const checklistOf = async (root: string, promotion: IPromotion): Promise<string>
     .map(
       (subject) => `- #${PULL_REQUEST.exec(subject)?.groups?.number ?? ''} ${subject.replace(PULL_REQUEST, '').trim()}`
     )
+    .toReversed()
   const [from, to] = [since === null ? 0 : await schemaVersionAt(root, since), await schemaVersionAt(root, target)]
   const quarantined: IQuarantined[] = await quarantinedAt(root, target)
-  return [
+  const checklist = [
     `# Promote ${promotion.version} to latest${promotion.isRollback ? ' (rollback)' : ''}`,
     '',
     `latest is ${promotion.latest} now. Packages: ${promotion.packages.join(', ')}.`,
     '',
     `## Pull requests since ${since ?? 'the first commit'}`,
     '',
-    ...(pulls.length === 0 ? ['None'] : pulls.toReversed()),
+    ...(pulls.length === 0 ? ['None'] : pulls),
     '',
     '## Warehouse migration',
     '',
@@ -280,6 +282,7 @@ const checklistOf = async (root: string, promotion: IPromotion): Promise<string>
       : quarantined.map(({ file, name, issue }) => `- ${file}: ${name} (${issue})`)),
     '',
   ].join('\n')
+  return { checklist, pulls }
 }
 
 // Checks 1 to 4 in order, stopping at the first that refuses, then the checklist.
@@ -288,7 +291,7 @@ const promotionOf = async (
   version: string,
   isRollback: boolean,
   ref: string | undefined
-): Promise<IPromotion & { checklist: string }> => {
+): Promise<IPromotion & { checklist: string; pulls: string[] }> => {
   const commit = await taggedCommit(context.root, version, ref)
   const packages = await packagesIn(context.root)
   const promotion = { version, isRollback, packages, commit, latest: '' }
@@ -296,7 +299,7 @@ const promotionOf = async (
   await checkRuns(context, promotion)
   promotion.latest = await latestOf(context, packages)
   await checkDirection(context.root, promotion)
-  return { ...promotion, checklist: await checklistOf(context.root, promotion) }
+  return { ...promotion, ...(await checklistOf(context.root, promotion)) }
 }
 
 const outputTo = async (file: string | undefined, text: string): Promise<void> => {
@@ -388,7 +391,8 @@ const argumentsOf = (args: readonly string[], env: IPromoteContext['env']): IArg
 
 // `promote X.Y.Z [--rollback] [--dry-run]` on a machine: the checks and the checklist, then the dispatch unless dry.
 // `promote --check` in promote.yml's check job: the version and rollback from VERSION and ROLLBACK, the ref from
-// GITHUB_REF, the checklist into the job summary and the outputs version and packages.
+// GITHUB_REF, the checklist into the job summary and the outputs version, packages and pulls, each one line of JSON or
+// text.
 export const promote = async (args: readonly string[], context: IPromoteContext): Promise<number> => {
   const parsed = argumentsOf(args, context.env)
   if (parsed === null) {
@@ -402,7 +406,7 @@ export const promote = async (args: readonly string[], context: IPromoteContext)
       await outputTo(context.env.GITHUB_STEP_SUMMARY, `${promotion.checklist}\n`)
       await outputTo(
         context.env.GITHUB_OUTPUT,
-        `version=${promotion.version}\npackages=${JSON.stringify(promotion.packages)}\n`
+        `version=${promotion.version}\npackages=${JSON.stringify(promotion.packages)}\npulls=${JSON.stringify(promotion.pulls)}\n`
       )
       return 0
     }
