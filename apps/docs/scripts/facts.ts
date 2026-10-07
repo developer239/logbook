@@ -1,6 +1,6 @@
 import type { ICommandSpec, PACKAGE } from '@log-book/cli/grammar'
 
-const FACT_NAMES = ['defaultPort', 'defaultModel', 'nodeFloor'] as const
+const FACT_NAMES = ['defaultPort', 'defaultAddress', 'defaultModel', 'nodeFloor'] as const
 type FactName = (typeof FACT_NAMES)[number]
 export type Facts = Readonly<Record<FactName, string>>
 
@@ -28,8 +28,11 @@ export const factsOf = (commands: readonly ICommandSpec[], engines: string): Fac
   if (floor === undefined) {
     throw new Error(`The CLI's engines.node ${engines} names no floor such as >=24.15`)
   }
+  const port = defaultOf(commands, 'start', 'port')
   return {
-    defaultPort: defaultOf(commands, 'start', 'port'),
+    defaultPort: port,
+    // The page's whole address, for a page that shows it as code: Markdown turns a bare address into a link.
+    defaultAddress: `http://127.0.0.1:${port}`,
     defaultModel: defaultOf(commands, 'labels update', 'model'),
     nodeFloor: floor,
   }

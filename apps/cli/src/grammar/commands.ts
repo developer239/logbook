@@ -8,7 +8,7 @@ import {
   SESSION_ORIGINS,
   SESSION_OUTCOMES,
 } from '@log-book/engine'
-import { RULES_LABELLER } from '@log-book/warehouse'
+import { RULES_LABELLER, SCHEMA_DESCRIPTION } from '@log-book/warehouse'
 import type { ExitCodeName } from './exit-codes.js'
 
 // integer: a whole number in min..max; day: a calendar day as YYYY-MM-DD; choice: one of `values`; model: the
@@ -250,7 +250,8 @@ export const COMMANDS: readonly ICommandSpec[] = [
     words: ['sql'],
     synopsis: 'logbook sql <query> [--max-rows <n>]',
     summary: 'Run a read-only SQL query over the warehouse',
-    description: 'Read-only SQL over the warehouse.',
+    // The schema in prose, one table a line, so a person or an agent can write a query from the help alone.
+    description: `Read-only SQL over the warehouse. The tables:\n${SCHEMA_DESCRIPTION}`,
     positionals: [positional('query')],
     options: [MAX_ROWS],
     isWriting: false,
