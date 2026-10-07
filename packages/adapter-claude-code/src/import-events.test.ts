@@ -93,6 +93,18 @@ describe('importTranscript events and unknown records', () => {
       event('l1', 'error', 1, { error: { status: 529 }, retryAttempt: 2 }),
     ],
     [
+      'model_refusal_no_fallback',
+      {
+        type: 'system',
+        subtype: 'model_refusal_no_fallback',
+        apiRefusalCategory: 'example_category',
+        apiRefusalExplanation: 'An invented explanation.',
+        content: 'An invented notice.',
+        level: 'error',
+      },
+      event('l1', 'error', 1, { error: { refusal: 'example_category' }, retryAttempt: null }),
+    ],
+    [
       'deferred_tools_delta',
       {
         type: 'attachment',
@@ -171,6 +183,10 @@ describe('importTranscript events and unknown records', () => {
       line('l2', 2, { type: 'attachment', attachment: { type: 'date', date: '2026-01-02' } }),
       line('l3', 3, { type: 'system', subtype: 'turn_duration', durationMs: 1200 }),
       line('l4', 4, { type: 'file-history-snapshot', snapshot: {} }),
+      line('l5', 5, { type: 'attachment', attachment: { type: 'ultra_effort_enter', reminderType: 'example' } }),
+      line('l6', 6, { type: 'attachment', attachment: { type: 'ultra_effort_exit' } }),
+      line('l7', 7, { type: 'attachment', attachment: { type: 'date_change', newDate: '2026-01-03' } }),
+      line('l8', 8, { type: 'attachment', attachment: { type: 'diagnostics', files: [], isNew: true } }),
     ]
 
     // Act

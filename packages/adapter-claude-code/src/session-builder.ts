@@ -120,6 +120,18 @@ export class SessionBuilder {
         { error: line.error ?? null, retryAttempt: typeof line.retryAttempt === 'number' ? line.retryAttempt : null },
         at
       ),
+    // The API refused the request; only the refusal's category is kept, none of its text.
+    'system:model_refusal_no_fallback': (line, at, number) =>
+      this.addEvent(
+        line,
+        number,
+        'error',
+        {
+          error: { refusal: typeof line.apiRefusalCategory === 'string' ? line.apiRefusalCategory : null },
+          retryAttempt: null,
+        },
+        at
+      ),
     'attachment:deferred_tools_delta': (line, at, number) => {
       const data = toolsOffered(line.attachment)
       return data !== undefined && this.addEvent(line, number, 'tools-offered', data, at)
@@ -406,11 +418,12 @@ export class SessionBuilder {
     const blocks = blocksOf(content)
     if (blocks.some((block) => block.type === 'tool_result')) {
       const record = this.newMessage(sourceId, 'tool', 'user', at, line)
+      // Claude Code also writes text, and an image the user pasted while a tool ran, into a result's line.
       for (const [index, block] of blocks.entries()) {
         if (block.type === 'tool_result') {
           this.addToolResult(record, block, at, line)
         } else {
-          this.addUnknownBlock(line, number, index, block, at)
+          this.addUserBlock(record, 'text', block, () => this.addUnknownBlock(line, number, index, block, at))
         }
       }
       return true

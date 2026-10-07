@@ -44,6 +44,8 @@ export interface ITranscriptLine {
   compactMetadata?: unknown
   error?: unknown
   retryAttempt?: unknown
+  // A model_refusal_no_fallback line's reason.
+  apiRefusalCategory?: unknown
   sourceToolUseID?: unknown
   toolUseResult?: unknown
   message?: { id?: unknown; model?: unknown; content?: unknown; usage?: IUsage }

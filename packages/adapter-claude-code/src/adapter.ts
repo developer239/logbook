@@ -22,7 +22,7 @@ const DESCRIPTOR: IHarnessDescriptor = {
   defaultAgent: 'Claude',
   unitNoun: 'transcripts',
   filterAlias: 'claude',
-  parserVersion: 1,
+  parserVersion: 2,
   testedVersions: ['2.1'],
   locationVariables: [CONFIG_DIR_VARIABLE],
 }
