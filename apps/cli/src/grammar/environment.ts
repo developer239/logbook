@@ -46,16 +46,15 @@ const INTERNAL_VARIABLES: readonly IEnvironmentVariable[] = ['LOGBOOK_CLI', 'LOG
 // with the adapter's effect added to it.
 const withAdapterVariables = (variables: readonly IEnvironmentVariable[]): IEnvironmentVariable[] =>
   ADAPTERS.reduce<IEnvironmentVariable[]>(
-    (rows, { descriptor }) => {
-      const effect = { by: descriptor.name, changes: `Where ${descriptor.name} keeps its data, read as it reads it` }
-      return descriptor.locationVariables.reduce<IEnvironmentVariable[]>((current, name) => {
+    (rows, { descriptor }) =>
+      descriptor.locationVariables.reduce<IEnvironmentVariable[]>((current, { name, changes }) => {
+        const effect = { by: descriptor.name, changes }
         const existing = current.find((row) => row.name === name)
         if (existing !== undefined) {
           return current.map((row) => (row === existing ? { ...row, effects: [...row.effects, effect] } : row))
         }
         return [...current, { name, effects: [effect], default: `${descriptor.name}'s own default`, isInternal: false }]
-      }, rows)
-    },
+      }, rows),
     [...variables]
   )
 

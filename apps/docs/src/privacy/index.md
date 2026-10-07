@@ -1,4 +1,4 @@
-# What Log Book sends, and where
+# Privacy and security
 
 <!--@include: ./statement.md-->
 
@@ -10,25 +10,40 @@ flowchart LR
   claude -.->|excerpts| provider["Anthropic, or your Claude Code's provider"]
 ```
 
+## The page on your machine
+
+Log Book serves its page on `127.0.0.1` only, with no login, so while it runs any user of the same machine can open it, as with any local server. The warehouse file itself can be read only by you. The page accepts changes, such as starting a sync or a labelling run, only from its own pages, so another website open in your browser cannot trigger them.
+
 ## How to check it
 
-| Claim                                                               | How to check                                                                                                                                                                                                                                                                                                                                                                                         |
-| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The only open sockets are on 127.0.0.1                              | While `logbook` runs: `lsof -nP -i -a -p <pid of logbook>` (macOS and Linux) lists only a `LISTEN` on `127.0.0.1:<port>`, and loopback connections from your browser. On Linux also `ss -tnp` filtered for the process.                                                                                                                                                                              |
-| Sync, the page and rule labels need no network                      | Turn the network off, run `logbook`, wait for the first sync, use the pages. Everything works; only model labelling fails, at Claude Code's first request.                                                                                                                                                                                                                                           |
-| Model requests come from Claude Code only, and only while you label | During labelling, `ps` shows `claude -p` children of the labelling process (the `logbook labels update` you typed, or the one the host started when you pressed Start), each with `--model` and the model you chose; with a per-application firewall (Little Snitch, LuLu, OpenSnitch) the only outbound connections are those of `claude`. Outside a labelling run there are no `claude` processes. |
-| What a request contains                                             | `logbook labels preview --task <task>` prints the task's system line and the exact text of the next batches without sending them, and names the framing Claude Code adds.                                                                                                                                                                                                                            |
-| Claude Code sends nothing else of its own                           | With a per-application firewall, `claude` connects only to its API host during labelling, and not at all during the version and login checks.                                                                                                                                                                                                                                                        |
-| Claude Code keeps no history of the calls                           | After labelling, no new session for a temporary directory appears in Claude Code's `projects` folder or in Log Book's conversation list.                                                                                                                                                                                                                                                             |
-| The code has no other network call                                  | The published packages' source can be searched: the one call site that can reach the network is starting `claude` in the engine's Claude client; the table below names its file, and a CI check keeps that true.                                                                                                                                                                                     |
+Three checks cover most of it:
 
-For example, to see what the next batch of the shell task would send:
+- **Preview what labelling would send.** `logbook labels preview --task <task>` prints the exact text of the next batches without sending anything, and names the framing Claude Code adds:
 
-```sh
-logbook labels preview --task shell
-```
+  ```sh
+  logbook labels preview --task shell
+  ```
 
-## Where the code makes network calls
+- **Run it offline.** Turn the network off, run `logbook`, wait for the first sync and use the pages. Everything works; only model labelling fails, at Claude Code's first request.
+- **Look at its sockets.** While `logbook` runs, `lsof -nP -i -a -p <pid of logbook>` (macOS and Linux) lists only a `LISTEN` on `127.0.0.1:<port>` and loopback connections from your browser. On Linux, `ss -tnp` filtered for the process shows the same.
+
+And for labelling itself:
+
+- During labelling, `ps` shows `claude -p` children of the labelling process, each with `--model` and the model you chose. Outside a labelling run there are no `claude` processes.
+- With a per-application firewall (Little Snitch, LuLu, OpenSnitch), the only outbound connections are those of `claude`, to its API host, during labelling; none during the version and login checks.
+- After labelling, no new session for a temporary directory appears in Claude Code's `projects` folder or in Log Book's conversation list.
+
+## What each request contains
+
+Each labelling request holds a batch of items, and each item holds these parts of a record, in this order, each cut to its clip size. Nothing is redacted.
+
+<!--@include: ../.generated/item-contents.md-->
+
+With the items go the task's one-line system text and its fixed instructions, about 1 to 4 KB per task, and the lines Claude Code adds itself, listed above.
+
+## Audit notes: where the code can reach the network
+
+The one call site that can reach the network is starting `claude` for labelling. The others are local: the server on `127.0.0.1`, the child processes Log Book starts, and the tools the repository's own build runs. A CI check fails the build when a call site appears that this list does not name.
 
 <!--@include: ../.generated/call-sites.md-->
 

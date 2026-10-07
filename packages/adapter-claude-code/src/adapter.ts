@@ -24,7 +24,12 @@ const DESCRIPTOR: IHarnessDescriptor = {
   filterAlias: 'claude',
   parserVersion: 2,
   testedVersions: ['2.1'],
-  locationVariables: [CONFIG_DIR_VARIABLE],
+  locationVariables: [
+    {
+      name: CONFIG_DIR_VARIABLE,
+      changes: "Claude Code's configuration directory; Log Book reads the projects directory inside it",
+    },
+  ],
 }
 
 // The reader holds no handle, so close does nothing; a transcript records no format marker besides each line's

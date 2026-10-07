@@ -70,6 +70,7 @@ export const renderCommandHelp = (command: ICommandSpec): string =>
     `Usage: ${command.synopsis}`,
     '',
     command.description,
+    ...(command.tables === null ? [] : ['The tables:', command.tables]),
     '',
     'Options:',
     ...command.options.flatMap(optionLines),

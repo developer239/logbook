@@ -1,6 +1,6 @@
 import type { ICommandSpec, IEnvironmentVariable, IExitCode, IOptionSpec } from '@log-book/cli/grammar'
 import { describe, expect, it } from 'vitest'
-import { cliPage, environmentPage, exitCodesPage, modelOptionPage } from './reference.js'
+import { cliPage, environmentPage, exitCodesPage, modelOptionPage, schemaPage } from './reference.js'
 
 const option = (fields: Partial<IOptionSpec> & Pick<IOptionSpec, 'name' | 'help'>): IOptionSpec => ({
   placeholder: '<n>',
@@ -24,6 +24,7 @@ const command = (words: readonly string[], options: readonly IOptionSpec[]): ICo
   isWriting: false,
   exitCodes: ['success'],
   forms: null,
+  tables: null,
 })
 
 const MODEL = option({
@@ -41,6 +42,8 @@ const EXIT_CODES: readonly IExitCode[] = [
   { code: 0, name: 'success', meaning: 'It worked', raisedBy: 'all' },
   { code: 2, name: 'usage error', meaning: 'A bad option', raisedBy: 'all' },
 ]
+
+const withTables = (tables: string | null): readonly ICommandSpec[] => [{ ...command(['sql'], []), tables }]
 
 const optionRows = (page: string): string[] => page.split('\n').filter((line) => line.startsWith('| `--'))
 
@@ -85,6 +88,31 @@ describe('cliPage', () => {
       inPage: true,
       part: 'Model B agrees 70%\n',
     })
+  })
+
+  it('shows the description without the summary, which only logbook --help lists', () => {
+    // Act
+    const page = cliPage(COMMANDS.slice(0, 1), EXIT_CODES)
+
+    // Assert
+    expect({
+      summary: page.includes('The start summary'),
+      description: page.includes('The start description'),
+    }).toStrictEqual({ summary: false, description: true })
+  })
+
+  it('links the tables of a command that prints them to the schema page, instead of listing them', () => {
+    // Arrange
+    const sql = { ...command(['sql'], []), tables: 'Times are UTC.\nitem(id, name) - one row per item;' }
+
+    // Act
+    const page = cliPage([sql], EXIT_CODES)
+
+    // Assert
+    expect({
+      link: page.includes('[Database schema](/reference/schema)'),
+      table: page.includes('item(id'),
+    }).toStrictEqual({ link: true, table: false })
   })
 
   it('links each exit code a command raises to its row', () => {
@@ -145,6 +173,57 @@ describe('exitCodesPage', () => {
   ])('refuses %s', (_case, whatToDo, message) => {
     // Act
     const page = (): string => exitCodesPage(EXIT_CODES, whatToDo)
+
+    // Assert
+    expect(page).toThrow(message)
+  })
+})
+
+describe('schemaPage', () => {
+  it('opens with the conventions, then gives each table its notes and a row per column', () => {
+    // Arrange
+    const tables = [
+      'Times are UTC.',
+      'item(id (the item id, unique), state open|closed) - one row per item;',
+      'tag(item_id, name).',
+    ].join('\n')
+
+    // Act
+    const page = schemaPage(withTables(tables))
+
+    // Assert
+    expect(page.split('\n')).toStrictEqual([
+      'Times are UTC.',
+      '',
+      '## item',
+      '',
+      'One row per item.',
+      '',
+      '| Column | Notes |',
+      '| --- | --- |',
+      '| `id` | the item id, unique |',
+      '| `state` | open\\|closed |',
+      '',
+      '## tag',
+      '',
+      '| Column | Notes |',
+      '| --- | --- |',
+      '| `item_id` |  |',
+      '| `name` |  |',
+      '',
+    ])
+  })
+
+  it.each([
+    [
+      'a line that is not a table',
+      'Times are UTC.\nnot a table',
+      'A table line is not table(columns) - notes: not a table',
+    ],
+    ['a sql command without tables', null, 'logbook sql prints no tables'],
+  ])('refuses %s', (_case, tables, message) => {
+    // Act
+    const page = (): string => schemaPage(withTables(tables))
 
     // Assert
     expect(page).toThrow(message)

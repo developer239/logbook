@@ -155,7 +155,7 @@ const minimalAdapter: IHarnessAdapter = {
     filterAlias: 'minimal',
     parserVersion: 1,
     testedVersions: ['1.0'],
-    locationVariables: ['MINIMAL_SESSIONS_DIR'],
+    locationVariables: [{ name: 'MINIMAL_SESSIONS_DIR', changes: 'Where the minimal harness keeps its sessions' }],
   },
   locate: async (env) => {
     const root = env.variables.MINIMAL_SESSIONS_DIR ?? sessionsDirectory(env.homeDir)

@@ -22,12 +22,18 @@ const found = inventedAdapter({
 })
 const missingPath = inventedAdapter({
   name: 'Example Agent',
-  locationVariables: ['EXAMPLE_DIR', 'EXAMPLE_DB'],
+  locationVariables: [
+    { name: 'EXAMPLE_DIR', changes: 'Where the example harness keeps its data' },
+    { name: 'EXAMPLE_DB', changes: "The example harness's database" },
+  ],
   locate: { kind: 'not-found', lookedAt: '.example/projects' },
 })
 const missingNoPath = inventedAdapter({
   name: 'Other Agent',
-  locationVariables: ['OTHER_HOME', 'OTHER_DB'],
+  locationVariables: [
+    { name: 'OTHER_HOME', changes: 'Where the other harness keeps its data' },
+    { name: 'OTHER_DB', changes: "The other harness's database" },
+  ],
   locate: { kind: 'not-found', lookedAt: null },
 })
 const throwing = inventedAdapter({

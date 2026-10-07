@@ -12,7 +12,14 @@ const DESCRIPTOR: IHarnessDescriptor = {
   filterAlias: 'opencode',
   parserVersion: 1,
   testedVersions: ['2.0'],
-  locationVariables: [DATABASE_VARIABLE, DISABLE_CHANNEL_DATABASE_VARIABLE, DATA_HOME_VARIABLE],
+  locationVariables: [
+    { name: DATABASE_VARIABLE, changes: "OpenCode's database file; a relative path is inside its data directory" },
+    {
+      name: DISABLE_CHANNEL_DATABASE_VARIABLE,
+      changes: '1 or true reads opencode.db, instead of the newest opencode-<channel>.db',
+    },
+    { name: DATA_HOME_VARIABLE, changes: "OpenCode's data directory (opencode inside it)" },
+  ],
 }
 
 export const openCode = (): IHarnessAdapter => ({

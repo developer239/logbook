@@ -3,7 +3,13 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { LogBookError } from '@log-book/core'
-import { resolveWarehousePath, WAREHOUSE_ERROR_CODES, WarehouseStore, WarehouseVersionError } from '@log-book/warehouse'
+import {
+  resolveWarehousePath,
+  SCHEMA_DESCRIPTION,
+  WAREHOUSE_ERROR_CODES,
+  WarehouseStore,
+  WarehouseVersionError,
+} from '@log-book/warehouse'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { COMMANDS } from './grammar.js'
 import { renderCommandHelp } from './help.js'
@@ -71,6 +77,14 @@ describe('runCli', () => {
       expect(result).toStrictEqual({ code: 0, stdout: `${renderCommandHelp(command)}\n`, stderr: '' })
     }
   )
+
+  it('prints the warehouse tables in logbook sql --help, after the description', async () => {
+    // Act
+    const { stdout } = await run(['sql', '--help'])
+
+    // Assert
+    expect(stdout).toContain(`Read-only SQL over the warehouse.\nThe tables:\n${SCHEMA_DESCRIPTION}\n`)
+  })
 
   it('lists the 17 commands in logbook --help, in table order', async () => {
     // Act

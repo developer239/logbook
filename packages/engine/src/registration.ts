@@ -24,9 +24,18 @@ const RULES: readonly TDescriptorRule[] = [
       ? null
       : 'its tested versions are not a non-empty list of major.minor versions',
   ({ locationVariables }) =>
-    Array.isArray(locationVariables) && locationVariables.every((variable) => typeof variable === 'string')
+    Array.isArray(locationVariables) &&
+    locationVariables.every(
+      (variable: unknown) =>
+        typeof variable === 'object' &&
+        variable !== null &&
+        'name' in variable &&
+        typeof variable.name === 'string' &&
+        'changes' in variable &&
+        typeof variable.changes === 'string'
+    )
       ? null
-      : 'its location variables are not an array of strings',
+      : 'its location variables are not a list of names with what each changes',
 ]
 
 const invalid = (who: string, rule: string): LogBookError =>

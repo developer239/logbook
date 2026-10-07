@@ -8,6 +8,7 @@ import type {
   IHarnessDescriptor,
   IHarnessLocation,
   IImportedUnit,
+  ILocationVariable,
   IRecognisedCommand,
   ISourceReader,
   ISourceUnit,
@@ -74,7 +75,7 @@ export interface IInventedAdapterOptions {
   readonly filterAlias?: string
   readonly parserVersion?: number
   readonly testedVersions?: readonly string[]
-  readonly locationVariables?: readonly string[]
+  readonly locationVariables?: readonly ILocationVariable[]
   readonly locate?: InventedLocate
   readonly open?: InventedOpen
   // One value every reader carries, or one per reader in the order openSource returns them, the last repeating.

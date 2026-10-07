@@ -33,15 +33,14 @@ export const EXIT_CODES: readonly IExitCode[] = [
     code: 1,
     name: 'failure',
     meaning:
-      'The command failed: an error that ended the whole sync, a SQL error in sql, a full disk (a compaction among them), a labelling run that ended unreachable or failed',
+      'The command failed, for example a SQL error, a full disk, or a labelling run that could not reach its API',
     raisedBy: 'all',
   },
   { code: 2, name: 'usage error', meaning: 'Unknown command or option, bad value', raisedBy: 'all' },
   {
     code: 3,
     name: 'already running',
-    meaning:
-      'A sync, a forget or a compaction holds the sync lock, or a labelling run, a labels drop, a forget or a compaction holds the labelling lock, and this command needs that lock. A forget or a compaction needs both',
+    meaning: 'Another command holds a warehouse lock this one needs',
     raisedBy: 'sync, forget, compact, labels update, labels run, labels drop',
   },
   {
@@ -65,14 +64,13 @@ export const EXIT_CODES: readonly IExitCode[] = [
   {
     code: 7,
     name: 'missing prerequisite',
-    meaning:
-      'A labelling prerequisite is missing: claude not found, too old, or not signed in, at detection or when a call is refused for authentication',
+    meaning: 'Claude Code is missing, too old, or not signed in',
     raisedBy: 'labels update, labels run, labels plan',
   },
   {
     code: 8,
     name: 'usage limit',
-    meaning: "Labelling stopped at the user's Claude usage limit; every batch finished before it is stored",
+    meaning: 'Labelling stopped at your Claude usage limit; every finished batch is kept',
     raisedBy: 'labels update, labels run',
   },
   {
@@ -84,15 +82,13 @@ export const EXIT_CODES: readonly IExitCode[] = [
   {
     code: 10,
     name: 'partial failure',
-    meaning:
-      "The sync finished, but at least one adapter's step failed or a source unit was skipped; everything else it read is imported",
+    meaning: 'The sync imported what it could, but some step failed or some files were skipped',
     raisedBy: 'sync',
   },
   {
     code: 130,
     name: 'interrupted',
-    meaning:
-      'A one-shot command stopped by Ctrl+C or SIGTERM (the host exits 0). Work already committed stays; an unfinished compaction leaves the file as it was',
+    meaning: 'Stopped by Ctrl+C or SIGTERM; work already stored stays',
     raisedBy: 'one-shot commands',
   },
 ]

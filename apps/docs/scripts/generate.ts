@@ -2,7 +2,15 @@ import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { COMMANDS, ENVIRONMENT, EXIT_CODES } from '@log-book/cli/grammar'
 import { ITEM_CONTENTS, LABEL_TASK_NAMES } from '@log-book/engine'
 import { callSitesOf, callSitesPage, itemContentsPage } from './privacy.js'
-import { cliPage, commandSlug, environmentPage, exitCodesPage, modelOptionPage, startOptionsPage } from './reference.js'
+import {
+  cliPage,
+  commandSlug,
+  environmentPage,
+  exitCodesPage,
+  modelOptionPage,
+  schemaPage,
+  startOptionsPage,
+} from './reference.js'
 import { WHAT_TO_DO } from './what-to-do.js'
 
 // The package's src, from dist/scripts where the build leaves this script.
@@ -43,6 +51,7 @@ export const generate = async (): Promise<void> => {
     'model-option.md': modelOptionPage(COMMANDS),
     'exit-codes.md': exitCodesPage(EXIT_CODES, WHAT_TO_DO),
     'environment.md': environmentPage(ENVIRONMENT),
+    'schema.md': schemaPage(COMMANDS),
     'item-contents.md': itemContentsPage(ITEM_CONTENTS, LABEL_TASK_NAMES),
     'call-sites.md': callSitesPage(callSitesOf(await readFile(CALL_SITES, 'utf8'))),
   }

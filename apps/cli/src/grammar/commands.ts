@@ -51,6 +51,9 @@ export interface ICommandSpec {
   exitCodes: readonly ExitCodeName[]
   // Two forms of which exactly one is given: the positionals, or this option.
   forms: { option: string; both: string; neither: string } | null
+  // The warehouse's tables in prose, one a line, which --help prints after the description so a person or an agent
+  // can write a query from the help alone; the docs site gives them a page of their own.
+  tables: string | null
 }
 
 const NO_LIMITS = { min: null, max: null, values: null, isRequired: false, forbidden: null } as const
@@ -154,6 +157,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: true,
     exitCodes: ['success', 'failure', 'usage error', 'port in use', 'newer warehouse'],
     forms: null,
+    tables: null,
   },
   {
     words: ['sync'],
@@ -167,6 +171,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: true,
     exitCodes: [...WRITES, 'partial failure'],
     forms: null,
+    tables: null,
   },
   {
     words: ['sessions'],
@@ -197,6 +202,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: false,
     exitCodes: READS,
     forms: null,
+    tables: null,
   },
   {
     words: ['search'],
@@ -210,6 +216,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: false,
     exitCodes: READS,
     forms: null,
+    tables: null,
   },
   {
     words: ['tree'],
@@ -221,6 +228,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: false,
     exitCodes: READS,
     forms: null,
+    tables: null,
   },
   {
     words: ['timeline'],
@@ -232,6 +240,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: false,
     exitCodes: READS,
     forms: null,
+    tables: null,
   },
   {
     words: ['report'],
@@ -245,18 +254,19 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: false,
     exitCodes: READS,
     forms: null,
+    tables: null,
   },
   {
     words: ['sql'],
     synopsis: 'logbook sql <query> [--max-rows <n>]',
     summary: 'Run a read-only SQL query over the warehouse',
-    // The schema in prose, one table a line, so a person or an agent can write a query from the help alone.
-    description: `Read-only SQL over the warehouse. The tables:\n${SCHEMA_DESCRIPTION}`,
+    description: 'Read-only SQL over the warehouse.',
     positionals: [positional('query')],
     options: [MAX_ROWS],
     isWriting: false,
     exitCodes: READS,
     forms: null,
+    tables: SCHEMA_DESCRIPTION,
   },
   {
     words: ['labels', 'update'],
@@ -271,6 +281,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: true,
     exitCodes: [...WRITES, 'missing prerequisite', 'usage limit'],
     forms: null,
+    tables: null,
   },
   {
     words: ['labels', 'run'],
@@ -295,6 +306,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: true,
     exitCodes: [...WRITES, 'missing prerequisite', 'usage limit'],
     forms: null,
+    tables: null,
   },
   {
     words: ['labels', 'plan'],
@@ -308,6 +320,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: false,
     exitCodes: [...READS, 'missing prerequisite'],
     forms: null,
+    tables: null,
   },
   {
     words: ['labels', 'preview'],
@@ -319,6 +332,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: false,
     exitCodes: READS,
     forms: null,
+    tables: null,
   },
   {
     words: ['labels', 'compare'],
@@ -334,6 +348,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: false,
     exitCodes: READS,
     forms: null,
+    tables: null,
   },
   {
     words: ['labels', 'drop'],
@@ -353,6 +368,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: true,
     exitCodes: WRITES,
     forms: null,
+    tables: null,
   },
   {
     words: ['forget'],
@@ -370,6 +386,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
       both: 'forget takes session ids or --project <dir>, not both.',
       neither: 'forget needs session ids or --project <dir>.',
     },
+    tables: null,
   },
   {
     words: ['compact'],
@@ -381,6 +398,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: true,
     exitCodes: WRITES,
     forms: null,
+    tables: null,
   },
   {
     words: ['doctor'],
@@ -394,6 +412,7 @@ export const COMMANDS: readonly ICommandSpec[] = [
     isWriting: false,
     exitCodes: ONE_SHOT,
     forms: null,
+    tables: null,
   },
 ]
 

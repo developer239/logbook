@@ -4,6 +4,7 @@ import type { ICommandSpec, IEnvironmentVariable, IExitCode, IOptionSpec } from 
 // emphasis, a table cell's end or an HTML tag.
 const MARKDOWN = /[\\`*_[\]<>|{}]/gu
 const EXIT_CODES_PAGE = '/reference/exit-codes'
+const SCHEMA_PAGE = '/reference/schema'
 const EXAMPLES = '../reference/examples'
 
 // Text from the command table as a page shows it, word for word.
@@ -83,10 +84,15 @@ const commandSection = (command: ICommandSpec, exitCodes: readonly IExitCode[]):
   command.synopsis,
   '```',
   '',
-  escaped(command.summary),
-  '',
+  // The description opens with what the summary says, so the summary, written for `logbook --help`, is left out.
   // Each line of a description is a paragraph of its own, as the terminal shows it on a line of its own.
   ...command.description.split('\n').flatMap((line) => [escaped(line), '']),
+  ...(command.tables === null
+    ? []
+    : [
+        `\`logbook ${command.words.join(' ')} --help\` prints the tables too; [Database schema](${SCHEMA_PAGE}) lists them.`,
+        '',
+      ]),
   ...(command.options.length === 0 ? [] : [...optionsTable(command.options), '']),
   ...valuesOf(command).flatMap((line) => [line, '']),
   `**Writes:** ${command.isWriting ? 'yes' : 'no'}`,
@@ -157,4 +163,71 @@ export const environmentPage = (environment: readonly IEnvironmentVariable[]): s
       escaped(variable.default ?? ''),
     ])
   return `${table(['Variable', 'What it changes', 'Default'], rows).join('\n')}\n`
+}
+
+// The index of the parenthesis that closes the one at open.
+const closingOf = (text: string, open: number): number => {
+  let depth = 0
+  for (const [index, character] of [...text].entries()) {
+    if (index < open) {
+      continue
+    }
+    depth += Number(character === '(') - Number(character === ')')
+    if (depth === 0) {
+      return index
+    }
+  }
+  return -1
+}
+
+// Splits at the commas outside parentheses: `id (a, b), name` is two columns.
+const topLevelParts = (text: string): string[] => {
+  const parts: string[] = []
+  let depth = 0
+  let start = 0
+  for (const [index, character] of [...text].entries()) {
+    depth += Number(character === '(') - Number(character === ')')
+    if (character === ',' && depth === 0) {
+      parts.push(text.slice(start, index).trim())
+      start = index + 1
+    }
+  }
+  return [...parts, text.slice(start).trim()]
+}
+
+const NOTES = /^(?: - (?<notes>.+?))?[;.]$/u
+
+// `table(column notes, ...) - notes;`, the notes optional, as a section: the table's notes, then one row per column.
+const tableSection = (line: string): string[] => {
+  const open = line.indexOf('(')
+  const close = open <= 0 ? -1 : closingOf(line, open)
+  const notes = close === -1 ? null : NOTES.exec(line.slice(close + 1))
+  if (notes === null) {
+    throw new Error(`A table line is not table(columns) - notes: ${line}`)
+  }
+  const text = notes.groups?.notes
+  const columns = topLevelParts(line.slice(open + 1, close)).map((column) => {
+    const [name = '', ...words] = column.split(' ')
+    const details = words.join(' ')
+    // A note wholly in parentheses reads as the cell itself.
+    const isWrapped = details.startsWith('(') && closingOf(details, 0) === details.length - 1
+    return [code(name), escaped(isWrapped ? details.slice(1, -1) : details)]
+  })
+  return [
+    `## ${line.slice(0, open)}`,
+    '',
+    ...(text === undefined ? [] : [`${escaped(text.charAt(0).toUpperCase() + text.slice(1))}.`, '']),
+    ...table(['Column', 'Notes'], columns),
+    '',
+  ]
+}
+
+// The tables logbook sql --help prints: its first line, the conventions every table follows, then a section a table.
+export const schemaPage = (commands: readonly ICommandSpec[]): string => {
+  const { tables } = commandNamed(commands, 'sql')
+  if (tables === null) {
+    throw new Error('logbook sql prints no tables')
+  }
+  const [conventions = '', ...lines] = tables.split('\n')
+  return [escaped(conventions), '', ...lines.flatMap(tableSection)].join('\n')
 }

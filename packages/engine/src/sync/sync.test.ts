@@ -283,7 +283,9 @@ describe('runSync', () => {
   it('writes each descriptor with its variables and its location in the ~/ form, or NULL', async () => {
     // Arrange
     const adapters = [
-      inventedAdapter({ locationVariables: ['INVENTED_HOME'] }),
+      inventedAdapter({
+        locationVariables: [{ name: 'INVENTED_HOME', changes: 'Where the invented harness keeps its data' }],
+      }),
       otherHarness({ locate: { kind: 'not-found', lookedAt: '.other' } }),
       otherHarness({ locate: { kind: 'not-found', lookedAt: null } }, { id: 'third-harness', filterAlias: 'third' }),
       otherHarness(
