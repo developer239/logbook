@@ -43,7 +43,8 @@
     "check:network": "pnpm ci:build && node packages/ci/dist/index.js network",
     "check:package": "pnpm ci:build && node packages/ci/dist/index.js package",
     "release:version": "pnpm ci:build && node packages/ci/dist/index.js release",
-    "check:installed": "pnpm ci:build && node packages/ci/dist/index.js installed"
+    "check:installed": "pnpm ci:build && node packages/ci/dist/index.js installed",
+    "release:promote": "pnpm ci:build && node packages/ci/dist/index.js promote"
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",

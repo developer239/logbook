@@ -1,3 +1,5 @@
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
 import semanticRelease from 'semantic-release'
 import { demoCaptureArguments } from './checks/demo-captures.js'
 import { dependencyFindings } from './checks/deps.js'
@@ -8,6 +10,7 @@ import { networkFindings } from './checks/network.js'
 import { packageFindings } from './checks/package.js'
 import { releaseFindings } from './checks/release.js'
 import { checkTests } from './checks/tests.js'
+import { promote } from './release/promote.js'
 import { releaseNotes, schemaVersionAt } from './release/release-notes.js'
 import { releaseVersion } from './release/release-version.js'
 import { stageCli } from './stage/stage-cli.js'
@@ -23,6 +26,8 @@ export interface ICiIo {
 type CiCommand = (args: readonly string[], io: ICiIo) => Promise<number>
 
 const WRONG_ARGUMENTS = 2
+const MAX_OUTPUT_BYTES = 64 * 1024 * 1024
+const runFile = promisify(execFile)
 
 // A command that prints lines read from two git refs of the repository in the working directory; a refusal is its one
 // line on stderr and exit 1.
@@ -106,6 +111,19 @@ const COMMANDS: Readonly<Record<string, CiCommand>> = {
   ]),
   // The lines the release job appends to a release's notes; an empty previous tag is the first release's.
   'release-notes': fromTwoRefs('<previous tag> <release ref>', releaseNotes),
+  // Checks a version for promotion and dispatches promote.yml, or with --check runs the checks in its check job.
+  'promote': async (args, io) =>
+    promote(args, {
+      root: process.cwd(),
+      env: process.env,
+      stdout: io.stdout,
+      stderr: io.stderr,
+      gh: async (ghArgs) => (await runFile('gh', ghArgs, { maxBuffer: MAX_OUTPUT_BYTES })).stdout,
+      registry: async (url) => {
+        const response = await fetch(url)
+        return { status: response.status, body: response.ok ? ((await response.json()) as unknown) : null }
+      },
+    }),
   'release': async (args, io) =>
     releaseVersion(args, { stderr: io.stderr, env: process.env, cwd: process.cwd(), release: semanticRelease }),
   // Prints `pnpm demo:scan` arguments for each demo entry of the committed capture manifest, for the demo job.
