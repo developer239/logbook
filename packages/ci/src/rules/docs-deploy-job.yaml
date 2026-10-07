@@ -1,0 +1,15 @@
+# The deploy job of docs.yml, the only job that holds Pages credentials. docs.yml's job `deploy` must equal this template
+# in everything but the commit SHA of actions/deploy-pages, which must be a full 40-character SHA; check:release
+# compares the two. Its one step is GitHub's Pages action, in the environment github-pages, which no npm trusted
+# publisher names, so its OIDC token can neither publish nor move a dist-tag.
+needs: build
+runs-on: ubuntu-latest
+permissions:
+  pages: write
+  id-token: write
+environment:
+  name: github-pages
+  url: ${{ steps.deployment.outputs.page_url }}
+steps:
+  - id: deployment
+    uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

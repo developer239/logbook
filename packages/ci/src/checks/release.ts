@@ -23,6 +23,7 @@ const SECRET = /\bsecrets\.(?<name>[A-Za-z_][A-Za-z0-9_]*)/gu
 const ALLOWED_SECRET = 'GITHUB_TOKEN'
 const CI_WORKFLOW = '.github/workflows/ci.yml'
 const PROMOTE_WORKFLOW = '.github/workflows/promote.yml'
+const DOCS_WORKFLOW = '.github/workflows/docs.yml'
 
 // A job that may hold an npm token: equal to its template but for the commit SHAs of its pinned actions, which must be
 // full SHAs. Within its lines alone, the workflow's text may hold these phrases.
@@ -35,7 +36,8 @@ interface IGuardedJob {
   rule: string
 }
 
-// ci.yml's job publish, which publishes to next, and promote.yml's job move, which moves latest and cannot publish.
+// ci.yml's job publish, which publishes to next; promote.yml's job move, which moves latest and cannot publish; and
+// docs.yml's job deploy, which deploys the site with an OIDC token no npm trusted publisher accepts.
 const GUARDED_JOBS: readonly IGuardedJob[] = [
   {
     workflow: CI_WORKFLOW,
@@ -53,12 +55,25 @@ const GUARDED_JOBS: readonly IGuardedJob[] = [
     text: new Set(['npm dist-tag', 'npm-cli.js']),
     rule: 'release-guard/move-job',
   },
+  {
+    workflow: DOCS_WORKFLOW,
+    job: 'deploy',
+    template: 'packages/ci/src/rules/docs-deploy-job.yaml',
+    actions: ['actions/deploy-pages'],
+    text: new Set(),
+    rule: 'release-guard/docs-deploy-job',
+  },
 ]
 // The jobs that may write contents: ci.yml's job release, which pushes the tag and writes the GitHub release, and
 // promote.yml's job finish, which marks the promoted release latest.
 const CONTENTS_WRITERS = [`${CI_WORKFLOW}#release`, `${PROMOTE_WORKFLOW}#finish`]
-// promote.yml starts only from a dispatch.
-const PROMOTE_TRIGGER = 'workflow_dispatch'
+// The triggers each release workflow may have: promote.yml a dispatch only; docs.yml a dispatch and the completion of
+// promote's runs, the only workflow its workflow_run may name.
+const ALLOWED_TRIGGERS: ReadonlyMap<string, readonly string[]> = new Map([
+  [PROMOTE_WORKFLOW, ['workflow_dispatch']],
+  [DOCS_WORKFLOW, ['workflow_run', 'workflow_dispatch']],
+])
+const DOCS_SOURCE = 'promote'
 const FULL_SHA = /^[0-9a-f]{40}$/u
 const ANY_SHA = '<sha>'
 
@@ -188,19 +203,35 @@ const textFindings = (file: string, text: string, allowed: ReadonlyMap<number, R
     ]
   })
 
-// promote.yml's triggers other than a dispatch.
-const triggerFindings = (file: string, workflow: Record<string, unknown>): string[] => {
-  if (file !== PROMOTE_WORKFLOW) {
-    return []
-  }
-  const triggers =
-    typeof workflow.on === 'string' ? [workflow.on] : Object.keys(isRecord(workflow.on) ? workflow.on : {})
-  const others = triggers.filter((trigger) => trigger !== PROMOTE_TRIGGER)
-  return others.length > 0 || triggers.length === 0
+// A workflow_run of any workflow but promote.
+const runSourceFindings = (file: string, on: Record<string, unknown>): string[] => {
+  const run = on.workflow_run
+  const sources: unknown = isRecord(run) ? run.workflows : undefined
+  return 'workflow_run' in on && !isDeepStrictEqual(sources, [DOCS_SOURCE])
     ? [
-        `${file}: triggered by ${others.join(', ') || 'nothing'}, not only ${PROMOTE_TRIGGER} [release-guard/promote-trigger]`,
+        `${file}: workflow_run of ${JSON.stringify(sources ?? null)}, not of ${DOCS_SOURCE} alone [release-guard/workflow-trigger]`,
       ]
     : []
+}
+
+// A release workflow's triggers beyond those it may have.
+const triggerFindings = (file: string, workflow: Record<string, unknown>): string[] => {
+  const allowed = ALLOWED_TRIGGERS.get(file)
+  if (allowed === undefined) {
+    return []
+  }
+  const on = isRecord(workflow.on) ? workflow.on : {}
+  const triggers = typeof workflow.on === 'string' ? [workflow.on] : Object.keys(on)
+  const others = triggers.filter((trigger) => !allowed.includes(trigger))
+  return [
+    ...(others.length > 0 || triggers.length === 0
+      ? [
+          `${file}: triggered by ${others.join(', ') || 'nothing'}, not only ${allowed.join(' and ')} ` +
+            '[release-guard/workflow-trigger]',
+        ]
+      : []),
+    ...runSourceFindings(file, on),
+  ]
 }
 
 const workflowFindings = (file: string, text: string, templates: ReadonlyMap<string, unknown>): string[] => {
@@ -255,9 +286,10 @@ const releaseConfigFindings = async (root: string): Promise<string[]> => {
 }
 
 // Every workflow right and manifest the release guard refuses: no OIDC token, no npm environment or publishing text, no
-// stored secret, outside ci.yml's job publish and promote.yml's job move, which must equal their templates; no contents
-// write but in ci.yml's job release and promote.yml's job finish; promote.yml started only by a dispatch; every
-// workspace manifest private; and semantic-release configured exactly.
+// stored secret, outside ci.yml's job publish, promote.yml's job move and docs.yml's job deploy, which must equal their
+// templates; no contents write but in ci.yml's job release and promote.yml's job finish; promote.yml started only by a
+// dispatch, and docs.yml by a dispatch or promote's completion; every workspace manifest private; and semantic-release
+// configured exactly.
 export const releaseFindings = async (root: string): Promise<string[]> => {
   const files = await trackedFiles(root, ['.github/workflows', 'packages', 'apps'])
   const read = async (file: string): Promise<string> => readFile(join(root, file), 'utf8')

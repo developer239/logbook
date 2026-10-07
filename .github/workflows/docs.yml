@@ -1,0 +1,102 @@
+name: docs
+
+# The documentation site describes latest, so it deploys when a promotion succeeds, built from the tag GitHub marks
+# latest; a rollback marks an older release latest, and the site goes back with it. A release trigger would never fire:
+# promote.yml's finish edits the release with its own GITHUB_TOKEN, whose events start no workflow. A file of its own,
+# so the workflows npm's trusted publishers name hold no Pages right and these jobs hold no npm right.
+on:
+  workflow_run:
+    workflows: [promote]
+    types: [completed]
+    branches: [main]
+  # A redeploy. Empty means the latest release's tag, main the head of main, anything else an existing tag vX.Y.Z. The
+  # environment admits main only, so a dispatch is made on main.
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Empty for the latest release, main, or a tag vX.Y.Z
+        required: false
+        type: string
+        default: ''
+
+# A deploy is never cut off halfway, and a newer one waits.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  build:
+    name: build
+    # A failed or cancelled promotion deploys nothing.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # The input reaches the script through env, never written into it.
+      - name: Resolve the ref
+        id: ref
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF_INPUT: ${{ inputs.ref }}
+        run: |
+          if [ -z "$REF_INPUT" ]; then
+            ref=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)
+            if ! [[ "$ref" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::The latest release's tag is $ref, not vX.Y.Z."
+              exit 1
+            fi
+          elif [ "$REF_INPUT" = main ]; then
+            ref=main
+          elif [[ "$REF_INPUT" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] &&
+            gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$REF_INPUT" --silent 2> /dev/null; then
+            ref=$REF_INPUT
+          else
+            echo "::error::The input ref is $REF_INPUT, which is neither empty, main nor an existing tag vX.Y.Z."
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "Building the site from $ref."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.ref.outputs.ref }}
+          # The tags, so the site names the release it is built from.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      # Chromium for the site's captures, cached per Playwright version.
+      - name: Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('./apps/docs/node_modules/playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - run: pnpm --filter @log-book/docs exec playwright install --with-deps chromium
+      - run: pnpm docs:build
+      - run: pnpm docs:check
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: apps/docs/.vitepress/dist
+
+  # Runs nothing but GitHub's Pages action; packages/ci/src/rules/docs-deploy-job.yaml is its template, which
+  # check:release holds it to.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

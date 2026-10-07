@@ -46,6 +46,15 @@ const MOVE_TEMPLATE_FILE = 'packages/ci/src/rules/promote-job.yaml'
 const MOVE_TEMPLATE_TEXT = readFileSync(new URL('../rules/promote-job.yaml', import.meta.url), 'utf8')
 const PROMOTE = '.github/workflows/promote.yml'
 const MOVE_STEP = 3
+// The docs deploy job's template, as the repository holds it.
+const DEPLOY_TEMPLATE_FILE = 'packages/ci/src/rules/docs-deploy-job.yaml'
+const DEPLOY_TEMPLATE_TEXT = readFileSync(new URL('../rules/docs-deploy-job.yaml', import.meta.url), 'utf8')
+const DOCS = '.github/workflows/docs.yml'
+// docs.yml's triggers as the repository holds them.
+const DOCS_TRIGGERS = {
+  workflow_run: { workflows: ['promote'], types: ['completed'], branches: ['main'] },
+  workflow_dispatch: { inputs: { ref: { type: 'string', default: '' } } },
+}
 
 interface IStep {
   uses?: string
@@ -67,6 +76,22 @@ const promoteWorkflow = (
   on: unknown = 'workflow_dispatch'
 ): string => stringify({ name: 'promote', on, permissions: {}, jobs: { ...jobs, move } })
 
+// A fresh copy of the docs deploy template's job, to change before planting it.
+const deployJob = (): { steps: IStep[] } & Record<string, unknown> =>
+  parse(DEPLOY_TEMPLATE_TEXT) as { steps: IStep[] } & Record<string, unknown>
+
+// docs.yml started by these triggers, with no top-level rights, a build job that reads, and the deploy job given.
+const docsWorkflow = (deploy: unknown, on: unknown = DOCS_TRIGGERS): string =>
+  stringify({
+    name: 'docs',
+    on,
+    permissions: {},
+    jobs: {
+      build: { 'runs-on': 'ubuntu-latest', 'permissions': { contents: 'read' }, 'steps': [{ run: 'pnpm docs:build' }] },
+      deploy,
+    },
+  })
+
 // ci.yml with top-level permissions, the publish job given and any other jobs.
 const ciWorkflow = (publish: unknown, jobs: Record<string, unknown> = {}): string =>
   stringify({ name: 'CI', on: 'push', permissions: { contents: 'read' }, jobs: { ...jobs, publish } })
@@ -83,6 +108,7 @@ const findings = async (files: Readonly<Record<string, string | null>>): Promise
     '.releaserc.json': JSON.stringify(RELEASE_CONFIG, null, 2),
     [TEMPLATE_FILE]: TEMPLATE_TEXT,
     [MOVE_TEMPLATE_FILE]: MOVE_TEMPLATE_TEXT,
+    [DEPLOY_TEMPLATE_FILE]: DEPLOY_TEMPLATE_TEXT,
     ...files,
   }
   return releaseFindings(
@@ -482,7 +508,7 @@ describe('the release guard', () => {
 
       // Assert
       expect(found).toStrictEqual([
-        `${PROMOTE}: triggered by push, not only workflow_dispatch [release-guard/promote-trigger]`,
+        `${PROMOTE}: triggered by push, not only workflow_dispatch [release-guard/workflow-trigger]`,
       ])
     })
 
@@ -522,6 +548,92 @@ describe('the release guard', () => {
       expect(found).toStrictEqual([
         `${CI}:${String(lineHolding(ci, 'npm dist-tag add'))}: npm dist-tag [release-guard/no-publish-text]`,
         `${PROMOTE}:${String(lineHolding(promote, 'npm dist-tag add'))}: npm dist-tag [release-guard/no-publish-text]`,
+      ])
+    })
+  })
+
+  describe('the docs deploy job', () => {
+    it('passes docs.yml with its deploy job equal to the template', async () => {
+      // Act
+      const found = await findings({ [DOCS]: docsWorkflow(deployJob()) })
+
+      // Assert
+      expect(found).toStrictEqual([])
+    })
+
+    it.each([
+      [
+        'a run step added',
+        (job: ReturnType<typeof deployJob>) => ({ ...job, steps: [...job.steps, { run: 'ls' }] }),
+        'steps',
+      ],
+      [
+        'another environment',
+        (job: ReturnType<typeof deployJob>) => ({ ...job, environment: 'production' }),
+        'environment',
+      ],
+      [
+        'contents: write',
+        (job: ReturnType<typeof deployJob>) => ({
+          ...job,
+          permissions: { 'pages': 'write', 'id-token': 'write', 'contents': 'write' },
+        }),
+        'permissions.contents',
+      ],
+    ])('fails with %s', async (_case, change, difference) => {
+      // Act
+      const found = await findings({ [DOCS]: docsWorkflow(change(deployJob())) })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${DOCS}: job deploy: ${difference} differs from ${DEPLOY_TEMPLATE_FILE} [release-guard/docs-deploy-job]`,
+      ])
+    })
+
+    it('fails with an npm command in it', async () => {
+      // Arrange
+      const job = deployJob()
+      job.steps = [...job.steps, { run: 'npm dist-tag add @log-book/cli@1.0.0 latest' }]
+      const text = docsWorkflow(job)
+
+      // Act
+      const found = await findings({ [DOCS]: text })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${DOCS}: job deploy: steps differs from ${DEPLOY_TEMPLATE_FILE} [release-guard/docs-deploy-job]`,
+        `${DOCS}:${String(lineHolding(text, 'npm dist-tag add'))}: npm dist-tag [release-guard/no-publish-text]`,
+      ])
+    })
+
+    it('fails with actions/deploy-pages pinned to a version tag', async () => {
+      // Arrange
+      const job = deployJob()
+      job.steps = [{ ...job.steps[0], uses: 'actions/deploy-pages@v5' }]
+
+      // Act
+      const found = await findings({ [DOCS]: docsWorkflow(job) })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${DOCS}: job deploy: actions/deploy-pages@v5 is not a full commit SHA [release-guard/docs-deploy-job]`,
+      ])
+    })
+
+    it('fails on a push trigger and on a workflow_run of another workflow', async () => {
+      // Act
+      const found = await findings({
+        [DOCS]: docsWorkflow(deployJob(), {
+          ...DOCS_TRIGGERS,
+          workflow_run: { ...DOCS_TRIGGERS.workflow_run, workflows: ['CI'] },
+          push: { branches: ['main'] },
+        }),
+      })
+
+      // Assert
+      expect(found).toStrictEqual([
+        `${DOCS}: triggered by push, not only workflow_run and workflow_dispatch [release-guard/workflow-trigger]`,
+        `${DOCS}: workflow_run of ["CI"], not of promote alone [release-guard/workflow-trigger]`,
       ])
     })
   })
