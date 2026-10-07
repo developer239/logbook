@@ -61,11 +61,16 @@ const CONTENT_SECURITY_POLICY = [
   "object-src 'none'",
 ].join('; ')
 
+// same-origin, not no-referrer: under no-referrer a browser sends `Origin: null` with a form submission, which the
+// Origin check refuses, while same-origin keeps the page's own origin on its own requests and sends no other site a
+// referrer.
+const REFERRER_POLICY = 'same-origin'
+
 // The headers of an accepted response; a refusal gets none of them. The host passes the running logbook's version,
 // so a second start and the port probe can tell Log Book answers; under `astro dev` there is none to pass.
 export const responseHeaders = (version?: string): Record<string, string> => ({
   'Content-Security-Policy': CONTENT_SECURITY_POLICY,
   'X-Content-Type-Options': 'nosniff',
-  'Referrer-Policy': 'no-referrer',
+  'Referrer-Policy': REFERRER_POLICY,
   ...(version === undefined ? {} : { 'x-log-book': version }),
 })

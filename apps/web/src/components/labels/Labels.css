@@ -1,16 +1,13 @@
 .labels {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  max-width: 48rem;
+  gap: var(--space-4);
+  max-width: 52rem;
   padding: var(--space-5) 0;
-  font-size: var(--text-body);
 }
 
-.labels__heading {
+.labels .page-head {
   margin: 0;
-  font-size: var(--text-title);
-  font-weight: 600;
 }
 
 .labels__last {
@@ -22,35 +19,68 @@
   margin: 0;
 }
 
+.labels__plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--text-2);
+}
+
 .labels__progress {
-  margin: 0;
+  margin: 0 0 var(--space-3);
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   white-space: pre;
   overflow-x: auto;
 }
 
-.labels__model {
+/* The model field and the button side by side, the help under both; stacked on a narrow screen. */
+.labels__start {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin: var(--space-2) 0 0;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--surface-2);
+}
+
+.labels__model {
+  flex: 1 1 18rem;
+  min-width: 0;
+  margin: 0;
 }
 
 .labels__field {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.labels__field-name {
+  font-size: var(--text-sm);
+  color: var(--text-3);
 }
 
 .labels__input {
   min-width: 0;
-  width: 18rem;
-  max-width: 100%;
+  height: 2.625rem;
+  padding: 0 var(--space-4);
+  border: 0;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font: inherit;
   font-family: var(--font-mono);
+  font-size: var(--text-ui);
+}
+
+.labels__submit {
+  --button-height: 2.625rem;
+  --button-padding: 1.375rem;
 }
 
 .labels__help {
+  flex-basis: 100%;
   margin: 0;
   font-size: var(--text-sm);
   color: var(--text-3);

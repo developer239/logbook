@@ -59,7 +59,7 @@ describe('responseHeaders', () => {
     const policy = {
       'Content-Security-Policy': POLICY,
       'X-Content-Type-Options': 'nosniff',
-      'Referrer-Policy': 'no-referrer',
+      'Referrer-Policy': 'same-origin',
     }
     expect({ withVersion, withoutVersion }).toStrictEqual({
       withVersion: { ...policy, 'x-log-book': '1.2.3' },

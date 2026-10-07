@@ -51,6 +51,7 @@ const PROJECTS: IProjectSpec[] = [
   {
     name: 'web',
     include: ['apps/web/src/**/*.test.ts', 'apps/web/test/**/*.test.ts'],
+    exclude: ['apps/web/**/*.browser.test.ts'],
     timeout: ENGINE_TIMEOUT_MS,
     isEnvStubKept: true,
     env: NO_USER_WAREHOUSE,
@@ -70,7 +71,12 @@ const PROJECTS: IProjectSpec[] = [
     exclude: ['apps/docs/**/*.browser.test.ts'],
     timeout: UNIT_TIMEOUT_MS,
   },
-  { name: 'docs-browser', include: ['apps/docs/**/*.browser.test.ts'], timeout: BROWSER_TIMEOUT_MS },
+  // Every test that drives Chromium, run where it is installed.
+  {
+    name: 'docs-browser',
+    include: ['apps/docs/**/*.browser.test.ts', 'apps/web/**/*.browser.test.ts'],
+    timeout: BROWSER_TIMEOUT_MS,
+  },
   {
     name: 'e2e',
     include: ['apps/cli/test/e2e/**/*.e2e.test.ts'],
