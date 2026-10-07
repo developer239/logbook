@@ -36,6 +36,10 @@ export const IGNORED_KINDS: ReadonlySet<string> = new Set([
     'auto_mode_exit',
     'auto_mode',
     'workflow_size_guideline_change',
+    'ultra_effort_enter',
+    'ultra_effort_exit',
+    'date_change',
+    'diagnostics',
   ].map((type) => `attachment:${type}`),
   // May re-attach skills after a compaction (unverified): ignored until a fixture shows its shape.
   'attachment:invoked_skills',

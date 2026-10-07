@@ -483,6 +483,39 @@ describe('importTranscript', () => {
     }).toStrictEqual({ result: [expected], status: ['completed'], problems: [] })
   })
 
+  it("makes text and an image beside a result parts of the result's message, and keeps another block unknown", async () => {
+    // Arrange
+    const lines = [
+      user('u1', 0, [
+        { type: 'tool_result', tool_use_id: 'toolu_1', content: 'done' },
+        text('Also check the logs.'),
+        { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'AA==' } },
+        { type: 'hologram' },
+      ]),
+    ]
+
+    // Act
+    const unit = await importLines(lines)
+
+    // Assert
+    const session = onlySession(unit)
+    expect({
+      actors: session.messages.map((message) => message.actor),
+      parts: session.parts.map((part) => [part.kind, part.text]),
+      events: session.events.map((event) => event.kind),
+      problems: validateImportedUnit(claudeCode().descriptor, unit),
+    }).toStrictEqual({
+      actors: ['tool'],
+      parts: [
+        ['tool_result', 'done'],
+        ['text', 'Also check the logs.'],
+        ['text', '(image)'],
+      ],
+      events: ['unknown'],
+      problems: [],
+    })
+  })
+
   it('keeps the part of a result whose call is not in the file, and invents no call', async () => {
     // Arrange
     const lines = [user('u1', 0, [{ type: 'tool_result', tool_use_id: 'toolu_earlier', content: 'done' }])]
