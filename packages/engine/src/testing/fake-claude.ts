@@ -188,10 +188,12 @@ const watchCaller = () => {
   }, 100).unref()
 }
 
+// Armed before the call is recorded: a test kills the caller as soon as the record appears, and a fake that read its
+// parent only after that could read the process it was reparented to.
+watchCaller()
 const isPrint = args.includes('-p')
 const stdin = isPrint ? fs.readFileSync(0, 'utf8') : ''
 record(stdin)
-watchCaller()
 if (args[0] === '--version') {
   process.stdout.write(config.version + '\n')
 } else if (args[0] === 'auth' && args[1] === 'status') {
