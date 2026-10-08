@@ -18,6 +18,8 @@ import { runLabelling, type ILabelRunOptions, type ILabelRunReport, type LabelRu
 import versions from './tasks/versions.json' with { type: 'json' }
 
 const CHILD_TIMEOUT_MS = 20_000
+const ENDED_TIMEOUT_MS = 5_000
+const POLL_MS = 50
 const SESSION = 'test-harness:main'
 const SHELL_SYSTEM = 'You label shell commands'
 
@@ -115,6 +117,32 @@ process.stdout.write(result.outcome)
 // The argument vectors of the fake's `claude -p` calls, without the detection calls.
 const printCalls = async (fake: IFakeClaude): Promise<string[][]> =>
   (await fake.readRecords()).filter(({ argv }) => argv.includes('-p')).map(({ argv }) => argv)
+
+const isRunning = (pid: number): boolean => {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// The processes that are still running after the time allowed for them to end, killed so a failure here leaks none.
+const survivorsOf = async (pids: readonly number[]): Promise<number[]> => {
+  await vi
+    .waitFor(
+      () => {
+        expect(pids.filter(isRunning)).toStrictEqual([])
+      },
+      { timeout: ENDED_TIMEOUT_MS, interval: POLL_MS }
+    )
+    .catch(() => undefined)
+  const survivors = pids.filter(isRunning)
+  for (const pid of survivors) {
+    process.kill(pid, 'SIGKILL')
+  }
+  return survivors
+}
 
 describe('runLabelling', () => {
   let home = ''
@@ -350,9 +378,12 @@ describe('runLabelling', () => {
       const running = await child(LABELLING_CHILD, [new URL('label-run.ts', import.meta.url).href, opened().path])
       await vi.waitFor(async () => expect(await printCalls(fake)).toHaveLength(2), { timeout: CHILD_TIMEOUT_MS })
 
+      const claudePids = (await fake.readRecords()).filter(({ argv }) => argv.includes('-p')).map(({ pid }) => pid)
+
       // Act
       process.kill(running.pid, signal)
       await running.closed
+      const survivors = await survivorsOf(claudePids)
 
       // Assert
       const [record] = runRecords()
@@ -360,9 +391,11 @@ describe('runLabelling', () => {
         outcome: record?.outcome,
         isEnded: record?.isEnded,
         isLockHeld: readLabelsLock(opened().path).isHeld,
+        survivors,
       }).toStrictEqual({
         ...expected,
         isLockHeld: false,
+        survivors: [],
       })
     },
     CHILD_TIMEOUT_MS
