@@ -1,3 +1,5 @@
+import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -14,6 +16,15 @@ const TIMEOUT_MS = 5000
 const SYSTEM_PROMPT = 'Classify each shell call.'
 const ENVELOPES = new URL('../../fixtures/claude/2.1.286/', import.meta.url)
 const LABEL_ARGS = ['-p', '--model', 'claude-haiku-4-5', '--system-prompt', SYSTEM_PROMPT, '--output-format', 'json']
+
+const isRunning = (pid: number): boolean => {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
 
 const batch = (...records: string[]): string =>
   records.map((text, index) => `### #0${String(index)}\n${text}\n`).join('')
@@ -105,6 +116,7 @@ describe('installFakeClaude', () => {
     expect(records).toStrictEqual(
       [1, 2].map((counter) => ({
         counter,
+        pid: expect.any(Number) as number,
         argv: LABEL_ARGS,
         model: 'claude-haiku-4-5',
         stdin: input,
@@ -230,6 +242,58 @@ describe('installFakeClaude', () => {
 
     // Assert
     await expect(calling).rejects.toThrow(expect.objectContaining({ code: 'TIMEOUT' }))
+  })
+})
+
+describe('a fake whose caller is killed', () => {
+  let directory = ''
+
+  // Runs a caller that starts the fake with a batch that never gets an answer and prints the fake's pid.
+  const CALLER = `const { spawn } = require('node:child_process')
+const child = spawn('claude', process.argv.slice(1), { stdio: ['pipe', 'ignore', 'ignore'] })
+child.stdin.end('### #00\\n(ok) ls marker-n\\n')
+process.stdout.write(String(child.pid))
+`
+
+  beforeEach(async () => {
+    directory = await realpath(await mkdtemp(join(tmpdir(), 'log-book-fake-claude-')))
+  })
+
+  afterEach(async () => {
+    await rm(directory, { recursive: true, force: true })
+  })
+
+  it('ends instead of running on without it', async () => {
+    // Arrange
+    await installFakeClaude(directory, {
+      answers: [{ systemPrompt: SYSTEM_PROMPT, answer: '3 0' }],
+      rules: [{ marker: 'marker-n', kind: 'never' }],
+    })
+    const caller = spawn(process.execPath, ['-e', CALLER, '--', ...LABEL_ARGS], {
+      env: { PATH: directory },
+      stdio: ['ignore', 'pipe', 'inherit'],
+    })
+    const pid = await new Promise<number>((resolve) => {
+      caller.stdout.once('data', (chunk: Buffer) => {
+        resolve(Number(chunk.toString()))
+      })
+    })
+    await vi.waitFor(() => expect(existsSync(join(directory, 'claude-calls.jsonl'))).toBe(true), {
+      timeout: TIMEOUT_MS,
+    })
+
+    // Act
+    caller.kill('SIGKILL')
+    const hasEnded = await vi
+      .waitFor(() => expect(isRunning(pid)).toBe(false), { timeout: TIMEOUT_MS })
+      .then(() => true)
+      .catch(() => false)
+
+    // Assert
+    if (!hasEnded) {
+      process.kill(pid, 'SIGKILL')
+    }
+    expect(hasEnded).toBe(true)
   })
 })
 

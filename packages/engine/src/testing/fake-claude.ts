@@ -47,6 +47,7 @@ export interface IFakeClaudeScenario {
 
 export interface IFakeClaudeRecord {
   counter: number
+  pid: number
   argv: string[]
   model: string | null
   stdin: string
@@ -90,6 +91,7 @@ const record = (stdin) => {
   const canary = config.canary
   const entry = {
     counter: previous + 1,
+    pid: process.pid,
     argv: args,
     model: valueAfter('--model'),
     stdin,
@@ -175,6 +177,20 @@ const respond = (stdin) => {
   }
 }
 
+// The real claude ends when its caller is gone and its output pipe breaks. The fake does too, so a rule that holds or
+// never answers cannot outlive a caller that was killed before it could stop its child.
+const watchCaller = () => {
+  const caller = process.ppid
+  setInterval(() => {
+    if (process.ppid !== caller) {
+      process.exit(1)
+    }
+  }, 100).unref()
+}
+
+// Armed before the call is recorded: a test kills the caller as soon as the record appears, and a fake that read its
+// parent only after that could read the process it was reparented to.
+watchCaller()
 const isPrint = args.includes('-p')
 const stdin = isPrint ? fs.readFileSync(0, 'utf8') : ''
 record(stdin)
