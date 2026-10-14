@@ -41,7 +41,7 @@ catalog:
   playwright: 1.63.0
   semantic-release: 25.0.9
   stylelint: 17.16.0
-  typescript: 7.1.0-dev.20261003.1
+  typescript: 7.1.0-dev.20261010.1
   vitepress: 1.6.3
   vitepress-mermaid-renderer: 1.2.2
   vitest: 5.0.3
