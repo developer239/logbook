@@ -41,7 +41,7 @@ describe('claudeCode', () => {
       defaultAgent: 'Claude',
       unitNoun: 'transcripts',
       filterAlias: 'claude',
-      parserVersion: 2,
+      parserVersion: 3,
       testedVersions: ['2.1'],
       locationVariables: [
         {

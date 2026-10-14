@@ -173,6 +173,25 @@
           "tokensReasoning": null
         },
         {
+          "actor": "user",
+          "agent": null,
+          "completedAt": null,
+          "createdAt": 1772445385000,
+          "gitBranch": "main",
+          "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000025",
+          "model": null,
+          "reportedCost": null,
+          "requestedAt": null,
+          "seq": 4,
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+          "sourceRole": "attachment/queued_command",
+          "tokensCacheRead": null,
+          "tokensCacheWrite": null,
+          "tokensInput": null,
+          "tokensOutput": null,
+          "tokensReasoning": null
+        },
+        {
           "actor": "assistant",
           "agent": null,
           "completedAt": 1772445423000,
@@ -181,8 +200,8 @@
           "id": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/msg_example42",
           "model": "claude-sonnet-5-5",
           "reportedCost": null,
-          "requestedAt": 1772445308000,
-          "seq": 4,
+          "requestedAt": 1772445385000,
+          "seq": 5,
           "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
           "sourceRole": "assistant",
           "tokensCacheRead": 900,
@@ -223,6 +242,14 @@
           "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000010",
           "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
           "text": "Base directory for this skill: /home/example/.claude/skills/write-release-notes\n\nWrite release notes from the merged changes, newest first.",
+          "toolCallId": null
+        },
+        {
+          "idx": 0,
+          "kind": "text",
+          "messageId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008/5f0c2a1e-0008-4000-8000-000000000025",
+          "sessionId": "claude-code:5f0c2a1e-0000-4000-8000-000000000008",
+          "text": "Note: keep the notes under ten lines.",
           "toolCallId": null
         },
         {
