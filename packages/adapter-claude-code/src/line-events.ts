@@ -19,7 +19,6 @@ export const IGNORED_KINDS: ReadonlySet<string> = new Set([
     'model',
     'instructions',
     'remote_session_change',
-    'queued_command',
     'batching_reminder_sent',
     'file',
     'credential_org',
@@ -64,7 +63,8 @@ export const IGNORED_KINDS: ReadonlySet<string> = new Set([
   'artifact-comment-monitor',
   // Session totals from a different counter than the per-message usage already imported.
   'cost-state',
-  // A queued prompt: a delivered one is imported from its own user line, a removed one never reached the model.
+  // The queue's bookkeeping, not the prompt: a delivered prompt is imported from its own user line, or from its
+  // queued_command attachment when the agent took it mid-turn.
   'queue-operation',
   // Meaning unverified: not mapped to the session's agent.
   'agent-name',

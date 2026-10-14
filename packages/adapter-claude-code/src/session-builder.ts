@@ -38,6 +38,7 @@ const SYNTHETIC_MODEL = '<synthetic>'
 // Text Claude Code writes in the user's name without marking it.
 const HARNESS_PREFIXES = ['<command-name>', '<command-message>', '<local-command-', '[Request interrupted']
 const LOCAL_COMMAND_ROLE = 'system/local_command'
+const QUEUED_COMMAND_ROLE = 'attachment/queued_command'
 // What Claude Code writes when the human stops the agent: `[Request interrupted by user]`, or `... for tool use]`.
 const INTERRUPT_MARKER = '[Request interrupted by user'
 // The result Claude Code writes for a tool call the human refused.
@@ -110,6 +111,7 @@ export class SessionBuilder {
     'user': (line, at, number) => this.addUser(line, at, number),
     'assistant': (line, at, number) => this.addAssistant(line, at, number),
     'system:local_command': (line, at) => this.addLocalCommand(line, at),
+    'attachment:queued_command': (line, at, number) => this.addQueuedCommand(line, at, number),
     'system:compact_boundary': (line, at, number) =>
       this.addEvent(line, number, 'compaction', { metadata: line.compactMetadata ?? null }, at),
     'system:api_error': (line, at, number) =>
@@ -493,10 +495,16 @@ export class SessionBuilder {
     })
   }
 
+  // Claude Code marks what the human typed, a slash command too, with origin kind `human`. A line without that mark is
+  // the harness's when it is meta, a compact summary, injected by anyone else, or opens with text Claude Code writes
+  // in the user's name.
   private readonly userActor = (line: ITranscriptLine, text: string | null): MessageActor => {
     const originKind = line.origin?.kind
-    const isInjected = originKind !== undefined && originKind !== 'human'
-    const isHarness = line.isMeta === true || line.isCompactSummary === true || isInjected || isHarnessText(text)
+    if (originKind === 'human') {
+      return 'user'
+    }
+    const isHarness =
+      line.isMeta === true || line.isCompactSummary === true || originKind !== undefined || isHarnessText(text)
     return isHarness ? 'harness' : 'user'
   }
 
@@ -507,6 +515,25 @@ export class SessionBuilder {
       return false
     }
     this.addPart(this.newMessage(sourceId, 'harness', LOCAL_COMMAND_ROLE, at, line), 'text', stringOf(line.content))
+    return true
+  }
+
+  // A message queued while the agent worked and handed to it inside the running turn: Claude Code records it only as
+  // this attachment, never as a user line. The human's own (`origin.kind` human) is a user message; a background task's
+  // or another agent's is the harness's.
+  private readonly addQueuedCommand = (line: ITranscriptLine, at: number, number: number): boolean => {
+    const sourceId = stringOf(line.uuid)
+    const attachment = isObject(line.attachment) ? line.attachment : {}
+    const { prompt } = attachment
+    if (sourceId === null || (typeof prompt !== 'string' && !Array.isArray(prompt))) {
+      return false
+    }
+    const isHuman = isObject(attachment.origin) && attachment.origin.kind === 'human'
+    const record = this.newMessage(sourceId, isHuman ? 'user' : 'harness', QUEUED_COMMAND_ROLE, at, line)
+    this.addPart(record, 'text', stringOf(prompt))
+    for (const [index, block] of blocksOf(prompt).entries()) {
+      this.addUserBlock(record, 'text', block, () => this.addUnknownBlock(line, number, index, block, at))
+    }
     return true
   }
 

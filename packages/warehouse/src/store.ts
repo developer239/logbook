@@ -286,6 +286,10 @@ export class WarehouseStore implements IWarehouseReader {
       }
       this.db.exec("UPDATE session SET origin = CASE WHEN is_scripted = 1 THEN 'scripted' ELSE 'interactive' END")
       this.db.exec(
+        `UPDATE session SET origin = 'scripted'
+         WHERE id IN (SELECT child_session_id FROM link WHERE kind = 'dispatch' AND confidence <> 'ambiguous')`
+      )
+      this.db.exec(
         "UPDATE session SET origin = 'subagent' WHERE id IN (SELECT child_session_id FROM link WHERE kind = 'subagent')"
       )
     })

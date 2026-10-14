@@ -15,8 +15,8 @@ export interface IThreadTurn {
   number: number
   startedAt: number
   durationMs: number
-  // Null for a turn the harness started.
-  prompt: { text: string; reactions: string[] } | null
+  // Null for a turn the harness started; command is the one the prompt ran, if any.
+  prompt: { text: string; reactions: string[]; command: string | null } | null
   reply: { text: string; model: string | null; at: number } | null
   harnessLines: string[]
   compactions: { at: number; summary: string }[]
@@ -64,9 +64,13 @@ const threadTurn = (cache: ISessionCache, session: ISession, turn: ITurn): IThre
     startedAt: turn.startedAt,
     durationMs: turn.endedAt - turn.startedAt,
     prompt:
-      prompt === null
+      prompt === null || first === undefined
         ? null
-        : { text: prompt, reactions: (first === undefined ? undefined : session.reactions.get(first.id)) ?? [] },
+        : {
+            text: prompt,
+            reactions: session.reactions.get(first.id) ?? [],
+            command: session.commands.get(first.id) ?? null,
+          },
     reply:
       reply === undefined
         ? null
