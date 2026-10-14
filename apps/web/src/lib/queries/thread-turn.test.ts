@@ -42,6 +42,8 @@ const UNOFFERED_SERVER = 'notes'
 type TSpawnStep = Extract<TStep, { kind: 'spawn' }>
 
 const isSpawn = (step: TStep): step is TSpawnStep => step.kind === 'spawn'
+// A command the warehouse records as the prompt it expanded to.
+const isPromptCommand = (step: TStep): boolean => step.kind === 'command' && step.body !== null
 const hasReactions = (step: TStep): boolean => step.kind === 'prompt' && reactionsOf(demo, step.key).length > 1
 const isEventOf =
   (type: string) =>
@@ -293,7 +295,7 @@ describe('thread', () => {
       agent: plannedSession(demo, key).agent ?? defaultAgentOf(harnessOf(demo, key)),
       turns: prompts.map((prompt, index) => [
         index + 1,
-        { text: prompt.text, reactions: byPressure(reactionsOf(demo, prompt.key)) },
+        { text: prompt.text, reactions: byPressure(reactionsOf(demo, prompt.key)), command: null },
         failedIn(prompt.key),
       ]),
     })
@@ -346,6 +348,18 @@ describe('thread', () => {
         },
       ],
     })
+  })
+
+  it('should name the command a prompt ran', () => {
+    const key = sessionWith(demo, isPromptCommand)
+    const command = ownStepsOf(demo, key).find(isPromptCommand)
+    if (command?.kind !== 'command') {
+      throw new Error(`${key} plans no command recorded as a prompt`)
+    }
+
+    const { turns } = thread.thread(session.sessionCache(), idOf(demo, key))
+
+    expect(turns.find((row) => row.id === idOf(demo, command.key))?.prompt?.command).toBe(command.name)
   })
 
   it('should show no harness message as a prompt, only as a harness line', () => {

@@ -7,6 +7,7 @@ import { markdown } from '../../lib/markdown'
 import type { IThreadTurn } from '../../lib/queries/thread'
 import Icon from '../ui/Icon.astro'
 import Status from '../ui/Status.astro'
+import Tag from '../ui/Tag.astro'
 import Tile from '../ui/Tile.astro'
 import ThreadMessage from './ThreadMessage.astro'
 import './Thread.css'
@@ -44,6 +45,12 @@ const BRIEF_LENGTH = 280
           <ThreadMessage kind="prompt" turnId={turn.id} href={href} isSelected={isSelected} isNested={isSpawn}>
             <Fragment slot="who">
               <b class="thread-message__speaker">{promptBy}</b>
+              {turn.prompt.command !== null && (
+                <>
+                  <Tag>command</Tag>
+                  <span class="thread-message__meta">/{turn.prompt.command}</span>
+                </>
+              )}
               {isSpawn && <span class="thread-message__meta">{time(turn.startedAt)}</span>}
               {turn.prompt.reactions.map((reaction) => (
                 <Status class="thread-message__reaction" tone={reactionStatus(reaction)} form="text">

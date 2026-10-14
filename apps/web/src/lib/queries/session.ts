@@ -96,6 +96,8 @@ export interface ISession {
   definitionTokens: Map<string, number>
   // By the prompt's message id, the most pressing first.
   reactions: Map<string, string[]>
+  // By the message's id, the command it ran as the command pass recognised it.
+  commands: Map<string, string>
   childrenOfTurn: Map<string, IChildTurn[]>
   childrenOfCall: Map<string, IChildTurn[]>
 }
@@ -260,6 +262,14 @@ export const sessionOf = (cache: ISessionCache, sessionId: string): ISession => 
           (row) => row.id
         ),
       ].map(([id, rows]) => [id, byPressure(rows.map((row) => row.reaction))])
+    ),
+    // A message whose parts name several commands keeps the first by name.
+    commands: new Map(
+      all<{ id: string; command: string }>(
+        `SELECT c.message_id AS id, MIN(c.command) AS command FROM session_command c WHERE c.session_id = ?
+         GROUP BY c.message_id`,
+        sessionId
+      ).map((row) => [row.id, row.command])
     ),
     childrenOfTurn: Map.groupBy(
       all<IChildTurn>(

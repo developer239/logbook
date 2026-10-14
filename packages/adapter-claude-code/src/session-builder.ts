@@ -495,10 +495,16 @@ export class SessionBuilder {
     })
   }
 
+  // Claude Code marks what the human typed, a slash command too, with origin kind `human`. A line without that mark is
+  // the harness's when it is meta, a compact summary, injected by anyone else, or opens with text Claude Code writes
+  // in the user's name.
   private readonly userActor = (line: ITranscriptLine, text: string | null): MessageActor => {
     const originKind = line.origin?.kind
-    const isInjected = originKind !== undefined && originKind !== 'human'
-    const isHarness = line.isMeta === true || line.isCompactSummary === true || isInjected || isHarnessText(text)
+    if (originKind === 'human') {
+      return 'user'
+    }
+    const isHarness =
+      line.isMeta === true || line.isCompactSummary === true || originKind !== undefined || isHarnessText(text)
     return isHarness ? 'harness' : 'user'
   }
 
