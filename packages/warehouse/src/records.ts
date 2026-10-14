@@ -43,7 +43,9 @@ export type SessionEventKind =
 // in a tool result, a time window); `ambiguous` marks each of several candidates the evidence could not choose between.
 export type LinkConfidence = 'exact' | 'reconstructed' | 'ambiguous'
 
-export type LinkKind = 'subagent'
+// `subagent`: a subagent call started the child inside its harness. `dispatch`: a dispatch call started the child as a
+// run of a harness of its own, so the child is a scripted session.
+export type LinkKind = 'subagent' | 'dispatch'
 
 // Typed by name, or recognised by its expanded body.
 export type SessionCommandSource = 'typed' | 'template'

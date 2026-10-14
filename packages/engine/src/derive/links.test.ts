@@ -35,6 +35,16 @@ const callRow = (
   child_session_id: fields.child ?? null,
 })
 
+// The result a call recorded, as its tool_result part.
+const resultPart = (callId: string, text: string): Record<string, string | number | null> => ({
+  message_id: 'test-harness:caller/m1',
+  session_id: 'test-harness:caller',
+  idx: 0,
+  kind: 'tool_result',
+  text,
+  tool_call_id: callId,
+})
+
 describe('the link and initiator passes', () => {
   let warehouse: ITestWarehouse | null = null
   let store: WarehouseStore | null = null
@@ -155,20 +165,21 @@ describe('the link and initiator passes', () => {
     ])
   })
 
-  it('creates no link for a dispatch call whose result names a stored session', () => {
+  it('links a dispatch call to the one session its result or input names, and makes that session scripted', () => {
     // Arrange
-    rows('session', [sessionRow('test-harness:caller'), sessionRow('test-harness:ses_example01')])
-    rows('tool_call', [callRow('test-harness:caller/c1', 'test-harness:caller', { family: 'dispatch' })])
-    rows('part', [
+    rows('session', [
+      sessionRow('test-harness:caller'),
+      sessionRow('test-harness:ses_example01'),
+      sessionRow('test-harness:ses_example02'),
+    ])
+    rows('tool_call', [
+      callRow('test-harness:caller/c1', 'test-harness:caller', { family: 'dispatch' }),
       {
-        message_id: 'test-harness:caller/m1',
-        session_id: 'test-harness:caller',
-        idx: 0,
-        kind: 'tool_result',
-        text: 'Run started.\nSession ID: ses_example01',
-        tool_call_id: 'test-harness:caller/c1',
+        ...callRow('test-harness:caller/c2', 'test-harness:caller', { family: 'dispatch' }),
+        input_json: '{"sessionId":"ses_example01"}',
       },
     ])
+    rows('part', [resultPart('test-harness:caller/c1', 'Run started.\nSession ID: ses_example01')])
 
     // Act
     deriveLinks(opened().store)
@@ -178,10 +189,55 @@ describe('the link and initiator passes', () => {
       links: opened().store.all(LINKS_READ),
       origins: opened().store.all('SELECT id, origin FROM session ORDER BY id'),
     }).toStrictEqual({
-      links: [],
+      links: ['test-harness:caller/c1', 'test-harness:caller/c2'].map((call) => ({
+        parent_session_id: 'test-harness:caller',
+        parent_tool_call_id: call,
+        child_session_id: 'test-harness:ses_example01',
+        kind: 'dispatch',
+        confidence: 'reconstructed',
+        evidence: "the dispatch call's input or result names the child session",
+      })),
+      origins: [
+        { id: 'test-harness:caller', origin: 'interactive' },
+        { id: 'test-harness:ses_example01', origin: 'scripted' },
+        { id: 'test-harness:ses_example02', origin: 'interactive' },
+      ],
+    })
+  })
+
+  it("marks each of several sessions a dispatch call names ambiguous, leaving out the call's own and a subagent", () => {
+    // Arrange
+    rows('session', [
+      sessionRow('test-harness:caller'),
+      sessionRow('test-harness:ses_example01'),
+      sessionRow('test-harness:ses_example02'),
+      sessionRow('test-harness:ses_example03', { spawnedBy: 'test-harness:caller' }),
+    ])
+    rows('tool_call', [callRow('test-harness:caller/c1', 'test-harness:caller', { family: 'dispatch' })])
+    rows('part', [
+      resultPart('test-harness:caller/c1', 'From caller: ses_example01 and ses_example02 ran, ses_example03 helped.'),
+    ])
+
+    // Act
+    deriveLinks(opened().store)
+
+    // Assert
+    expect({
+      dispatches: opened()
+        .store.all<{ child_session_id: string; kind: string; confidence: string }>(LINKS_READ)
+        .filter((link) => link.kind === 'dispatch')
+        .map((link) => [link.child_session_id, link.confidence]),
+      origins: opened().store.all('SELECT id, origin FROM session ORDER BY id'),
+    }).toStrictEqual({
+      dispatches: [
+        ['test-harness:ses_example01', 'ambiguous'],
+        ['test-harness:ses_example02', 'ambiguous'],
+      ],
       origins: [
         { id: 'test-harness:caller', origin: 'interactive' },
         { id: 'test-harness:ses_example01', origin: 'interactive' },
+        { id: 'test-harness:ses_example02', origin: 'interactive' },
+        { id: 'test-harness:ses_example03', origin: 'subagent' },
       ],
     })
   })
